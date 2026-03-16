@@ -1,0 +1,353 @@
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidCurrency(currency) {
+      return currency == 'EUR';
+    }
+
+    function isValidTimestamp(value) {
+      return value is timestamp;
+    }
+
+    function userExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function sellerDoc(sellerId) {
+      return get(/databases/$(database)/documents/seller_profiles/$(sellerId));
+    }
+
+    function listingDoc(listingId) {
+      return get(/databases/$(database)/documents/listings/$(listingId));
+    }
+
+    function orderDoc(orderId) {
+      return get(/databases/$(database)/documents/orders/$(orderId));
+    }
+
+    function isSellerOwnerBySellerId(sellerId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/seller_profiles/$(sellerId))
+        && sellerDoc(sellerId).data.ownerUserId == request.auth.uid;
+    }
+
+    function isActiveListing() {
+      return resource.data.status == 'active';
+    }
+
+    function isPublicListingData() {
+      return request.resource.data.status in ['draft', 'active', 'paused', 'hidden', 'archived']
+        && request.resource.data.sellerId is string
+        && request.resource.data.title is string
+        && request.resource.data.description is string
+        && request.resource.data.slug is string
+        && request.resource.data.type in ['product', 'meal', 'service']
+        && request.resource.data.deliveryMode in ['aosell', 'seller']
+        && request.resource.data.countryCode is string
+        && request.resource.data.city is string
+        && request.resource.data.tags is list
+        && request.resource.data.categories is list
+        && request.resource.data.media is list
+        && request.resource.data.attributes is list
+        && request.resource.data.inventory is map
+        && request.resource.data.price is map
+        && request.resource.data.price.amountCents is int
+        && request.resource.data.price.amountCents >= 0
+        && isValidCurrency(request.resource.data.price.currency)
+        && request.resource.data.isFeatured is bool;
+    }
+
+    function isSafeListingUpdate() {
+      return request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isValidOrderStatusTransition(oldStatus, newStatus) {
+      return (
+        oldStatus == 'created' && newStatus in ['pending_payment', 'canceled']
+      ) || (
+        oldStatus == 'pending_payment' && newStatus in ['paid', 'canceled']
+      ) || (
+        oldStatus == 'paid' && newStatus in ['confirmed', 'canceled', 'refunded']
+      ) || (
+        oldStatus == 'confirmed' && newStatus in ['preparing', 'canceled']
+      ) || (
+        oldStatus == 'preparing' && newStatus in ['out_for_delivery', 'canceled']
+      ) || (
+        oldStatus == 'out_for_delivery' && newStatus in ['delivered', 'canceled']
+      ) || (
+        oldStatus == 'delivered' && newStatus == 'delivered'
+      ) || (
+        oldStatus == 'canceled' && newStatus == 'canceled'
+      ) || (
+        oldStatus == 'refunded' && newStatus == 'refunded'
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+        && request.resource.data.id == userId
+        && request.resource.data.email is string
+        && request.resource.data.role in ['buyer', 'seller', 'admin']
+        && request.resource.data.isActive is bool
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /user_profiles/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId)
+        && request.resource.data.userId == userId
+        && request.resource.data.firstName is string
+        && request.resource.data.lastName is string
+        && request.resource.data.displayName is string
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /addresses/{addressId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId)
+          && request.resource.data.userId == userId
+          && request.resource.data.fullName is string
+          && request.resource.data.phoneNumber is string
+          && request.resource.data.line1 is string
+          && request.resource.data.postalCode is string
+          && request.resource.data.city is string
+          && request.resource.data.countryCode is string
+          && isValidTimestamp(request.resource.data.createdAt)
+          && isValidTimestamp(request.resource.data.updatedAt);
+        allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    match /seller_profiles/{sellerId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUserId == request.auth.uid
+        && request.resource.data.type in ['shop', 'restaurant', 'individual']
+        && request.resource.data.brandName is string
+        && request.resource.data.countryCode is string
+        && request.resource.data.city is string
+        && request.resource.data.deliveryModes is list
+        && request.resource.data.verificationStatus in ['unverified', 'pending', 'verified', 'rejected']
+        && request.resource.data.tags is list
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+      allow update: if isSellerOwnerBySellerId(sellerId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /listings/{listingId} {
+      allow read: if resource.data.status == 'active' || isSellerOwnerBySellerId(resource.data.sellerId) || isAdmin();
+
+      allow create: if isSignedIn()
+        && isPublicListingData()
+        && isSellerOwnerBySellerId(request.resource.data.sellerId)
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt)
+        && (
+          !('publishedAt' in request.resource.data) || isValidTimestamp(request.resource.data.publishedAt)
+        )
+        && request.resource.data.searchTokens is list
+        && request.resource.data.hasVideo is bool;
+
+      allow update: if (isSellerOwnerBySellerId(resource.data.sellerId) || isAdmin())
+        && isPublicListingData()
+        && isSafeListingUpdate()
+        && isValidTimestamp(request.resource.data.updatedAt)
+        && (
+          !('publishedAt' in request.resource.data) || isValidTimestamp(request.resource.data.publishedAt)
+        );
+
+      allow delete: if isSellerOwnerBySellerId(resource.data.sellerId) || isAdmin();
+    }
+
+    match /carts/{cartId} {
+      allow read: if isSignedIn() && resource.data.buyerUserId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.buyerUserId == request.auth.uid
+        && request.resource.data.sellerId is string
+        && request.resource.data.items is list
+        && request.resource.data.subtotalAmountCents is int
+        && request.resource.data.deliveryFeeAmountCents is int
+        && request.resource.data.totalAmountCents is int
+        && isValidCurrency(request.resource.data.currency)
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+      allow update: if isSignedIn()
+        && resource.data.buyerUserId == request.auth.uid
+        && request.resource.data.buyerUserId == resource.data.buyerUserId;
+      allow delete: if isSignedIn() && resource.data.buyerUserId == request.auth.uid;
+    }
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn()
+        && (
+          resource.data.buyerUserId == request.auth.uid
+          || isSellerOwnerBySellerId(resource.data.sellerId)
+          || isAdmin()
+        );
+
+      allow create: if isSignedIn()
+        && request.resource.data.buyerUserId == request.auth.uid
+        && request.resource.data.sellerId is string
+        && request.resource.data.items is list
+        && request.resource.data.status in ['created', 'pending_payment']
+        && request.resource.data.subtotalAmountCents is int
+        && request.resource.data.deliveryFeeAmountCents is int
+        && request.resource.data.totalAmountCents is int
+        && isValidCurrency(request.resource.data.currency)
+        && request.resource.data.deliveryMode in ['aosell', 'seller']
+        && request.resource.data.deliveryAddress is map
+        && request.resource.data.timeline is list
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+
+      allow update: if isSignedIn() && (
+        (
+          resource.data.buyerUserId == request.auth.uid
+          && request.resource.data.buyerUserId == resource.data.buyerUserId
+          && request.resource.data.sellerId == resource.data.sellerId
+          && request.resource.data.items == resource.data.items
+          && request.resource.data.subtotalAmountCents == resource.data.subtotalAmountCents
+          && request.resource.data.totalAmountCents == resource.data.totalAmountCents
+          && request.resource.data.status == resource.data.status
+        )
+        ||
+        (
+          isSellerOwnerBySellerId(resource.data.sellerId)
+          && request.resource.data.buyerUserId == resource.data.buyerUserId
+          && request.resource.data.sellerId == resource.data.sellerId
+          && request.resource.data.items == resource.data.items
+          && request.resource.data.subtotalAmountCents == resource.data.subtotalAmountCents
+          && request.resource.data.totalAmountCents == resource.data.totalAmountCents
+          && isValidOrderStatusTransition(resource.data.status, request.resource.data.status)
+        )
+        || isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isSignedIn()
+        && (
+          orderDoc(resource.data.orderId).data.buyerUserId == request.auth.uid
+          || isSellerOwnerBySellerId(orderDoc(resource.data.orderId).data.sellerId)
+          || isAdmin()
+        );
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /deliveries/{deliveryId} {
+      allow read: if isSignedIn()
+        && (
+          orderDoc(resource.data.orderId).data.buyerUserId == request.auth.uid
+          || isSellerOwnerBySellerId(orderDoc(resource.data.orderId).data.sellerId)
+          || isAdmin()
+        );
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.buyerUserId == request.auth.uid
+        && request.resource.data.sellerId is string
+        && request.resource.data.rating in [1, 2, 3, 4, 5]
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+      allow update: if isSignedIn() && resource.data.buyerUserId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.buyerUserId == request.auth.uid || isAdmin();
+    }
+
+    match /notifications/{userId}/items/{notificationId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update, delete: if isOwner(userId) || isAdmin();
+    }
+  }
+}
+
+// storage.rules
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    function listingDoc(listingId) {
+      return firestore.get(/databases/(default)/documents/listings/$(listingId));
+    }
+
+    function canManageListingMedia(listingId) {
+      return isSignedIn()
+        && listingDoc(listingId).data.sellerId is string
+        && firestore.get(/databases/(default)/documents/seller_profiles/$(listingDoc(listingId).data.sellerId)).data.ownerUserId == request.auth.uid;
+    }
+
+    function isActiveListing(listingId) {
+      return listingDoc(listingId).data.status == 'active';
+    }
+
+    function isValidImageUpload() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function isValidVideoUpload() {
+      return request.resource.size < 150 * 1024 * 1024
+        && request.resource.contentType.matches('video/.*');
+    }
+
+    match /listing-media/{listingId}/images/{fileName} {
+      allow read: if isActiveListing(listingId) || canManageListingMedia(listingId) || isAdmin();
+      allow write: if canManageListingMedia(listingId) && isValidImageUpload() || isAdmin();
+      allow delete: if canManageListingMedia(listingId) || isAdmin();
+    }
+
+    match /listing-media/{listingId}/video/{fileName} {
+      allow read: if isActiveListing(listingId) || canManageListingMedia(listingId) || isAdmin();
+      allow write: if canManageListingMedia(listingId) && isValidVideoUpload() || isAdmin();
+      allow delete: if canManageListingMedia(listingId) || isAdmin();
+    }
+
+    match /listing-media/{listingId}/thumb/{fileName} {
+      allow read: if isActiveListing(listingId) || canManageListingMedia(listingId) || isAdmin();
+      allow write: if canManageListingMedia(listingId) && isValidImageUpload() || isAdmin();
+      allow delete: if canManageListingMedia(listingId) || isAdmin();
+    }
+
+    match /users/{userId}/avatars/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isSignedIn() && request.auth.uid == userId || isAdmin();
+    }
+  }
+}
