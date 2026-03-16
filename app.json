@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "aosell",
+    "name": "AoSell",
     "slug": "aosell",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F5EFE6",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -33,13 +33,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#2B1B12",
           "android": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
         }
-      ]
+      ],
+      "@stripe/stripe-react-native"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -47,6 +48,17 @@
     },
     "extra": {
       "router": {},
+      "firebase": {
+        "apiKey": "AIzaSyDEQUz1W4eSRx55vKaZDclPQi6TaZBaSn4",
+        "authDomain": "aosell-3f431.firebaseapp.com",
+        "projectId": "aosell-3f431",
+        "storageBucket": "aosell-3f431.firebasestorage.app",
+        "messagingSenderId": "938947493830",
+        "appId": "1:938947493830:web:eff3947eeecb42a274bcc7"
+      },
+      "stripe": {
+        "publishableKey": "pk_test_replace_me"
+      },
       "eas": {
         "projectId": "390d9694-24d4-47b9-8a84-c817136b1d29"
       }

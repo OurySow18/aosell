@@ -1,56 +1,91 @@
-# Welcome to your Expo app 👋
+# AoSell
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+AoSell is a premium mobile marketplace for products, meals, and services.
 
-## Get started
+## Current state
 
-1. Install dependencies
+This repository now contains:
 
-   ```bash
-   npm install
-   ```
+- an AoSell branded Expo Router app shell
+- buyer and seller navigation flows
+- discovery, search, listing detail, cart, checkout, orders, seller onboarding, seller dashboard, profile, and notifications screens
+- domain and Firestore types kept separate
+- Firebase app scaffolding for Auth, Firestore, and Storage
+- repository modules and Zod validations
+- Cloud Functions scaffolding for Stripe and notifications
+- Firestore composite indexes for the MVP query model
 
-2. Start the app
+The app now wires Firebase Authentication and Firestore subscriptions into the provider layer. Public sellers and active listings load from Firestore, private buyer/seller state subscribes after sign-in, and key mutations write back to Firestore. Seeded data remains as a fallback for the public marketplace shell if Firestore is unavailable or empty during local development.
 
-   ```bash
-   npx expo start
-   ```
+## App structure
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```txt
+src/
+  app/
+  components/
+  lib/
+    firebase/
+    stripe/
+    utils/
+    validations/
+  providers/
+  repositories/
+  services/
+  types/
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Setup
 
-### Other setup steps
+1. Install dependencies.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npm install
+```
 
-## Learn more
+2. Start the Expo app.
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+3. Add real Firebase and Stripe keys if you want to switch from seeded data to live services.
 
-## Join the community
+Update:
 
-Join our community of developers creating universal apps.
+- [app.json](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/app.json)
+- [src/lib/firebase/config.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/src/lib/firebase/config.ts)
+- [src/lib/stripe/index.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/src/lib/stripe/index.ts)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Firebase
+
+Relevant files:
+
+- [firestore.rules](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firestore.rules)
+- [firestore.indexes.json](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firestore.indexes.json)
+- [firestore_types.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firestore_types.ts)
+- [firebase.tsx](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firebase.tsx)
+
+Deploy commands after configuring Firebase CLI:
+
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only firestore:indexes
+firebase deploy --only functions
+```
+
+## Cloud Functions
+
+Scaffolded in [functions/src/index.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/functions/src/index.ts).
+
+Expected environment variables:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+
+## Notes
+
+- Cart is intentionally limited to one seller in V1.
+- Listing editor is built around the V1 schema and seller ownership model.
+- Search is Firestore-oriented and can later be upgraded with generated `searchTokens`.
+- Firebase Auth is wired with the base SDK only. Native session persistence still needs `@react-native-async-storage/async-storage` to be added and configured on a working Node environment.
+- The current environment here could not run `node`, `npm`, `tsc`, or `expo` commands because the available Node setup is broken under WSL, so runtime verification is still required on a working Node installation.

@@ -1,16 +1,31 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { useColorScheme } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { AosellProvider } from '@/providers/aosell-provider';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <AosellProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F5EFE6' } }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="auth" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="cart" />
+          <Stack.Screen name="checkout" />
+          <Stack.Screen name="checkout/success" />
+          <Stack.Screen name="listing/[listingId]" />
+          <Stack.Screen name="listing/edit/[listingId]" />
+          <Stack.Screen name="orders/[orderId]" />
+          <Stack.Screen name="seller/[sellerId]" />
+          <Stack.Screen name="seller-onboarding" />
+          <Stack.Screen name="seller-center" />
+          <Stack.Screen name="notifications" />
+        </Stack>
+      </AosellProvider>
+    </SafeAreaProvider>
   );
 }

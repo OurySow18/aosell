@@ -1,27 +1,41 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?:
+    | 'body'
+    | 'bodySmall'
+    | 'label'
+    | 'headline'
+    | 'title'
+    | 'display'
+    | 'button'
+    | 'code';
   themeColor?: ThemeColor;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
+export function ThemedText({
+  style,
+  type = 'body',
+  themeColor = 'text',
+  ...rest
+}: ThemedTextProps) {
   const theme = useTheme();
 
   return (
     <Text
       style={[
-        { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
+        styles.base,
+        { color: theme[themeColor] },
+        type === 'body' && styles.body,
+        type === 'bodySmall' && styles.bodySmall,
+        type === 'label' && styles.label,
+        type === 'headline' && styles.headline,
         type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
+        type === 'display' && styles.display,
+        type === 'button' && styles.button,
         type === 'code' && styles.code,
         style,
       ]}
@@ -31,43 +45,50 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 }
 
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
+  base: {
+    fontFamily: Fonts.body,
   },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
   },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
+  bodySmall: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  label: {
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+  },
+  headline: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontFamily: Fonts.heading,
+    fontWeight: '700',
   },
   title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+    fontSize: 30,
+    lineHeight: 36,
+    fontFamily: Fonts.heading,
+    fontWeight: '700',
   },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+  display: {
+    fontSize: 42,
+    lineHeight: 46,
+    fontFamily: Fonts.heading,
+    fontWeight: '700',
   },
-  link: {
-    lineHeight: 30,
-    fontSize: 14,
-  },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
+  button: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '700',
   },
   code: {
     fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
     fontSize: 12,
+    lineHeight: 18,
   },
 });
