@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Radius, Spacing } from '@/constants/theme';
+import { getSellerTypeLabel, getVerificationStatusLabel } from '@/lib/i18n';
+import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
 import { ThemedText } from '@/components/themed-text';
@@ -16,13 +18,14 @@ export default function SellerProfileScreen() {
   const params = useLocalSearchParams<{ sellerId?: string | string[] }>();
   const sellerId = Array.isArray(params.sellerId) ? params.sellerId[0] : params.sellerId ?? '';
   const theme = useTheme();
+  const { t } = useLocale();
   const { getSellerById, listings } = useAosell();
   const seller = getSellerById(sellerId);
 
   if (!seller) {
     return (
       <AppScreen>
-        <EmptyState title="Seller not found" description="The requested storefront is unavailable." />
+        <EmptyState title={t('sellerProfileScreen.notFoundTitle')} description={t('sellerProfileScreen.notFoundDescription')} />
       </AppScreen>
     );
   }
@@ -32,16 +35,16 @@ export default function SellerProfileScreen() {
   return (
     <AppScreen>
       <View style={[styles.hero, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <SectionTitle eyebrow="Seller profile" title={seller.brandName} description={seller.description} />
+        <SectionTitle eyebrow={t('sellerProfileScreen.eyebrow')} title={seller.brandName} description={seller.description} />
         <View style={styles.tags}>
-          <StatusPill label={seller.type} tone="brand" />
-          <StatusPill label={seller.verificationStatus} tone="neutral" />
+          <StatusPill label={getSellerTypeLabel(seller.type)} tone="brand" />
+          <StatusPill label={getVerificationStatusLabel(seller.verificationStatus)} tone="neutral" />
           <StatusPill label={`${seller.city}, ${seller.countryCode}`} tone="neutral" />
         </View>
-        <AppButton label="Search more sellers" variant="ghost" onPress={() => router.push('/search')} />
+        <AppButton label={t('sellerProfileScreen.searchMore')} variant="ghost" onPress={() => router.push('/search')} />
       </View>
 
-      <ThemedText type="headline">Active listings</ThemedText>
+      <ThemedText type="headline">{t('sellerProfileScreen.activeListings')}</ThemedText>
       <View style={styles.grid}>
         {sellerListings.map((listing) => (
           <View key={listing.id} style={styles.gridItem}>

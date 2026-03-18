@@ -20,9 +20,11 @@ import { ListingRepository } from '@/repositories/listing-repository';
 import { NotificationRepository } from '@/repositories/notification-repository';
 import { OrderRepository } from '@/repositories/order-repository';
 import { SellerRepository } from '@/repositories/seller-repository';
-import { UserRepository } from '@/repositories/user-repository';
+import { UserProfileSeed, UserRepository } from '@/repositories/user-repository';
 import { demoListings, demoSellers } from '@/services/mock-data';
+import { translate } from '@/lib/i18n';
 import { getNextStatuses } from '@/lib/utils/order';
+import { getPrimaryListingImage } from '@/lib/utils/listing-media';
 
 type SearchFilters = {
   query?: string;
@@ -64,7 +66,19 @@ type AddToCartResult = {
   requiresAuth?: boolean;
 };
 
+type SignInInput = {
+  email: string;
+  password: string;
+};
+
+type SignUpInput = SignInInput & {
+  firstName: string;
+  lastName: string;
+  role: 'buyer' | 'seller';
+};
+
 type AosellContextValue = {
+  authReady: boolean;
   currentUser: AppUser | null;
   userProfile: UserProfile | null;
   addresses: Address[];
@@ -74,7 +88,8 @@ type AosellContextValue = {
   cart: Cart | null;
   orders: Order[];
   notifications: Notification[];
-  signInAs: (role: 'buyer' | 'seller') => Promise<AppUser | null>;
+  signIn: (input: SignInInput) => Promise<AppUser | null>;
+  signUp: (input: SignUpInput) => Promise<AppUser | null>;
   logout: () => Promise<void>;
   createSellerProfile: (input: CreateSellerProfileInput) => Promise<SellerProfile | null>;
   saveListing: (input: SaveListingInput) => Promise<Listing | null>;
@@ -110,6 +125,7 @@ function mergeById<T extends { id: string }>(...groups: T[][]) {
 }
 
 export function AosellProvider({ children }: { children: ReactNode }) {
+  const [authReady, setAuthReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -128,20 +144,25 @@ export function AosellProvider({ children }: { children: ReactNode }) {
   const orders = mergeById(buyerOrders, sellerOrders);
 
   useEffect(() => {
-    const unsubscribeAuth = AuthRepository.subscribe((user) => {
-      setCurrentUser(user);
+    const unsubscribeAuth = AuthRepository.subscribe(
+      (user) => {
+        setCurrentUser(user);
 
-      if (!user) {
-        setUserProfile(null);
-        setAddresses([]);
-        setCurrentSellerProfile(null);
-        setOwnedListings([]);
-        setCart(null);
-        setBuyerOrders([]);
-        setSellerOrders([]);
-        setNotifications([]);
+        if (!user) {
+          setUserProfile(null);
+          setAddresses([]);
+          setCurrentSellerProfile(null);
+          setOwnedListings([]);
+          setCart(null);
+          setBuyerOrders([]);
+          setSellerOrders([]);
+          setNotifications([]);
+        }
+      },
+      () => {
+        setAuthReady(true);
       }
-    });
+    );
 
     const unsubscribeSellers = SellerRepository.subscribePublic(setSellers);
     const unsubscribeListings = ListingRepository.subscribePublicActive(setPublicListings);
@@ -209,9 +230,28 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     setUserProfile((current) => (current ? { ...current, addresses } : current));
   }, [addresses, userProfile?.userId]);
 
-  async function signInAs(role: 'buyer' | 'seller') {
-    const user = await AuthRepository.signIn(role);
+  async function signIn(input: SignInInput) {
+    const user = await AuthRepository.signIn(input);
     await UserRepository.ensureProfile(user);
+    setCurrentUser(user);
+    return user;
+  }
+
+  async function signUp(input: SignUpInput) {
+    const user = await AuthRepository.signUp({
+      email: input.email,
+      password: input.password,
+      role: input.role,
+    });
+    const profileSeed: UserProfileSeed = {
+      firstName: input.firstName,
+      lastName: input.lastName,
+      displayName: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
+      city: 'Berlin',
+      countryCode: 'DE',
+    };
+
+    await UserRepository.ensureProfile(user, profileSeed);
     setCurrentUser(user);
     return user;
   }
@@ -350,6 +390,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         titleSnapshot: listing.title,
         unitPriceSnapshot: listing.price,
         quantity: 1,
+        imageUrl: getPrimaryListingImage(listing)?.url,
       });
     }
 
@@ -429,6 +470,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         titleSnapshot: item.titleSnapshot,
         unitPriceSnapshot: item.unitPriceSnapshot,
         quantity: item.quantity,
+        imageUrl: item.imageUrl,
       })),
       subtotal: cart.subtotal,
       deliveryFee: cart.deliveryFee,
@@ -449,8 +491,8 @@ export function AosellProvider({ children }: { children: ReactNode }) {
 
     await NotificationRepository.create(currentUser.id, {
       type: 'order_created',
-      title: 'Order created',
-      body: `Your order ${createdOrder.id} has been created and is awaiting payment confirmation.`,
+      title: translate('notifications.orderCreatedTitle'),
+      body: translate('notifications.orderCreatedBody', { orderId: createdOrder.id }),
       isRead: false,
       data: { orderId: createdOrder.id },
     });
@@ -490,6 +532,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
   return (
     <AosellContext.Provider
       value={{
+        authReady,
         currentUser,
         userProfile,
         addresses,
@@ -499,7 +542,8 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         cart,
         orders,
         notifications,
-        signInAs,
+        signIn,
+        signUp,
         logout,
         createSellerProfile,
         saveListing,

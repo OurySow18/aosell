@@ -7,20 +7,34 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { Spacing } from '@/constants/theme';
+import { useLocale } from '@/hooks/use-locale';
 import { formatMoney } from '@/lib/utils/format';
 import { useAosell } from '@/providers/aosell-provider';
 
 export default function AddScreen() {
+  const { t } = useLocale();
   const { currentUser, currentSellerProfile, listings, orders } = useAosell();
 
   if (!currentUser) {
     return (
       <AppScreen>
         <EmptyState
-          title="Seller tools need an account"
-          description="Create an account first, then set up your seller profile and storefront."
+          title={t('addScreen.noAccountTitle')}
+          description={t('addScreen.noAccountDescription')}
         />
-        <AppButton label="Open authentication" onPress={() => router.push('/auth')} />
+        <AppButton
+          label={t('common.createSellerAccount')}
+          onPress={() =>
+            router.push({
+              pathname: '/auth',
+              params: {
+                mode: 'signup',
+                role: 'seller',
+                returnTo: '/add',
+              },
+            })
+          }
+        />
       </AppScreen>
     );
   }
@@ -29,11 +43,11 @@ export default function AddScreen() {
     return (
       <AppScreen>
         <SectionTitle
-          eyebrow="Seller center"
-          title="Start seller onboarding"
-          description="Choose your seller type, describe your offer, and define delivery modes before publishing listings."
+          eyebrow={t('addScreen.sellerCenterEyebrow')}
+          title={t('addScreen.startSetupTitle')}
+          description={t('addScreen.startSetupDescription')}
         />
-        <AppButton label="Create seller profile" onPress={() => router.push('/seller-onboarding')} />
+        <AppButton fullWidth label={t('common.createSellerProfile')} onPress={() => router.push('/seller-onboarding')} />
       </AppScreen>
     );
   }
@@ -45,18 +59,18 @@ export default function AddScreen() {
   return (
     <AppScreen>
       <SectionTitle
-        eyebrow="Seller dashboard"
+        eyebrow={t('addScreen.dashboardEyebrow')}
         title={currentSellerProfile.brandName}
-        description="Manage listings, incoming orders, and storefront health from one place."
+        description={t('addScreen.dashboardDescription')}
       />
       <View style={styles.stats}>
-        <StatCard label="Listings" value={String(sellerListings.length)} />
-        <StatCard label="Orders" value={String(sellerOrders.length)} />
-        <StatCard label="Revenue" value={formatMoney({ amountCents: revenue, currency: 'EUR' })} />
+        <StatCard label={t('sellerCenterScreen.listings')} value={String(sellerListings.length)} />
+        <StatCard label={t('sellerCenterScreen.orders')} value={String(sellerOrders.length)} />
+        <StatCard label={t('sellerCenterScreen.revenue')} value={formatMoney({ amountCents: revenue, currency: 'EUR' })} />
       </View>
       <View style={styles.actions}>
-        <AppButton label="Create listing" onPress={() => router.push('/listing/edit/new')} />
-        <AppButton label="Open seller center" variant="secondary" onPress={() => router.push('/seller-center')} />
+        <AppButton fullWidth label={t('common.createListing')} onPress={() => router.push('/listing/edit/new')} />
+        <AppButton fullWidth label={t('common.openSellerCenter')} variant="secondary" onPress={() => router.push('/seller-center')} />
       </View>
     </AppScreen>
   );

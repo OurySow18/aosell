@@ -8,6 +8,12 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { Radius, Spacing } from '@/constants/theme';
+import {
+  getDeliveryModeLabel,
+  getListingStatusLabel,
+  getListingTypeLabel,
+} from '@/lib/i18n';
+import { useLocale } from '@/hooks/use-locale';
 import { listingSchema } from '@/lib/validations/listing';
 import { useTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
@@ -21,6 +27,7 @@ export default function ListingEditorScreen() {
   const params = useLocalSearchParams<{ listingId?: string | string[] }>();
   const listingId = Array.isArray(params.listingId) ? params.listingId[0] : params.listingId ?? 'new';
   const theme = useTheme();
+  const { t } = useLocale();
   const { currentSellerProfile, getListingById, saveListing } = useAosell();
   const existing = listingId === 'new' ? undefined : getListingById(listingId);
 
@@ -43,8 +50,8 @@ export default function ListingEditorScreen() {
     return (
       <AppScreen>
         <EmptyState
-          title="Seller profile missing"
-          description="Create your storefront before creating or editing listings."
+          title={t('listingEditor.missingTitle')}
+          description={t('listingEditor.missingDescription')}
         />
       </AppScreen>
     );
@@ -73,7 +80,7 @@ export default function ListingEditorScreen() {
     });
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Listing is invalid.');
+      setError(parsed.error.issues[0]?.message ?? t('listingEditor.invalid'));
       return;
     }
 
@@ -95,21 +102,21 @@ export default function ListingEditorScreen() {
   return (
     <AppScreen>
       <SectionTitle
-        eyebrow="Listing editor"
-        title={existing ? 'Edit listing' : 'Create listing'}
-        description="One image minimum, one optional video, and up to ten total media items. This editor keeps the form simple and ready for Firebase Storage wiring."
+        eyebrow={t('listingEditor.eyebrow')}
+        title={existing ? t('listingEditor.editTitle') : t('listingEditor.createTitle')}
+        description={t('listingEditor.description')}
       />
 
       <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <AppInput label="Title" value={title} onChangeText={setTitle} />
-        <AppInput label="Slug" value={slug} onChangeText={setSlug} />
-        <AppInput label="Description" value={description} onChangeText={setDescription} multiline />
-        <AppInput label="Price in cents" value={amount} onChangeText={setAmount} />
+        <AppInput label={t('common.title')} value={title} onChangeText={setTitle} />
+        <AppInput label={t('common.slug')} value={slug} onChangeText={setSlug} />
+        <AppInput label={t('common.description')} value={description} onChangeText={setDescription} multiline />
+        <AppInput label={t('common.priceInCents')} value={amount} onChangeText={setAmount} />
         <View style={styles.row}>
           {listingTypes.map((option) => (
             <AppButton
               key={option}
-              label={option}
+              label={getListingTypeLabel(option)}
               variant={type === option ? 'secondary' : 'ghost'}
               onPress={() => setType(option)}
             />
@@ -119,7 +126,7 @@ export default function ListingEditorScreen() {
           {deliveryModes.map((option) => (
             <AppButton
               key={option}
-              label={option}
+              label={getDeliveryModeLabel(option)}
               variant={deliveryMode === option ? 'secondary' : 'ghost'}
               onPress={() => setDeliveryMode(option)}
             />
@@ -129,25 +136,25 @@ export default function ListingEditorScreen() {
           {listingStatuses.map((option) => (
             <AppButton
               key={option}
-              label={option}
+              label={getListingStatusLabel(option)}
               variant={status === option ? 'secondary' : 'ghost'}
               onPress={() => setStatus(option)}
             />
           ))}
         </View>
         <View style={styles.row}>
-          <AppInput label="City" value={city} onChangeText={setCity} />
-          <AppInput label="Country code" value={countryCode} onChangeText={setCountryCode} />
+          <AppInput label={t('common.city')} value={city} onChangeText={setCity} />
+          <AppInput label={t('common.countryCode')} value={countryCode} onChangeText={setCountryCode} />
         </View>
-        <AppInput label="Tags" value={tags} onChangeText={setTags} placeholder="culture, featured, meal" />
+        <AppInput label={t('common.tags')} value={tags} onChangeText={setTags} placeholder={t('listingEditor.tagsPlaceholder')} />
         <AppInput
-          label="Categories"
+          label={t('common.categories')}
           value={categories}
           onChangeText={setCategories}
-          placeholder="Dinner, Decor, Repair"
+          placeholder={t('listingEditor.categoriesPlaceholder')}
         />
         <AppButton
-          label={hasVideo ? 'Video included' : 'Add optional video'}
+          label={hasVideo ? t('listingEditor.videoIncluded') : t('listingEditor.addOptionalVideo')}
           variant={hasVideo ? 'secondary' : 'ghost'}
           onPress={() => setHasVideo((current) => !current)}
         />
@@ -158,7 +165,7 @@ export default function ListingEditorScreen() {
         ) : null}
         <AppButton
           disabled={isSubmitting}
-          label={existing ? 'Save changes' : 'Publish listing'}
+          label={existing ? t('listingEditor.saveChanges') : t('listingEditor.publishListing')}
           onPress={() => {
             void handleSave();
           }}

@@ -1,6 +1,7 @@
 import { collection, doc, onSnapshot, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/config';
+import { logFirestoreListenerError } from '@/lib/firebase/listener-errors';
 import {
   fromFirestoreNotificationDoc,
   toFirestoreNotificationDoc,
@@ -18,6 +19,10 @@ export const NotificationRepository = {
             fromFirestoreNotificationDoc(item.id, item.data() as FirestoreNotificationDoc)
           )
         );
+      },
+      (error) => {
+        logFirestoreListenerError('notifications.user', error);
+        onChange([]);
       }
     );
   },

@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/config';
+import { logFirestoreListenerError } from '@/lib/firebase/listener-errors';
 import { createTimestamp, fromFirestoreOrderDoc, toFirestoreOrderDoc } from '@/lib/firebase/mappers';
 import type { Order } from '@/types/domain';
 import type { FirestoreOrderDoc } from '@/types/firestore';
@@ -23,6 +24,10 @@ export const OrderRepository = {
         onChange(
           snapshot.docs.map((item) => fromFirestoreOrderDoc(item.id, item.data() as FirestoreOrderDoc))
         );
+      },
+      (error) => {
+        logFirestoreListenerError('orders.buyer', error);
+        onChange([]);
       }
     );
   },
@@ -34,6 +39,10 @@ export const OrderRepository = {
         onChange(
           snapshot.docs.map((item) => fromFirestoreOrderDoc(item.id, item.data() as FirestoreOrderDoc))
         );
+      },
+      (error) => {
+        logFirestoreListenerError('orders.seller', error);
+        onChange([]);
       }
     );
   },

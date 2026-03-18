@@ -25,13 +25,16 @@ export function AppButton({
     variant === 'primary'
       ? theme.earth
       : variant === 'secondary'
-        ? theme.gold
+        ? theme.backgroundSelected
         : variant === 'danger'
           ? theme.error
-          : 'transparent';
+          : theme.backgroundElement;
 
   const textColor =
-    variant === 'ghost' ? theme.text : variant === 'secondary' ? theme.earth : theme.background;
+    variant === 'primary' || variant === 'danger' ? theme.background : theme.text;
+
+  const borderColor =
+    variant === 'primary' || variant === 'danger' ? backgroundColor : theme.border;
 
   return (
     <Pressable
@@ -41,8 +44,8 @@ export function AppButton({
       style={({ pressed }) => [
         styles.pressable,
         fullWidth && styles.fullWidth,
-        variant === 'ghost' && [styles.ghost, { borderColor: theme.border }],
-        variant !== 'ghost' && [{ backgroundColor }, Shadows.card],
+        [styles.base, { backgroundColor, borderColor }],
+        (variant === 'primary' || variant === 'danger') && Shadows.card,
         pressed && styles.pressed,
         disabled && styles.disabled,
       ]}>
@@ -60,17 +63,17 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     overflow: 'hidden',
   },
+  base: {
+    borderWidth: 1,
+  },
   inner: {
-    minHeight: 48,
+    minHeight: 52,
     paddingHorizontal: Spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullWidth: {
     width: '100%',
-  },
-  ghost: {
-    borderWidth: 1,
   },
   pressed: {
     opacity: 0.88,

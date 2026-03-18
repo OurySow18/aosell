@@ -1,4 +1,4 @@
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, TextInputProps, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -10,7 +10,15 @@ type AppInputProps = {
   onChangeText: (value: string) => void;
   placeholder?: string;
   multiline?: boolean;
-};
+} & Pick<
+  TextInputProps,
+  | 'autoCapitalize'
+  | 'autoCorrect'
+  | 'inputMode'
+  | 'keyboardType'
+  | 'secureTextEntry'
+  | 'textContentType'
+>;
 
 export function AppInput({
   label,
@@ -18,6 +26,12 @@ export function AppInput({
   onChangeText,
   placeholder,
   multiline = false,
+  autoCapitalize,
+  autoCorrect,
+  inputMode,
+  keyboardType,
+  secureTextEntry,
+  textContentType,
 }: AppInputProps) {
   const theme = useTheme();
 
@@ -27,20 +41,26 @@ export function AppInput({
         {label}
       </ThemedText>
       <TextInput
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        inputMode={inputMode}
+        keyboardType={keyboardType}
         multiline={multiline}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={theme.textSecondary}
+        secureTextEntry={secureTextEntry}
         style={[
           styles.input,
           {
-            backgroundColor: theme.backgroundElement,
+            backgroundColor: theme.backgroundSelected,
             color: theme.text,
             borderColor: theme.border,
-            minHeight: multiline ? 120 : 50,
+            minHeight: multiline ? 124 : 54,
             textAlignVertical: multiline ? 'top' : 'center',
           },
         ]}
+        textContentType={textContentType}
         value={value}
       />
     </View>
@@ -53,7 +73,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: Radius.medium,
+    borderRadius: Radius.large,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     fontSize: 15,

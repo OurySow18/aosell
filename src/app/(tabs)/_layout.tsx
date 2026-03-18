@@ -1,11 +1,15 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import React from 'react';
+import { Platform } from 'react-native';
 
+import { Radius, Shadows } from '@/constants/theme';
+import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const { t } = useLocale();
 
   return (
     <Tabs
@@ -15,15 +19,25 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: {
           backgroundColor: theme.backgroundElement,
-          borderTopColor: theme.border,
-          height: 76,
-          paddingTop: 8,
+          borderTopColor: 'transparent',
+          height: 78,
+          paddingTop: 10,
+          paddingBottom: Platform.OS === 'ios' ? 12 : 10,
+          marginHorizontal: 14,
+          marginBottom: 12,
+          borderRadius: Radius.large,
+          position: 'absolute',
+          ...Shadows.card,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
         },
       }}>
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color }) => (
             <SymbolView tintColor={color} size={18} name={{ ios: 'house.fill', android: 'home', web: 'house.fill' }} />
           ),
@@ -32,7 +46,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
+          title: t('tabs.search'),
           tabBarIcon: ({ color }) => (
             <SymbolView
               tintColor={color}
@@ -45,16 +59,16 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="add"
         options={{
-          title: 'Add',
+          title: t('tabs.add'),
           tabBarIcon: ({ color }) => (
-            <SymbolView tintColor={color} size={18} name={{ ios: 'plus.circle.fill', android: 'add', web: 'plus.circle.fill' }} />
+            <SymbolView tintColor={color} size={19} name={{ ios: 'plus.circle.fill', android: 'add', web: 'plus.circle.fill' }} />
           ),
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
-          title: 'Orders',
+          title: t('tabs.orders'),
           tabBarIcon: ({ color }) => (
             <SymbolView
               tintColor={color}
@@ -67,7 +81,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color }) => (
             <SymbolView tintColor={color} size={18} name={{ ios: 'person.fill', android: 'person', web: 'person.fill' }} />
           ),

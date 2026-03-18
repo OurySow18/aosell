@@ -48,10 +48,33 @@ npm install
 npx expo start
 ```
 
-3. Add real Firebase and Stripe keys if you want to switch from seeded data to live services.
+3. Create your local env file from the example and add your real Firebase and Stripe values.
 
-Update:
+```bash
+cp .env.example .env
+```
 
+Required Expo env keys:
+
+- `EXPO_PUBLIC_FIREBASE_API_KEY`
+- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `EXPO_PUBLIC_FIREBASE_APP_ID`
+- `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `EXPO_PUBLIC_STRIPE_MERCHANT_IDENTIFIER`
+
+4. Rebuild the app after changing native or Expo config.
+
+```bash
+npx expo prebuild --clean
+npx expo run:android
+```
+
+Relevant config files:
+
+- [app.config.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/app.config.ts)
 - [app.json](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/app.json)
 - [src/lib/firebase/config.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/src/lib/firebase/config.ts)
 - [src/lib/stripe/index.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/src/lib/stripe/index.ts)
@@ -87,5 +110,5 @@ Expected environment variables:
 - Cart is intentionally limited to one seller in V1.
 - Listing editor is built around the V1 schema and seller ownership model.
 - Search is Firestore-oriented and can later be upgraded with generated `searchTokens`.
-- Firebase Auth is wired with the base SDK only. Native session persistence still needs `@react-native-async-storage/async-storage` to be added and configured on a working Node environment.
+- Firebase client config is now expected from Expo environment variables and is no longer committed in the repo.
 - The current environment here could not run `node`, `npm`, `tsc`, or `expo` commands because the available Node setup is broken under WSL, so runtime verification is still required on a working Node installation.

@@ -19,7 +19,7 @@ export function SectionTitle({
           {eyebrow}
         </ThemedText>
       ) : null}
-      <ThemedText type="headline">{title}</ThemedText>
+      <ThemedText type="title">{title}</ThemedText>
       {description ? (
         <ThemedText type="body" themeColor="textSecondary">
           {description}
@@ -31,6 +31,6 @@ export function SectionTitle({
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.xs,
+    gap: Spacing.sm,
   },
 });

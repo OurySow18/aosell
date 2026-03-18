@@ -2,6 +2,7 @@ import { collection, doc, onSnapshot, orderBy, query, setDoc, where } from 'fire
 
 import { buildSearchTokens } from '@/lib/firebase/search-tokens';
 import { db } from '@/lib/firebase/config';
+import { logFirestoreListenerError } from '@/lib/firebase/listener-errors';
 import { fromFirestoreListingDoc, toFirestoreListingDoc } from '@/lib/firebase/mappers';
 import { demoListings } from '@/services/mock-data';
 import type { Listing, SellerProfile } from '@/types/domain';
@@ -16,7 +17,8 @@ export const ListingRepository = {
           snapshot.docs.map((item) => fromFirestoreListingDoc(item.id, item.data() as FirestoreListingDoc))
         );
       },
-      () => {
+      (error) => {
+        logFirestoreListenerError('listing.publicActive', error);
         onChange(demoListings.filter((item) => item.status === 'active'));
       }
     );
@@ -29,6 +31,10 @@ export const ListingRepository = {
         onChange(
           snapshot.docs.map((item) => fromFirestoreListingDoc(item.id, item.data() as FirestoreListingDoc))
         );
+      },
+      (error) => {
+        logFirestoreListenerError('listing.bySeller', error);
+        onChange([]);
       }
     );
   },

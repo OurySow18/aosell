@@ -182,7 +182,11 @@ service cloud.firestore {
     }
 
     match /carts/{cartId} {
-      allow read: if isSignedIn() && resource.data.buyerUserId == request.auth.uid;
+      allow read: if isSignedIn()
+        && (
+          cartId == request.auth.uid
+          || resource.data.buyerUserId == request.auth.uid
+        );
       allow create: if isSignedIn()
         && request.resource.data.buyerUserId == request.auth.uid
         && request.resource.data.sellerId is string

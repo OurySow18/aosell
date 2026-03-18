@@ -5,8 +5,11 @@ import { StyleSheet, View } from 'react-native';
 import { AppButton } from '@/components/ui/app-button';
 import { AppInput } from '@/components/ui/app-input';
 import { AppScreen } from '@/components/ui/app-screen';
+import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { Radius, Spacing } from '@/constants/theme';
+import { getDeliveryModeLabel, getSellerTypeLabel } from '@/lib/i18n';
+import { useLocale } from '@/hooks/use-locale';
 import { sellerProfileSchema } from '@/lib/validations/seller-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
@@ -17,7 +20,8 @@ const deliveryModes = ['aosell', 'seller'] as const;
 
 export default function SellerOnboardingScreen() {
   const theme = useTheme();
-  const { createSellerProfile } = useAosell();
+  const { t } = useLocale();
+  const { currentUser, createSellerProfile } = useAosell();
   const [type, setType] = useState<(typeof sellerTypes)[number]>('shop');
   const [brandName, setBrandName] = useState('');
   const [description, setDescription] = useState('');
@@ -26,6 +30,30 @@ export default function SellerOnboardingScreen() {
   const [selectedDeliveryModes, setSelectedDeliveryModes] = useState<string[]>(['aosell']);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!currentUser) {
+    return (
+      <AppScreen>
+        <EmptyState
+          title={t('sellerOnboarding.noAccountTitle')}
+          description={t('sellerOnboarding.noAccountDescription')}
+        />
+        <AppButton
+          label={t('common.createSellerAccount')}
+          onPress={() =>
+            router.replace({
+              pathname: '/auth',
+              params: {
+                mode: 'signup',
+                role: 'seller',
+                returnTo: '/seller-onboarding',
+              },
+            })
+          }
+        />
+      </AppScreen>
+    );
+  }
 
   function toggleDeliveryMode(mode: string) {
     setSelectedDeliveryModes((current) =>
@@ -44,7 +72,7 @@ export default function SellerOnboardingScreen() {
     });
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? 'Seller profile is invalid.');
+      setError(parsed.error.issues[0]?.message ?? t('sellerOnboarding.invalid'));
       return;
     }
 
@@ -62,40 +90,41 @@ export default function SellerOnboardingScreen() {
   return (
     <AppScreen>
       <SectionTitle
-        eyebrow="Seller onboarding"
-        title="Build your storefront"
-        description="Choose the right seller type, describe your brand clearly, and activate the delivery modes you can actually operate."
+        eyebrow={t('sellerOnboarding.eyebrow')}
+        title={t('sellerOnboarding.title')}
+        description={t('sellerOnboarding.description')}
       />
 
       <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <ThemedText type="headline">Seller type</ThemedText>
+        <View style={[styles.panelGlow, { backgroundColor: theme.gold }]} />
+        <ThemedText type="headline">{t('sellerOnboarding.sellerType')}</ThemedText>
         <View style={styles.row}>
           {sellerTypes.map((option) => (
             <AppButton
               key={option}
-              label={option}
+              label={getSellerTypeLabel(option)}
               variant={option === type ? 'secondary' : 'ghost'}
               onPress={() => setType(option)}
             />
           ))}
         </View>
-        <AppInput label="Brand name" value={brandName} onChangeText={setBrandName} placeholder="Atelier Nomad" />
+        <AppInput label={t('sellerOnboarding.brandName')} value={brandName} onChangeText={setBrandName} placeholder={t('sellerOnboarding.brandPlaceholder')} />
         <AppInput
-          label="Description"
+          label={t('sellerOnboarding.descriptionLabel')}
           value={description}
           onChangeText={setDescription}
           multiline
-          placeholder="What do you sell and why should people trust your storefront?"
+          placeholder={t('sellerOnboarding.descriptionPlaceholder')}
         />
         <View style={styles.row}>
-          <AppInput label="City" value={city} onChangeText={setCity} />
-          <AppInput label="Country code" value={countryCode} onChangeText={setCountryCode} />
+          <AppInput label={t('common.city')} value={city} onChangeText={setCity} />
+          <AppInput label={t('common.countryCode')} value={countryCode} onChangeText={setCountryCode} />
         </View>
         <View style={styles.row}>
           {deliveryModes.map((mode) => (
             <AppButton
               key={mode}
-              label={mode}
+              label={getDeliveryModeLabel(mode)}
               variant={selectedDeliveryModes.includes(mode) ? 'secondary' : 'ghost'}
               onPress={() => toggleDeliveryMode(mode)}
             />
@@ -107,8 +136,9 @@ export default function SellerOnboardingScreen() {
           </ThemedText>
         ) : null}
         <AppButton
+          fullWidth
           disabled={isSubmitting}
-          label="Create seller profile"
+          label={t('common.createSellerProfile')}
           onPress={() => {
             void handleSubmit();
           }}
@@ -124,6 +154,17 @@ const styles = StyleSheet.create({
     borderRadius: Radius.large,
     padding: Spacing.xl,
     gap: Spacing.lg,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  panelGlow: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    top: -90,
+    right: -70,
+    opacity: 0.45,
   },
   row: {
     flexDirection: 'row',

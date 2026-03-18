@@ -33,7 +33,8 @@ const styles = StyleSheet.create({
   },
   padded: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxxl,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xxxl + 84,
   },
   inner: {
     width: '100%',

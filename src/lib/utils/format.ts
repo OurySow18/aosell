@@ -1,14 +1,16 @@
-import type { Money, OrderStatus } from '../../../types';
+import type { Money, OrderStatus } from '@/types/domain';
+
+import { getIntlLocale, translate } from '@/lib/i18n';
 
 export function formatMoney(money: Money) {
-  return new Intl.NumberFormat('de-DE', {
+  return new Intl.NumberFormat(getIntlLocale(), {
     style: 'currency',
     currency: money.currency,
   }).format(money.amountCents / 100);
 }
 
 export function formatDate(value: string) {
-  return new Intl.DateTimeFormat('de-DE', {
+  return new Intl.DateTimeFormat(getIntlLocale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -16,5 +18,5 @@ export function formatDate(value: string) {
 }
 
 export function formatStatus(status: OrderStatus) {
-  return status.replaceAll('_', ' ');
+  return translate(`order.status.${status}.label`);
 }

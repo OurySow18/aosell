@@ -1,6 +1,7 @@
 import { collection, doc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/config';
+import { logFirestoreListenerError } from '@/lib/firebase/listener-errors';
 import {
   fromFirestoreSellerProfileDoc,
   toFirestoreSellerProfileDoc,
@@ -20,7 +21,8 @@ export const SellerRepository = {
           )
         );
       },
-      () => {
+      (error) => {
+        logFirestoreListenerError('seller.public', error);
         onChange(demoSellers);
       }
     );
@@ -41,6 +43,10 @@ export const SellerRepository = {
             snapshot.docs[0].data() as FirestoreSellerProfileDoc
           )
         );
+      },
+      (error) => {
+        logFirestoreListenerError('seller.owned', error);
+        onChange(null);
       }
     );
   },

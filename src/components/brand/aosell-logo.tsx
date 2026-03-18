@@ -9,17 +9,27 @@ export function AosellLogo({ compact = false }: { compact?: boolean }) {
 
   return (
     <View style={[styles.wrapper, compact && styles.wrapperCompact]}>
-      <View style={[styles.badge, { backgroundColor: theme.earth }]}>
+      <View
+        style={[
+          styles.badge,
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: compact ? theme.border : theme.earth,
+          },
+        ]}>
         <ThemedText
           type={compact ? 'headline' : 'title'}
-          style={[styles.badgeText, { color: theme.background }]}>
+          style={[styles.badgeText, { color: theme.text }]}>
           AO
         </ThemedText>
       </View>
       <View style={styles.copy}>
-        <ThemedText type={compact ? 'headline' : 'title'} style={styles.wordmark}>
-          AoSell
-        </ThemedText>
+        <View style={styles.wordmarkRow}>
+          <ThemedText type={compact ? 'headline' : 'title'} style={styles.wordmark}>
+            AoSell
+          </ThemedText>
+          <View style={[styles.accentDot, { backgroundColor: theme.success }]} />
+        </View>
         {!compact ? (
           <ThemedText type="bodySmall" themeColor="textSecondary">
             Where people sell, cultures travel.
@@ -45,6 +55,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.large,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
   },
   badgeText: {
     letterSpacing: 1.5,
@@ -52,7 +63,18 @@ const styles = StyleSheet.create({
   copy: {
     gap: 2,
   },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   wordmark: {
     letterSpacing: -0.6,
+  },
+  accentDot: {
+    width: 10,
+    height: 10,
+    borderRadius: Radius.pill,
+    marginTop: 2,
   },
 });
