@@ -20,6 +20,25 @@ export default function ProfileScreen() {
   const { currentUser, userProfile, addresses, currentSellerProfile, logout, notifications } = useAosell();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  function openSignIn() {
+    router.push({
+      pathname: '/auth',
+      params: {
+        mode: 'signin',
+        returnTo: '/profile',
+      },
+    });
+  }
+
+  function handleLogout() {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+    void logout().finally(() => setIsLoggingOut(false));
+  }
+
   if (!currentUser) {
     return (
       <AppScreen>
@@ -28,16 +47,9 @@ export default function ProfileScreen() {
           description={t('profileScreen.noProfileDescription')}
         />
         <AppButton
-          label={t('profileScreen.signInCta')}
-          onPress={() =>
-            router.push({
-              pathname: '/auth',
-              params: {
-                mode: 'signin',
-                returnTo: '/profile',
-              },
-            })
-          }
+          fullWidth
+          label={t('common.signIn')}
+          onPress={openSignIn}
         />
       </AppScreen>
     );
@@ -49,6 +61,16 @@ export default function ProfileScreen() {
         <EmptyState
           title={t('profileScreen.loadingTitle')}
           description={t('profileScreen.loadingDescription')}
+        />
+        <ThemedText type="bodySmall" themeColor="textSecondary" style={styles.loadingEmail}>
+          {currentUser.email}
+        </ThemedText>
+        <AppButton
+          fullWidth
+          disabled={isLoggingOut}
+          label={t('common.logout')}
+          variant="danger"
+          onPress={handleLogout}
         />
       </AppScreen>
     );
@@ -131,11 +153,8 @@ export default function ProfileScreen() {
           fullWidth
           disabled={isLoggingOut}
           label={t('common.logout')}
-          variant="ghost"
-          onPress={() => {
-            setIsLoggingOut(true);
-            void logout().finally(() => setIsLoggingOut(false));
-          }}
+          variant="danger"
+          onPress={handleLogout}
         />
       </View>
     </AppScreen>
@@ -158,7 +177,7 @@ const styles = StyleSheet.create({
     borderRadius: 110,
     top: -100,
     right: -80,
-    opacity: 0.45,
+    opacity: 0.12,
   },
   heroTop: {
     flexDirection: 'row',
@@ -209,5 +228,8 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: Spacing.md,
+  },
+  loadingEmail: {
+    textAlign: 'center',
   },
 });

@@ -15,9 +15,12 @@ export function SectionTitle({
   return (
     <View style={styles.container}>
       {eyebrow ? (
-        <ThemedText type="label" themeColor="burntOrange">
-          {eyebrow}
-        </ThemedText>
+        <View style={styles.eyebrowRow}>
+          <View style={styles.eyebrowLine} />
+          <ThemedText type="label" themeColor="burntOrange">
+            {eyebrow}
+          </ThemedText>
+        </View>
       ) : null}
       <ThemedText type="title">{title}</ThemedText>
       {description ? (
@@ -32,5 +35,16 @@ export function SectionTitle({
 const styles = StyleSheet.create({
   container: {
     gap: Spacing.sm,
+  },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  eyebrowLine: {
+    width: 24,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E54416',
   },
 });

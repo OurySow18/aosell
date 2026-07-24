@@ -179,7 +179,15 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    UserRepository.ensureProfile(currentUser).catch(() => undefined);
+    let isActive = true;
+
+    UserRepository.ensureProfile(currentUser)
+      .then((profile) => {
+        if (isActive) {
+          setUserProfile((current) => current ?? profile);
+        }
+      })
+      .catch(() => undefined);
 
     const unsubscribeProfile = UserRepository.subscribeProfile(currentUser.id, setUserProfile);
     const unsubscribeAddresses = UserRepository.subscribeAddresses(currentUser.id, setAddresses);
@@ -195,6 +203,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     );
 
     return () => {
+      isActive = false;
       unsubscribeProfile();
       unsubscribeAddresses();
       unsubscribeCart();

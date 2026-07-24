@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     borderRadius: 110,
     top: -90,
     right: -70,
-    opacity: 0.45,
+    opacity: 0.12,
   },
   row: {
     flexDirection: 'row',

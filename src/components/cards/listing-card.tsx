@@ -1,16 +1,17 @@
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Listing } from '@/types/domain';
 
-import { Radius, Shadows, Spacing } from '@/constants/theme';
-import { getDeliveryModeLabel, getListingTypeLabel } from '@/lib/i18n';
-import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
-import { formatMoney } from '@/lib/utils/format';
-import { getPrimaryListingImage } from '@/lib/utils/listing-media';
 import { ThemedText } from '@/components/themed-text';
 import { StatusPill } from '@/components/ui/status-pill';
+import { Radius, Shadows, Spacing } from '@/constants/theme';
+import { useLocale } from '@/hooks/use-locale';
+import { useTheme } from '@/hooks/use-theme';
+import { getDeliveryModeLabel, getListingTypeLabel } from '@/lib/i18n';
+import { formatMoney } from '@/lib/utils/format';
+import { getPrimaryListingImage } from '@/lib/utils/listing-media';
 
 export function ListingCard({
   listing,
@@ -24,26 +25,25 @@ export function ListingCard({
   const theme = useTheme();
   const { t } = useLocale();
   const primaryImage = getPrimaryListingImage(listing);
-  const fallbackColor =
+  const categoryAccent =
+    listing.type === 'meal' ? theme.coral : listing.type === 'service' ? theme.cyan : theme.violet;
+  const categorySurface =
     listing.type === 'meal'
-      ? theme.gold
+      ? '#FBE5DC'
       : listing.type === 'service'
-        ? theme.forestGreen
-        : theme.earth;
+        ? '#E3F0E7'
+        : '#FFF1D2';
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        {
-          backgroundColor: theme.backgroundElement,
-          borderColor: theme.border,
-        },
+        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
         Shadows.card,
         pressed && styles.pressed,
       ]}>
-      <View style={[styles.media, { backgroundColor: fallbackColor }]}>
+      <View style={[styles.media, { backgroundColor: categorySurface }]}>
         {primaryImage?.url ? (
           <Image
             contentFit="cover"
@@ -55,50 +55,58 @@ export function ListingCard({
         <View
           style={[
             StyleSheet.absoluteFillObject,
-            { backgroundColor: primaryImage?.url ? theme.overlay : fallbackColor },
+            {
+              backgroundColor: primaryImage?.url
+                ? 'rgba(53, 21, 12, 0.12)'
+                : categorySurface,
+            },
           ]}
         />
         <View style={styles.mediaTop}>
-          <StatusPill label={getListingTypeLabel(listing.type)} tone="brand" />
-          <View style={styles.mediaFlags}>
-            {listing.averageRating ? (
-              <View style={[styles.ratingBadge, { backgroundColor: theme.backgroundElement }]}>
-                <ThemedText type="button">{listing.averageRating.toFixed(1)}</ThemedText>
-              </View>
-            ) : null}
-            {listing.linkedVideoUrl ? <StatusPill label={t('common.video')} tone="warning" /> : null}
+          <View style={[styles.typeBadge, { backgroundColor: categorySurface }]}>
+            <ThemedText type="label" style={{ color: theme.earth }}>
+              {getListingTypeLabel(listing.type)}
+            </ThemedText>
+          </View>
+          {listing.linkedVideoUrl ? <StatusPill label={t('common.video')} tone="warning" /> : null}
+        </View>
+        <View style={[styles.priceBadge, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="headline">{formatMoney(listing.price)}</ThemedText>
+        </View>
+      </View>
+
+      <View style={styles.content}>
+        <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
+          {sellerName ?? t('listingDetail.sellerFallback')} · {listing.city}
+        </ThemedText>
+        <ThemedText type="headline" numberOfLines={2} style={styles.title}>
+          {listing.title}
+        </ThemedText>
+        <View style={styles.footer}>
+          <View style={styles.metaItem}>
+            <SymbolView
+              tintColor={theme.gold}
+              size={15}
+              name={{ ios: 'star.fill', android: 'star', web: 'star' }}
+            />
+            <ThemedText type="button">
+              {listing.averageRating ? listing.averageRating.toFixed(1) : t('common.new')}
+            </ThemedText>
+          </View>
+          <View style={[styles.metaDivider, { backgroundColor: theme.border }]} />
+          <View style={styles.metaItem}>
+            <SymbolView
+              tintColor={theme.textSecondary}
+              size={16}
+              name={{ ios: 'shippingbox', android: 'local_shipping', web: 'local_shipping' }}
+            />
+            <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
+              {getDeliveryModeLabel(listing.deliveryMode)}
+            </ThemedText>
           </View>
         </View>
       </View>
-      <View style={styles.content}>
-        <View style={styles.titleRow}>
-          <ThemedText type="headline" numberOfLines={2} style={styles.title}>
-            {listing.title}
-          </ThemedText>
-        </View>
-        <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
-          {sellerName ?? t('listingDetail.sellerFallback')} · {listing.city}, {listing.countryCode}
-        </ThemedText>
-        <View style={styles.metaLine}>
-          <ThemedText type="bodySmall" themeColor="textSecondary">
-            {listing.inventory.isUnlimited
-              ? t('listingDetail.availableOnDemand')
-              : t('listingDetail.leftCount', { count: listing.inventory.quantity ?? 0 })}
-          </ThemedText>
-          <View style={styles.dot} />
-          <ThemedText type="bodySmall" themeColor="textSecondary">
-            {getDeliveryModeLabel(listing.deliveryMode)}
-          </ThemedText>
-        </View>
-        <View style={styles.priceRow}>
-          <ThemedText type="title" style={{ color: theme.text }}>
-            {formatMoney(listing.price)}
-          </ThemedText>
-          <ThemedText type="bodySmall" themeColor="textSecondary">
-            {listing.categories[0] ?? t('listingDetail.general')}
-          </ThemedText>
-        </View>
-      </View>
+      <View style={[styles.accentBar, { backgroundColor: categoryAccent }]} />
     </Pressable>
   );
 }
@@ -108,11 +116,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.large,
     overflow: 'hidden',
     borderWidth: 1,
+    position: 'relative',
   },
   media: {
-    minHeight: 208,
+    minHeight: 220,
     padding: Spacing.md,
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
   },
   mediaTop: {
     flexDirection: 'row',
@@ -120,50 +129,49 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: Spacing.md,
   },
-  mediaFlags: {
-    gap: Spacing.sm,
-    alignItems: 'flex-end',
+  typeBadge: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
-  ratingBadge: {
-    minWidth: 42,
-    minHeight: 32,
+  priceBadge: {
+    alignSelf: 'flex-start',
     borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   content: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
-    gap: Spacing.sm,
-  },
-  titleRow: {
-    gap: Spacing.xs,
+    padding: Spacing.lg,
+    gap: 7,
   },
   title: {
-    lineHeight: 28,
+    lineHeight: 26,
   },
-  metaLine: {
+  footer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
     alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: '#BDBDBD',
-  },
-  priceRow: {
+  metaItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-    alignItems: 'baseline',
+    alignItems: 'center',
+    gap: 5,
+    minWidth: 0,
+  },
+  metaDivider: {
+    width: 1,
+    height: 16,
+  },
+  accentBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 5,
   },
   pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.992 }],
+    opacity: 0.94,
+    transform: [{ scale: 0.988 }],
   },
 });

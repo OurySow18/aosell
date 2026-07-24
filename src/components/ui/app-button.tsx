@@ -23,7 +23,7 @@ export function AppButton({
 
   const backgroundColor =
     variant === 'primary'
-      ? theme.earth
+      ? theme.accent
       : variant === 'secondary'
         ? theme.backgroundSelected
         : variant === 'danger'
@@ -31,7 +31,7 @@ export function AppButton({
           : theme.backgroundElement;
 
   const textColor =
-    variant === 'primary' || variant === 'danger' ? theme.background : theme.text;
+    variant === 'primary' ? theme.earth : variant === 'danger' ? '#FFFFFF' : theme.text;
 
   const borderColor =
     variant === 'primary' || variant === 'danger' ? backgroundColor : theme.border;
@@ -45,7 +45,7 @@ export function AppButton({
         styles.pressable,
         fullWidth && styles.fullWidth,
         [styles.base, { backgroundColor, borderColor }],
-        (variant === 'primary' || variant === 'danger') && Shadows.card,
+        variant === 'primary' && Shadows.card,
         pressed && styles.pressed,
         disabled && styles.disabled,
       ]}>
@@ -60,14 +60,14 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   pressable: {
-    borderRadius: Radius.pill,
+    borderRadius: Radius.medium,
     overflow: 'hidden',
   },
   base: {
     borderWidth: 1,
   },
   inner: {
-    minHeight: 52,
+    minHeight: 56,
     paddingHorizontal: Spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',

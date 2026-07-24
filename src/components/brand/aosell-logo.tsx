@@ -1,80 +1,65 @@
+import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
-import { Radius, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from '@/components/themed-text';
+import { Radius, Spacing } from '@/constants/theme';
+
+const officialLogo = require('../../../assets/images/aosell-logo-official.png');
+const officialMark = require('../../../assets/images/aosell-mark-official.png');
 
 export function AosellLogo({ compact = false }: { compact?: boolean }) {
-  const theme = useTheme();
+  if (!compact) {
+    return (
+      <View style={styles.fullLockup}>
+        <Image contentFit="contain" source={officialLogo} style={styles.fullLogo} />
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.wrapper, compact && styles.wrapperCompact]}>
-      <View
-        style={[
-          styles.badge,
-          {
-            backgroundColor: theme.backgroundElement,
-            borderColor: compact ? theme.border : theme.earth,
-          },
-        ]}>
-        <ThemedText
-          type={compact ? 'headline' : 'title'}
-          style={[styles.badgeText, { color: theme.text }]}>
-          AO
-        </ThemedText>
+    <View style={styles.compactLockup}>
+      <View style={styles.markFrame}>
+        <Image contentFit="contain" source={officialMark} style={styles.mark} />
       </View>
-      <View style={styles.copy}>
-        <View style={styles.wordmarkRow}>
-          <ThemedText type={compact ? 'headline' : 'title'} style={styles.wordmark}>
-            AoSell
-          </ThemedText>
-          <View style={[styles.accentDot, { backgroundColor: theme.success }]} />
-        </View>
-        {!compact ? (
-          <ThemedText type="bodySmall" themeColor="textSecondary">
-            Where people sell, cultures travel.
-          </ThemedText>
-        ) : null}
-      </View>
+      <ThemedText type="title" style={styles.wordmark}>
+        AoSell
+      </ThemedText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  fullLockup: {
+    alignItems: 'flex-start',
+  },
+  fullLogo: {
+    width: 156,
+    height: 168,
+  },
+  compactLockup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-  },
-  wrapperCompact: {
     gap: Spacing.sm,
   },
-  badge: {
-    width: 60,
-    height: 60,
-    borderRadius: Radius.large,
+  markFrame: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.medium,
+    borderWidth: 1,
+    borderColor: '#DED5CF',
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
   },
-  badgeText: {
-    letterSpacing: 1.5,
-  },
-  copy: {
-    gap: 2,
-  },
-  wordmarkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
+  mark: {
+    width: 48,
+    height: 50,
   },
   wordmark: {
-    letterSpacing: -0.6,
-  },
-  accentDot: {
-    width: 10,
-    height: 10,
-    borderRadius: Radius.pill,
-    marginTop: 2,
+    color: '#35150C',
+    fontSize: 25,
+    lineHeight: 30,
+    letterSpacing: -0.8,
   },
 });

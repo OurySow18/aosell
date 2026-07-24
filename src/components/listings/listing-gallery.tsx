@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -47,12 +48,21 @@ export function ListingGallery({ listing }: { listing: Listing }) {
           ]}
         />
         <View style={styles.heroTop}>
-          <StatusPill label={getListingTypeLabel(listing.type)} tone="brand" />
+          <View style={styles.heroLead}>
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <SymbolView
+                tintColor={theme.earth}
+                size={19}
+                name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
+              />
+            </Pressable>
+            <StatusPill label={getListingTypeLabel(listing.type)} tone="brand" />
+          </View>
           <View style={styles.heroBadges}>
             {listing.isFeatured ? <StatusPill label={t('common.featured')} tone="neutral" /> : null}
             {activeItem?.kind === 'video' ? <StatusPill label={t('common.video')} tone="warning" /> : null}
             <View style={styles.mediaCount}>
-              <ThemedText type="button" style={{ color: theme.background }}>
+              <ThemedText type="button" style={{ color: '#FFFFFF' }}>
                 {activeIndex + 1}/{galleryItems.length || 1}
               </ThemedText>
             </View>
@@ -64,27 +74,27 @@ export function ListingGallery({ listing }: { listing: Listing }) {
               <SymbolView
                 tintColor={theme.earth}
                 size={22}
-                name={{ ios: 'play.fill', android: 'play_arrow', web: 'play.fill' }}
+                name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }}
               />
             </View>
-            <ThemedText type="button" style={{ color: theme.background }}>
+            <ThemedText type="button" style={{ color: '#FFFFFF' }}>
               {t('gallery.videoPreview')}
             </ThemedText>
           </View>
         ) : null}
         <View style={styles.heroFooter}>
-          <View style={styles.footerChip}>
-            <ThemedText type="button">
+          <View style={[styles.footerChip, { backgroundColor: theme.gold }]}>
+            <ThemedText type="button" style={{ color: theme.earth }}>
               {activeItem?.kind === 'video'
                 ? t('gallery.tapToReview')
                 : t('gallery.photosAvailable', { count: imageCount || 1 })}
             </ThemedText>
           </View>
           <View style={styles.footerCopy}>
-            <ThemedText type="headline" numberOfLines={2} style={{ color: theme.background }}>
+            <ThemedText type="headline" numberOfLines={2} style={{ color: '#FFFFFF' }}>
               {listing.title}
             </ThemedText>
-            <ThemedText type="bodySmall" style={{ color: theme.background }}>
+            <ThemedText type="bodySmall" style={{ color: '#FFFFFF' }}>
               {t('gallery.swipeHint')}
             </ThemedText>
           </View>
@@ -129,7 +139,7 @@ export function ListingGallery({ listing }: { listing: Listing }) {
                   ]}
                 />
                 <View style={styles.thumbnailMeta}>
-                  <ThemedText type="label" style={{ color: theme.background }}>
+                  <ThemedText type="label" style={{ color: '#FFFFFF' }}>
                     {item.kind === 'video' ? t('common.video') : t('gallery.photoNumber', { index: index + 1 })}
                   </ThemedText>
                 </View>
@@ -147,8 +157,8 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   hero: {
-    minHeight: 420,
-    borderRadius: Radius.large,
+    minHeight: 520,
+    borderRadius: Radius.xlarge,
     overflow: 'hidden',
     padding: Spacing.xl,
     justifyContent: 'space-between',
@@ -159,6 +169,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.md,
     alignItems: 'flex-start',
+  },
+  heroLead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroBadges: {
     flexDirection: 'row',
@@ -194,7 +217,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
   },
   footerCopy: {
     gap: Spacing.xs,

@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { Radius, Shadows } from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
@@ -15,23 +15,26 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.earth,
-        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: '#C8BBB5',
         tabBarStyle: {
-          backgroundColor: theme.backgroundElement,
+          backgroundColor: theme.earth,
           borderTopColor: 'transparent',
-          height: 78,
-          paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 12 : 10,
-          marginHorizontal: 14,
-          marginBottom: 12,
-          borderRadius: Radius.large,
+          height: 72,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 10 : 8,
+          marginHorizontal: 12,
+          marginBottom: 10,
+          borderRadius: Radius.xlarge,
           position: 'absolute',
-          ...Shadows.card,
+          borderWidth: 1,
+          borderColor: '#593126',
+          ...Shadows.float,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '700',
+          fontSize: 10,
+          fontWeight: '800',
+          letterSpacing: 0.2,
         },
       }}>
       <Tabs.Screen
@@ -39,7 +42,7 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.home'),
           tabBarIcon: ({ color }) => (
-            <SymbolView tintColor={color} size={18} name={{ ios: 'house.fill', android: 'home', web: 'house.fill' }} />
+            <SymbolView tintColor={color} size={18} name={{ ios: 'house.fill', android: 'home', web: 'home' }} />
           ),
         }}
       />
@@ -51,7 +54,7 @@ export default function TabsLayout() {
             <SymbolView
               tintColor={color}
               size={18}
-              name={{ ios: 'magnifyingglass', android: 'search', web: 'magnifyingglass' }}
+              name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
             />
           ),
         }}
@@ -60,8 +63,18 @@ export default function TabsLayout() {
         name="add"
         options={{
           title: t('tabs.add'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView tintColor={color} size={19} name={{ ios: 'plus.circle.fill', android: 'add', web: 'plus.circle.fill' }} />
+          tabBarIcon: () => (
+            <View
+              style={[
+                styles.addButton,
+                { backgroundColor: theme.accent, borderColor: theme.earth },
+              ]}>
+              <SymbolView
+                tintColor={theme.earth}
+                size={22}
+                name={{ ios: 'plus', android: 'add', web: 'add' }}
+              />
+            </View>
           ),
         }}
       />
@@ -73,7 +86,7 @@ export default function TabsLayout() {
             <SymbolView
               tintColor={color}
               size={18}
-              name={{ ios: 'shippingbox.fill', android: 'inbox', web: 'shippingbox.fill' }}
+              name={{ ios: 'shippingbox.fill', android: 'inbox', web: 'inbox' }}
             />
           ),
         }}
@@ -83,10 +96,22 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.profile'),
           tabBarIcon: ({ color }) => (
-            <SymbolView tintColor={color} size={18} name={{ ios: 'person.fill', android: 'person', web: 'person.fill' }} />
+            <SymbolView tintColor={color} size={18} name={{ ios: 'person.fill', android: 'person', web: 'person' }} />
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  addButton: {
+    width: 42,
+    height: 42,
+    borderRadius: Radius.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -13,
+    borderWidth: 2,
+  },
+});

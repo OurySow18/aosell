@@ -53,7 +53,7 @@ export function AppInput({
         style={[
           styles.input,
           {
-            backgroundColor: theme.backgroundSelected,
+            backgroundColor: theme.backgroundElement,
             color: theme.text,
             borderColor: theme.border,
             minHeight: multiline ? 124 : 54,
@@ -69,13 +69,13 @@ export function AppInput({
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: Spacing.sm,
+    gap: 6,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
+    borderWidth: 1.5,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    fontSize: 15,
+    fontSize: 16,
   },
 });

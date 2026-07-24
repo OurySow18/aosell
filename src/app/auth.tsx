@@ -4,11 +4,11 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { AosellLogo } from '@/components/brand/aosell-logo';
 import { ThemedText } from '@/components/themed-text';
-import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { AosellLogo } from '@/components/brand/aosell-logo';
 import { AppInput } from '@/components/ui/app-input';
 import { AppScreen } from '@/components/ui/app-screen';
+import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { Radius, Spacing } from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
@@ -18,48 +18,9 @@ import { useAosell } from '@/providers/aosell-provider';
 
 type AuthMode = 'signin' | 'signup';
 type AuthRole = 'buyer' | 'seller';
+type AuthMethod = 'phone' | 'apple' | 'google';
 
-const artworkItems = [
-  {
-    id: 'pizza',
-    discount: true,
-    imageSize: 94,
-    left: -30,
-    top: 58,
-    uri: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=480&q=80',
-  },
-  {
-    id: 'burger',
-    discount: true,
-    imageSize: 126,
-    left: 122,
-    top: 102,
-    uri: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=480&q=80',
-  },
-  {
-    id: 'avocado',
-    discount: true,
-    imageSize: 104,
-    right: -22,
-    top: 54,
-    uri: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=480&q=80',
-  },
-  {
-    id: 'bowl',
-    discount: true,
-    imageSize: 108,
-    left: -6,
-    top: 250,
-    uri: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=480&q=80',
-  },
-  {
-    id: 'tacos',
-    imageSize: 106,
-    right: 8,
-    top: 278,
-    uri: 'https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?auto=format&fit=crop&w=480&q=80',
-  },
-];
+const authHeroImage = require('../../assets/images/auth-food-hero-v4.png');
 
 function asSingleValue(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -108,12 +69,11 @@ export default function AuthScreen() {
   const initialMode = asSingleValue(params.mode) === 'signin' ? 'signin' : 'signup';
   const initialRole = asSingleValue(params.role) === 'seller' ? 'seller' : 'buyer';
   const returnTo = asSingleValue(params.returnTo);
-  const initialShowEmailForm = Boolean(asSingleValue(params.mode) || returnTo);
   const { authReady, currentUser, signIn, signUp } = useAosell();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [role, setRole] = useState<AuthRole>(initialRole);
-  const [showEmailForm, setShowEmailForm] = useState(initialShowEmailForm);
+  const [showEmailForm, setShowEmailForm] = useState(Boolean(returnTo));
   const [phoneDraft, setPhoneDraft] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -124,20 +84,13 @@ export default function AuthScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!authReady || !currentUser || !returnTo) {
-      return;
+    if (authReady && currentUser && returnTo) {
+      router.replace(returnTo as never);
     }
-
-    router.replace(returnTo);
   }, [authReady, currentUser, returnTo]);
 
-  useEffect(() => {
-    setMode(initialMode);
-  }, [initialMode]);
-
-  useEffect(() => {
-    setRole(initialRole);
-  }, [initialRole]);
+  useEffect(() => setMode(initialMode), [initialMode]);
+  useEffect(() => setRole(initialRole), [initialRole]);
 
   async function handleSubmit() {
     setError('');
@@ -146,13 +99,7 @@ export default function AuthScreen() {
 
     try {
       if (mode === 'signup') {
-        const parsed = authSignUpSchema.safeParse({
-          firstName,
-          lastName,
-          email,
-          password,
-          role,
-        });
+        const parsed = authSignUpSchema.safeParse({ firstName, lastName, email, password, role });
 
         if (!parsed.success) {
           setError(parsed.error.issues[0]?.message ?? t('auth.errors.invalidAccountDetails'));
@@ -160,14 +107,13 @@ export default function AuthScreen() {
         }
 
         await signUp(parsed.data);
-        router.replace(returnTo || (parsed.data.role === 'seller' ? '/seller-onboarding' : '/home'));
+        router.replace(
+          (returnTo || (parsed.data.role === 'seller' ? '/seller-onboarding' : '/home')) as never,
+        );
         return;
       }
 
-      const parsed = authSignInSchema.safeParse({
-        email,
-        password,
-      });
+      const parsed = authSignInSchema.safeParse({ email, password });
 
       if (!parsed.success) {
         setError(parsed.error.issues[0]?.message ?? t('auth.errors.invalidCredentials'));
@@ -175,7 +121,7 @@ export default function AuthScreen() {
       }
 
       await signIn(parsed.data);
-      router.replace(returnTo || '/home');
+      router.replace((returnTo || '/home') as never);
     } catch (nextError) {
       setError(getFriendlyAuthError(nextError));
     } finally {
@@ -189,324 +135,268 @@ export default function AuthScreen() {
     }
     setShowEmailForm(true);
     setInfo('');
+    setError('');
   }
 
-  function handleUnavailable(method: 'phone' | 'apple' | 'google') {
+  function handleUnavailable(method: AuthMethod) {
     setShowEmailForm(true);
     setInfo(
       method === 'phone'
         ? t('auth.phoneInfo')
         : method === 'apple'
           ? t('auth.appleInfo')
-          : t('auth.googleInfo')
+          : t('auth.googleInfo'),
     );
   }
 
   return (
     <AppScreen padded={false}>
-      <View style={[styles.page, { backgroundColor: theme.background }]}>
-        <View style={styles.heroShell}>
-          <View style={[styles.deliveryPill, { backgroundColor: theme.earth }]}>
-            <SymbolView
-              tintColor={theme.success}
-              size={18}
-              name={{ ios: 'phone.fill', android: 'call', web: 'phone.fill' }}
-            />
-            <ThemedText type="headline" style={{ color: theme.success, fontSize: 18, lineHeight: 22 }}>
-              33 min
-            </ThemedText>
-          </View>
-
+      <View style={styles.page}>
+        <View style={styles.shell}>
           <View style={styles.artStage}>
-            {artworkItems.map((item, index) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.artItem,
-                  {
-                    left: item.left,
-                    right: item.right,
-                    top: item.top,
-                  },
-                ]}>
-                <View
-                  style={[
-                    styles.bloomOutline,
-                    { borderColor: theme.gold },
-                    index % 2 ? styles.bloomRotateA : styles.bloomRotateB,
-                  ]}
-                />
-                {item.discount ? (
-                  <View style={[styles.discountTag, { backgroundColor: theme.error }]}>
-                    <ThemedText type="button" style={{ color: '#FFFFFF' }}>
-                      %
-                    </ThemedText>
-                  </View>
-                ) : null}
-                <View
-                  style={[
-                    styles.foodFrame,
-                    {
-                      borderRadius: item.imageSize / 2,
-                      height: item.imageSize,
-                      width: item.imageSize,
-                    },
-                  ]}>
-                  <Image contentFit="cover" source={{ uri: item.uri }} style={styles.foodImage} transition={250} />
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.content}>
-          <View style={[styles.brandRow, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-            <AosellLogo compact />
-          </View>
-
-          <LanguageSwitcher />
-
-          <View style={styles.titleBlock}>
-            <ThemedText type="title">{t('auth.title')}</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              {t('auth.subtitle')}
-            </ThemedText>
-          </View>
-
-          <View style={styles.phoneRow}>
-            <Pressable
-              style={[
-                styles.countryButton,
-                { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
-              ]}>
-              <ThemedText type="headline">DE</ThemedText>
-              <SymbolView
-                tintColor={theme.text}
-                size={16}
-                name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'chevron.down' }}
-              />
-            </Pressable>
-            <View
-              style={[
-                styles.phoneField,
-                { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
-              ]}>
-              <TextInput
-                inputMode="tel"
-                keyboardType="phone-pad"
-                onChangeText={setPhoneDraft}
-                placeholder={t('auth.phonePlaceholder')}
-                placeholderTextColor={theme.textSecondary}
-                style={[styles.phoneInput, { color: theme.text }]}
-                textContentType="telephoneNumber"
-                value={phoneDraft}
-              />
-              <View style={styles.phoneBadge}>
-                <SymbolView
-                  tintColor={theme.text}
-                  size={22}
-                  name={{ ios: 'person.crop.circle.badge.plus', android: 'person_add', web: 'person.crop.circle.badge.plus' }}
-                />
-              </View>
-            </View>
-          </View>
-
-          <Pressable
-            onPress={() => handleUnavailable('phone')}
-            style={({ pressed }) => [
-              styles.primaryButton,
-              { backgroundColor: theme.earth },
-              pressed && styles.pressed,
-            ]}>
-            <ThemedText type="headline" style={{ color: theme.background, fontSize: 18, lineHeight: 22 }}>
-              {t('common.continue')}
-            </ThemedText>
-          </Pressable>
-
-          {info ? (
-            <ThemedText type="bodySmall" themeColor="burntOrange">
-              {info}
-            </ThemedText>
-          ) : null}
-
-          <DividerLabel />
-
-          <View style={styles.optionList}>
-            <AuthOptionButton label={t('auth.apple')} type="apple" onPress={() => handleUnavailable('apple')} />
-            <AuthOptionButton label={t('auth.google')} type="google" onPress={() => handleUnavailable('google')} />
-            <AuthOptionButton label={t('auth.email')} type="email" onPress={() => revealEmailForm(initialMode)} />
-          </View>
-
-          <Pressable
-            onPress={() => setShowEmailForm((current) => !current)}
-            style={styles.moreButton}>
-            <ThemedText type="button">{showEmailForm ? t('auth.hideMore') : t('auth.showMore')}</ThemedText>
-          </Pressable>
-
-          {showEmailForm ? (
-            <View style={[styles.emailCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-              <View style={styles.modeTabs}>
-              {(['signup', 'signin'] as const).map((nextMode) => {
-                  const active = nextMode === mode;
-                  return (
-                    <Pressable
-                      key={nextMode}
-                      onPress={() => {
-                        setMode(nextMode);
-                        setError('');
-                      }}
-                      style={[
-                        styles.modeTab,
-                        {
-                          backgroundColor: active ? theme.earth : theme.background,
-                          borderColor: active ? theme.earth : theme.border,
-                        },
-                      ]}>
-                      <ThemedText type="button" style={{ color: active ? '#FFFFFF' : theme.text }}>
-                        {nextMode === 'signup' ? t('common.createAccount') : t('common.signIn')}
-                      </ThemedText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              {returnTo ? (
-                <ThemedText type="bodySmall" themeColor="textSecondary">
-                  {t('auth.returnToPrevious')}
-                </ThemedText>
-              ) : null}
-
-              {mode === 'signup' ? (
-                <>
-                  <View style={styles.roleRow}>
-                    {(['buyer', 'seller'] as const).map((nextRole) => {
-                      const active = nextRole === role;
-                      return (
-                        <Pressable
-                          key={nextRole}
-                          onPress={() => setRole(nextRole)}
-                          style={[
-                            styles.roleCard,
-                            {
-                              backgroundColor: active ? theme.background : theme.backgroundElement,
-                              borderColor: active ? theme.earth : theme.border,
-                            },
-                          ]}>
-                          <ThemedText type="button">
-                            {nextRole === 'buyer' ? t('auth.buyer') : t('auth.seller')}
-                          </ThemedText>
-                          <ThemedText type="bodySmall" themeColor="textSecondary">
-                            {nextRole === 'buyer'
-                              ? t('auth.buyerHint')
-                              : t('auth.sellerHint')}
-                          </ThemedText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-
-                  <View style={styles.inlineFields}>
-                    <View style={styles.field}>
-                      <AppInput
-                        autoCapitalize="words"
-                        autoCorrect={false}
-                        label={t('auth.firstName')}
-                        onChangeText={setFirstName}
-                        placeholder="Amina"
-                        textContentType="givenName"
-                        value={firstName}
-                      />
-                    </View>
-                    <View style={styles.field}>
-                      <AppInput
-                        autoCapitalize="words"
-                        autoCorrect={false}
-                        label={t('auth.lastName')}
-                        onChangeText={setLastName}
-                        placeholder="Diallo"
-                        textContentType="familyName"
-                        value={lastName}
-                      />
-                    </View>
-                  </View>
-                </>
-              ) : null}
-
-              <AppInput
-                autoCapitalize="none"
-                autoCorrect={false}
-                inputMode="email"
-                keyboardType="email-address"
-                label={t('auth.emailLabel')}
-                onChangeText={setEmail}
-                placeholder="you@aosell.com"
-                textContentType="emailAddress"
-                value={email}
-              />
-
-              <AppInput
-                autoCapitalize="none"
-                autoCorrect={false}
-                label={t('auth.passwordLabel')}
-                onChangeText={setPassword}
-                placeholder={t('auth.passwordPlaceholder')}
-                secureTextEntry
-                textContentType="password"
-                value={password}
-              />
-
-              {error ? (
-                <ThemedText type="bodySmall" themeColor="error">
-                  {error}
-                </ThemedText>
-              ) : null}
-
-              <Pressable
-                disabled={isSubmitting}
-                onPress={() => {
-                  void handleSubmit();
-                }}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  { backgroundColor: theme.earth },
-                  isSubmitting && styles.disabled,
-                  pressed && styles.pressed,
-                ]}>
-                <ThemedText type="headline" style={{ color: theme.background, fontSize: 18, lineHeight: 22 }}>
-                  {mode === 'signup' ? t('common.createAccount') : t('common.signIn')}
-                </ThemedText>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.replace(returnTo || '/home')}
-                style={styles.secondaryTextButton}>
-                <ThemedText type="button">
-                  {returnTo ? t('auth.backToPrevious') : t('auth.continueExploring')}
-                </ThemedText>
-              </Pressable>
-            </View>
-          ) : null}
-
-          <DividerLabel />
-
-          <Pressable
-            onPress={() => {
-              revealEmailForm('signin');
-              setEmail('');
-              setPassword('');
-            }}
-            style={styles.findAccountButton}>
-            <SymbolView
-              tintColor={theme.text}
-              size={22}
-              name={{ ios: 'magnifyingglass', android: 'search', web: 'magnifyingglass' }}
+            <Image
+              contentFit="cover"
+              source={authHeroImage}
+              style={StyleSheet.absoluteFillObject}
+              transition={300}
             />
-            <ThemedText type="headline">{t('auth.findAccount')}</ThemedText>
-          </Pressable>
+            <PromoBadge style={styles.promoTop} />
+            <PromoBadge style={styles.promoMiddle} />
+            <PromoBadge style={styles.promoBottom} />
+            <View style={styles.heroBrand}>
+              <AosellLogo compact />
+            </View>
+          </View>
 
-          <ThemedText type="bodySmall" themeColor="textSecondary" style={styles.legalCopy}>
-            {t('auth.legal')}
-          </ThemedText>
+          <View style={styles.content}>
+            <View style={styles.titleRow}>
+              <ThemedText type="title" style={styles.title}>
+                {t('auth.title')}
+              </ThemedText>
+              <LanguageSwitcher compact />
+            </View>
+
+            <View style={styles.phoneRow}>
+              <Pressable style={styles.countryButton}>
+                <GermanFlag />
+                <SymbolView
+                  tintColor="#35150C"
+                  size={17}
+                  name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' }}
+                />
+              </Pressable>
+              <View style={styles.phoneField}>
+                <TextInput
+                  inputMode="tel"
+                  keyboardType="phone-pad"
+                  onChangeText={setPhoneDraft}
+                  placeholder={t('auth.phonePlaceholder')}
+                  placeholderTextColor="#5E5E62"
+                  style={styles.phoneInput}
+                  textContentType="telephoneNumber"
+                  value={phoneDraft}
+                />
+                <SymbolView
+                  tintColor="#35150C"
+                  size={27}
+                  name={{
+                    ios: 'person.crop.circle.badge.plus',
+                    android: 'person_add',
+                    web: 'person_add',
+                  }}
+                />
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => handleUnavailable('phone')}
+              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+              <ThemedText type="headline" style={styles.continueText}>
+                {t('common.continue')}
+              </ThemedText>
+            </Pressable>
+
+            {info ? (
+              <View style={styles.infoBox}>
+                <ThemedText type="bodySmall" style={styles.infoText}>
+                  {info}
+                </ThemedText>
+              </View>
+            ) : null}
+
+            <DividerLabel />
+
+            <View style={styles.optionList}>
+              <AuthOptionButton
+                label={t('auth.apple')}
+                type="apple"
+                onPress={() => handleUnavailable('apple')}
+              />
+              <AuthOptionButton
+                label={t('auth.google')}
+                type="google"
+                onPress={() => handleUnavailable('google')}
+              />
+              <AuthOptionButton
+                label={t('auth.email')}
+                type="email"
+                onPress={() => revealEmailForm(initialMode)}
+              />
+            </View>
+
+            {showEmailForm ? (
+              <View style={styles.emailCard}>
+                <View style={styles.modeTabs}>
+                  {(['signup', 'signin'] as const).map((nextMode) => {
+                    const active = nextMode === mode;
+                    return (
+                      <Pressable
+                        key={nextMode}
+                        onPress={() => {
+                          setMode(nextMode);
+                          setError('');
+                        }}
+                        style={[styles.modeTab, active && styles.modeTabActive]}>
+                        <ThemedText type="button" style={{ color: active ? '#FFFFFF' : '#35150C' }}>
+                          {nextMode === 'signup' ? t('common.createAccount') : t('common.signIn')}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {mode === 'signup' ? (
+                  <>
+                    <View style={styles.roleRow}>
+                      {(['buyer', 'seller'] as const).map((nextRole) => {
+                        const active = nextRole === role;
+                        return (
+                          <Pressable
+                            key={nextRole}
+                            onPress={() => setRole(nextRole)}
+                            style={[styles.roleCard, active && styles.roleCardActive]}>
+                            <ThemedText type="button">
+                              {nextRole === 'buyer' ? t('auth.buyer') : t('auth.seller')}
+                            </ThemedText>
+                            <ThemedText type="bodySmall" themeColor="textSecondary">
+                              {nextRole === 'buyer' ? t('auth.buyerHint') : t('auth.sellerHint')}
+                            </ThemedText>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <View style={styles.inlineFields}>
+                      <View style={styles.field}>
+                        <AppInput
+                          autoCapitalize="words"
+                          autoCorrect={false}
+                          label={t('auth.firstName')}
+                          onChangeText={setFirstName}
+                          placeholder="Amina"
+                          textContentType="givenName"
+                          value={firstName}
+                        />
+                      </View>
+                      <View style={styles.field}>
+                        <AppInput
+                          autoCapitalize="words"
+                          autoCorrect={false}
+                          label={t('auth.lastName')}
+                          onChangeText={setLastName}
+                          placeholder="Diallo"
+                          textContentType="familyName"
+                          value={lastName}
+                        />
+                      </View>
+                    </View>
+                  </>
+                ) : null}
+
+                <AppInput
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  inputMode="email"
+                  keyboardType="email-address"
+                  label={t('auth.emailLabel')}
+                  onChangeText={setEmail}
+                  placeholder="you@aosell.com"
+                  textContentType="emailAddress"
+                  value={email}
+                />
+                <AppInput
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  label={t('auth.passwordLabel')}
+                  onChangeText={setPassword}
+                  placeholder={t('auth.passwordPlaceholder')}
+                  secureTextEntry
+                  textContentType="password"
+                  value={password}
+                />
+
+                {error ? (
+                  <ThemedText type="bodySmall" themeColor="error">
+                    {error}
+                  </ThemedText>
+                ) : null}
+
+                <Pressable
+                  disabled={isSubmitting}
+                  onPress={() => void handleSubmit()}
+                  style={[
+                    styles.continueButton,
+                    isSubmitting && styles.disabled,
+                  ]}>
+                  <ThemedText type="headline" style={styles.continueText}>
+                    {mode === 'signup' ? t('common.createAccount') : t('common.signIn')}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            ) : null}
+
+            <Pressable
+              onPress={() => setShowEmailForm((current) => !current)}
+              style={styles.moreButton}>
+              <ThemedText type="headline" style={styles.moreButtonText}>
+                {showEmailForm ? t('auth.hideMore') : t('auth.showMore')}
+              </ThemedText>
+            </Pressable>
+
+            <DividerLabel />
+
+            <Pressable
+              onPress={() => revealEmailForm('signin')}
+              style={styles.findAccountButton}>
+              <SymbolView
+                tintColor="#35150C"
+                size={24}
+                name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+              />
+              <ThemedText type="headline" style={styles.findAccountText}>
+                {t('auth.findAccount')}
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.replace('/home')}
+              style={({ pressed }) => [styles.guestButton, pressed && styles.pressed]}>
+              <ThemedText type="headline" style={styles.guestButtonText}>
+                {t('auth.continueAsGuest')}
+              </ThemedText>
+              <View style={styles.guestButtonIcon}>
+                <SymbolView
+                  tintColor="#35150C"
+                  size={20}
+                  name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
+                />
+              </View>
+            </Pressable>
+
+            <ThemedText type="bodySmall" style={styles.legalCopy}>
+              {t('auth.legal')}
+            </ThemedText>
+          </View>
         </View>
       </View>
     </AppScreen>
@@ -514,16 +404,35 @@ export default function AuthScreen() {
 }
 
 function DividerLabel() {
-  const theme = useTheme();
   const { t } = useLocale();
 
   return (
     <View style={styles.dividerRow}>
-      <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-      <ThemedText type="body" themeColor="textSecondary">
+      <View style={styles.dividerLine} />
+      <ThemedText type="body" style={styles.dividerText}>
         {t('common.or')}
       </ThemedText>
-      <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+      <View style={styles.dividerLine} />
+    </View>
+  );
+}
+
+function GermanFlag() {
+  return (
+    <View style={styles.flag}>
+      <View style={[styles.flagStripe, styles.flagBlack]} />
+      <View style={[styles.flagStripe, styles.flagRed]} />
+      <View style={[styles.flagStripe, styles.flagGold]} />
+    </View>
+  );
+}
+
+function PromoBadge({ style }: { style: object }) {
+  return (
+    <View style={[styles.discountTag, style]}>
+      <ThemedText type="headline" style={styles.discountText}>
+        %
+      </ThemedText>
     </View>
   );
 }
@@ -537,35 +446,23 @@ function AuthOptionButton({
   onPress: () => void;
   type: 'apple' | 'google' | 'email';
 }) {
-  const theme = useTheme();
-
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.optionButton,
-        { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
-        pressed && styles.pressed,
-      ]}>
+      style={({ pressed }) => [styles.optionButton, pressed && styles.pressed]}>
       <View style={styles.optionIcon}>
         {type === 'email' ? (
           <SymbolView
-            tintColor={theme.text}
-            size={22}
-            name={{ ios: 'envelope', android: 'mail', web: 'envelope' }}
+            tintColor="#35150C"
+            size={25}
+            name={{ ios: 'envelope', android: 'mail', web: 'mail' }}
           />
         ) : (
-          <View
-            style={[
-              styles.letterBadge,
-              { backgroundColor: type === 'google' ? '#FFFFFF' : theme.earth },
-            ]}>
-            <ThemedText
-              type="button"
-              style={{ color: type === 'google' ? '#4285F4' : '#FFFFFF' }}>
-              {type === 'google' ? 'G' : 'A'}
-            </ThemedText>
-          </View>
+          <ThemedText
+            type="headline"
+            style={[styles.providerLetter, type === 'google' && styles.googleLetter]}>
+            {type === 'google' ? 'G' : 'A'}
+          </ThemedText>
         )}
       </View>
       <ThemedText type="headline" style={styles.optionLabel}>
@@ -578,205 +475,145 @@ function AuthOptionButton({
 const styles = StyleSheet.create({
   page: {
     minHeight: '100%',
+    backgroundColor: '#EEEEEE',
+    alignItems: 'center',
   },
-  heroShell: {
-    paddingTop: Spacing.xl,
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
+  shell: {
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: '#FFFFFF',
   },
-  deliveryPill: {
-    alignSelf: 'center',
+  artStage: {
+    height: 320,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  heroBrand: {
+    position: 'absolute',
+    left: Spacing.lg,
+    top: Spacing.lg,
     borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    paddingVertical: 6,
+    paddingHorizontal: 6,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    minWidth: 180,
-    justifyContent: 'center',
-  },
-  artStage: {
-    height: 360,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  artItem: {
-    position: 'absolute',
-    width: 190,
-    height: 190,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bloomOutline: {
-    position: 'absolute',
-    width: 178,
-    height: 178,
-    borderWidth: 3,
-    borderRadius: 58,
-    opacity: 0.8,
-  },
-  bloomRotateA: {
-    transform: [{ rotate: '18deg' }],
-  },
-  bloomRotateB: {
-    transform: [{ rotate: '-14deg' }],
-  },
-  foodFrame: {
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  foodImage: {
-    width: '100%',
-    height: '100%',
   },
   discountTag: {
     position: 'absolute',
-    top: 22,
-    left: 28,
-    borderRadius: 16,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    minWidth: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: '#E54416',
+    alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 2,
   },
+  promoTop: {
+    right: 24,
+    top: 58,
+  },
+  promoMiddle: {
+    left: 20,
+    top: 150,
+  },
+  promoBottom: {
+    right: 30,
+    bottom: 28,
+  },
+  discountText: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
   content: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xxxl + 28,
+    width: '90%',
+    alignSelf: 'center',
+    paddingBottom: Spacing.xxxl,
     gap: Spacing.lg,
   },
-  brandRow: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+  titleRow: {
+    alignItems: 'flex-start',
+    gap: Spacing.md,
   },
-  titleBlock: {
-    gap: Spacing.sm,
+  title: {
+    width: '100%',
+    fontSize: 30,
+    lineHeight: 36,
   },
   phoneRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    alignItems: 'stretch',
+    gap: Spacing.sm,
   },
   countryButton: {
-    minWidth: 104,
-    borderWidth: 1,
-    borderRadius: Radius.large,
+    width: 116,
+    minHeight: 64,
+    borderRadius: Radius.medium,
+    backgroundColor: '#EEEEEE',
     paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.sm,
+  },
+  flag: {
+    width: 42,
+    height: 28,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  flagStripe: {
+    flex: 1,
+    width: '100%',
+  },
+  flagBlack: {
+    backgroundColor: '#111111',
+  },
+  flagRed: {
+    backgroundColor: '#DD1E2F',
+  },
+  flagGold: {
+    backgroundColor: '#F3C300',
   },
   phoneField: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    paddingLeft: Spacing.lg,
-    paddingRight: Spacing.md,
+    minWidth: 0,
     minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  phoneInput: {
-    flex: 1,
-    fontSize: 18,
-  },
-  phoneBadge: {
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    borderRadius: Radius.large,
-    minHeight: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  optionList: {
-    gap: Spacing.md,
-  },
-  optionButton: {
-    minHeight: 64,
-    borderRadius: Radius.large,
-    borderWidth: 1,
+    borderRadius: Radius.medium,
+    backgroundColor: '#EEEEEE',
     paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
-  },
-  optionIcon: {
-    width: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  letterBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optionLabel: {
-    fontSize: 20,
-    lineHeight: 24,
-  },
-  moreButton: {
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-  },
-  emailCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  modeTabs: {
-    flexDirection: 'row',
     gap: Spacing.sm,
   },
-  modeTab: {
+  phoneInput: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    minHeight: 48,
+    minWidth: 0,
+    minHeight: 60,
+    color: '#35150C',
+    fontSize: 18,
+  },
+  continueButton: {
+    minHeight: 64,
+    borderRadius: Radius.medium,
+    backgroundColor: '#35150C',
+    paddingHorizontal: Spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.md,
   },
-  roleRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    flexWrap: 'wrap',
+  continueText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '500',
   },
-  roleCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
+  infoBox: {
+    borderRadius: Radius.small,
+    backgroundColor: '#FFF1E8',
     padding: Spacing.md,
-    gap: Spacing.xs,
-    flexBasis: 160,
-    flexGrow: 1,
   },
-  inlineFields: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    flexWrap: 'wrap',
-  },
-  field: {
-    flexBasis: 180,
-    flexGrow: 1,
-  },
-  secondaryTextButton: {
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
+  infoText: {
+    color: '#8A351F',
   },
   dividerRow: {
     flexDirection: 'row',
@@ -786,21 +623,153 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
+    backgroundColor: '#4A4A4A',
   },
-  findAccountButton: {
-    minHeight: 54,
+  dividerText: {
+    color: '#666666',
+  },
+  optionList: {
+    gap: Spacing.md,
+  },
+  optionButton: {
+    minHeight: 64,
+    borderRadius: Radius.medium,
+    backgroundColor: '#EEEEEE',
+    paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.md,
   },
+  optionIcon: {
+    width: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  providerLetter: {
+    color: '#35150C',
+    fontSize: 22,
+    lineHeight: 25,
+  },
+  googleLetter: {
+    color: '#4285F4',
+    fontWeight: '800',
+  },
+  optionLabel: {
+    color: '#35150C',
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '500',
+  },
+  moreButton: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreButtonText: {
+    color: '#35150C',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '500',
+  },
+  emailCard: {
+    borderRadius: Radius.large,
+    borderWidth: 1,
+    borderColor: '#D6D6D6',
+    backgroundColor: '#F7F7F7',
+    padding: Spacing.lg,
+    gap: Spacing.md,
+  },
+  modeTabs: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  modeTab: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: Radius.small,
+    backgroundColor: '#E5E5E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+  },
+  modeTabActive: {
+    backgroundColor: '#35150C',
+  },
+  roleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  roleCard: {
+    flexBasis: 160,
+    flexGrow: 1,
+    borderWidth: 1,
+    borderColor: '#D5D5D5',
+    borderRadius: Radius.medium,
+    backgroundColor: '#FFFFFF',
+    padding: Spacing.md,
+    gap: Spacing.xs,
+  },
+  roleCardActive: {
+    borderColor: '#35150C',
+    borderWidth: 2,
+  },
+  inlineFields: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  field: {
+    flexBasis: 180,
+    flexGrow: 1,
+  },
+  findAccountButton: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+  },
+  findAccountText: {
+    color: '#35150C',
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '500',
+  },
+  guestButton: {
+    minHeight: 62,
+    borderWidth: 1.5,
+    borderColor: '#35150C',
+    borderRadius: Radius.medium,
+    backgroundColor: '#FFF1D2',
+    paddingHorizontal: Spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  guestButtonText: {
+    color: '#35150C',
+    flexShrink: 1,
+  },
+  guestButtonIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: '#35150C',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   legalCopy: {
-    textAlign: 'center',
+    color: '#686868',
     lineHeight: 20,
+    marginTop: Spacing.lg,
   },
   pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.992 }],
+    opacity: 0.78,
   },
   disabled: {
     opacity: 0.45,

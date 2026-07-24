@@ -1,90 +1,158 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Image } from 'expo-image';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
 import { ListingCard } from '@/components/cards/listing-card';
 import { SellerCard } from '@/components/cards/seller-card';
-import { AppButton } from '@/components/ui/app-button';
+import { ThemedText } from '@/components/themed-text';
 import { AppScreen } from '@/components/ui/app-screen';
-import { SectionTitle } from '@/components/ui/section-title';
-import { StatusPill } from '@/components/ui/status-pill';
-import { Radius, Spacing } from '@/constants/theme';
-import { getListingTypeLabel } from '@/lib/i18n';
+import { Radius, Shadows, Spacing } from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
 import { formatMoney } from '@/lib/utils/format';
 import { getPrimaryListingImage } from '@/lib/utils/listing-media';
 import { useAosell } from '@/providers/aosell-provider';
-import { ThemedText } from '@/components/themed-text';
 
 export default function HomeScreen() {
   const theme = useTheme();
   const { t } = useLocale();
   const { listings, sellers } = useAosell();
-  const quickFilters = [
-    { label: t('home.filters.meals'), route: '/search?type=meal' },
-    { label: t('home.filters.products'), route: '/search?type=product' },
-    { label: t('home.filters.services'), route: '/search?type=service' },
-    { label: t('home.filters.aosellDelivery'), route: '/search?deliveryMode=aosell' },
-  ];
 
   const featured = listings.filter((listing) => listing.isFeatured).slice(0, 6);
   const latest = [...listings].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4);
-  const restaurants = listings.filter((listing) => listing.type === 'meal').slice(0, 6);
-  const services = listings.filter((listing) => listing.type === 'service').slice(0, 4);
-  const shops = sellers.filter((seller) => seller.type === 'shop').slice(0, 4);
+  const shops = sellers.slice(0, 4);
   const spotlight = featured[0] ?? latest[0];
   const spotlightImage = spotlight ? getPrimaryListingImage(spotlight) : undefined;
   const spotlightSeller = spotlight ? sellers.find((seller) => seller.id === spotlight.sellerId) : undefined;
 
+  const categories = [
+    {
+      accent: theme.burntOrange,
+      surface: '#FBE5DC',
+      icon: { ios: 'fork.knife', android: 'restaurant', web: 'restaurant' } as const,
+      label: t('home.filters.meals'),
+      route: '/search?type=meal',
+    },
+    {
+      accent: theme.gold,
+      surface: '#FFF1D2',
+      icon: { ios: 'bag.fill', android: 'shopping_bag', web: 'shopping_bag' } as const,
+      label: t('home.filters.products'),
+      route: '/search?type=product',
+    },
+    {
+      accent: theme.forestGreen,
+      surface: '#E3F0E7',
+      icon: { ios: 'sparkles', android: 'handyman', web: 'handyman' } as const,
+      label: t('home.filters.services'),
+      route: '/search?type=service',
+    },
+  ];
+
   return (
     <AppScreen>
       <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <AosellLogo compact />
-          <View style={styles.headerText}>
-            <ThemedText type="bodySmall" themeColor="textSecondary">
-              {t('home.discoveringFrom')}
-            </ThemedText>
-            <ThemedText type="headline">{t('common.locations.berlinGermany')}</ThemedText>
-          </View>
+        <AosellLogo compact />
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/notifications')}
+            style={[styles.iconButton, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <SymbolView
+              tintColor={theme.text}
+              size={20}
+              name={{ ios: 'bell.fill', android: 'notifications', web: 'notifications' }}
+            />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/cart')}
+            style={[styles.iconButton, styles.cartButton, { backgroundColor: theme.earth }]}>
+            <SymbolView
+              tintColor={theme.accent}
+              size={20}
+              name={{ ios: 'bag.fill', android: 'shopping_bag', web: 'shopping_bag' }}
+            />
+          </Pressable>
         </View>
-        <StatusPill label={t('home.germanyLaunch')} tone="brand" />
       </View>
+
+      <Pressable onPress={() => router.push('/search')} style={styles.locationRow}>
+        <View
+          style={[
+            styles.locationIcon,
+            { backgroundColor: '#FFF1D2', borderColor: theme.border },
+          ]}>
+          <SymbolView
+            tintColor={theme.burntOrange}
+            size={18}
+            name={{ ios: 'location.fill', android: 'location_on', web: 'location_on' }}
+          />
+        </View>
+        <View style={styles.locationCopy}>
+          <ThemedText type="label" themeColor="textSecondary">
+            {t('home.discoveringFrom')}
+          </ThemedText>
+          <ThemedText type="headline">{t('common.locations.berlinGermany')}</ThemedText>
+        </View>
+        <SymbolView
+          tintColor={theme.text}
+          size={18}
+          name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }}
+        />
+      </Pressable>
 
       <Pressable
         onPress={() => router.push('/search')}
-        style={[styles.searchBar, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <View style={styles.searchLeft}>
+        style={[styles.searchBar, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, Shadows.card]}>
+        <View style={[styles.searchIcon, { backgroundColor: theme.text }]}>
           <SymbolView
-            tintColor={theme.textSecondary}
-            size={18}
-            name={{ ios: 'magnifyingglass', android: 'search', web: 'magnifyingglass' }}
+            tintColor={theme.accent}
+            size={20}
+            name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
           />
-          <View style={styles.searchCopy}>
-            <ThemedText type="button">{t('home.searchPlaceholder')}</ThemedText>
-            <ThemedText type="bodySmall" themeColor="textSecondary">
-              {t('home.searchHint')}
-            </ThemedText>
-          </View>
         </View>
-        <View style={[styles.searchPill, { backgroundColor: theme.backgroundSelected }]}>
-          <ThemedText type="button">{t('common.search')}</ThemedText>
+        <View style={styles.searchCopy}>
+          <ThemedText type="button">{t('home.searchPlaceholder')}</ThemedText>
+          <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
+            {t('home.searchHint')}
+          </ThemedText>
+        </View>
+        <View style={[styles.filterButton, { backgroundColor: theme.backgroundSelected }]}>
+          <SymbolView
+            tintColor={theme.text}
+            size={18}
+            name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }}
+          />
         </View>
       </Pressable>
 
       <FlatList
-        contentContainerStyle={styles.quickFilters}
-        data={quickFilters}
+        contentContainerStyle={styles.categories}
+        data={categories}
         horizontal
         keyExtractor={(item) => item.label}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => router.push(item.route as any)}
-            style={[styles.quickFilter, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-            <ThemedText type="button">{item.label}</ThemedText>
+            onPress={() => router.push(item.route as never)}
+            style={({ pressed }) => [
+              styles.category,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              pressed && styles.pressed,
+            ]}>
+            <View style={[styles.categoryIcon, { backgroundColor: item.surface }]}>
+              <SymbolView tintColor={item.accent} size={24} name={item.icon} />
+            </View>
+            <ThemedText type="headline" style={{ color: theme.text }}>
+              {item.label}
+            </ThemedText>
+            <SymbolView
+              tintColor={item.accent}
+              size={17}
+              name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }}
+            />
           </Pressable>
         )}
         showsHorizontalScrollIndicator={false}
@@ -93,156 +161,181 @@ export default function HomeScreen() {
       {spotlight ? (
         <Pressable
           onPress={() => router.push(`/listing/${spotlight.id}`)}
-          style={[
-            styles.spotlight,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <View style={[styles.spotlightGlow, { backgroundColor: theme.gold }]} />
-          <View style={styles.spotlightCopy}>
-            <View style={styles.spotlightTop}>
-              <StatusPill label={spotlight.type} tone="brand" />
-              <StatusPill label={getListingTypeLabel(spotlight.type)} tone="brand" />
-              {spotlightSeller ? (
-                <ThemedText type="bodySmall" themeColor="textSecondary">
-                  {spotlightSeller.brandName}
-                </ThemedText>
-              ) : null}
-            </View>
-            <View style={styles.spotlightBody}>
-              <ThemedText type="display">{spotlight.title}</ThemedText>
-              <ThemedText type="body" themeColor="textSecondary">
-                {spotlight.description}
+          style={[styles.hero, { backgroundColor: theme.earth }, Shadows.float]}>
+          {spotlightImage?.url ? (
+            <Image
+              contentFit="cover"
+              source={{ uri: spotlightImage.url }}
+              style={StyleSheet.absoluteFillObject}
+              transition={250}
+            />
+          ) : null}
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroTop}>
+            <View style={[styles.heroBadge, { backgroundColor: theme.accent }]}>
+              <ThemedText type="label" style={{ color: theme.earth }}>
+                {t('home.sections.featuredEyebrow')}
               </ThemedText>
             </View>
-            <View style={styles.spotlightFooter}>
-              <ThemedText type="headline">{formatMoney(spotlight.price)}</ThemedText>
-              <AppButton label={t('home.viewListing')} onPress={() => router.push(`/listing/${spotlight.id}`)} />
+            <View style={styles.heroArrow}>
+              <SymbolView
+                tintColor="#FFFFFF"
+                size={20}
+                name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }}
+              />
             </View>
           </View>
-          <View style={styles.spotlightArt}>
-            <View style={[styles.spotlightBloom, { borderColor: theme.gold }]} />
-            {spotlightImage?.url ? (
-              <View style={styles.spotlightImageFrame}>
-                <Image
-                  contentFit="cover"
-                  source={{ uri: spotlightImage.url }}
-                  style={StyleSheet.absoluteFillObject}
-                  transition={250}
-                />
-              </View>
+          <View style={styles.heroContent}>
+            {spotlightSeller ? (
+              <ThemedText type="button" style={styles.heroSeller}>
+                {spotlightSeller.brandName} · {spotlight.city}
+              </ThemedText>
             ) : null}
-            {!spotlightImage?.url ? (
-              <View style={[styles.spotlightFallback, { backgroundColor: theme.backgroundSelected }]}>
-                <ThemedText type="headline">{getListingTypeLabel(spotlight.type)}</ThemedText>
+            <ThemedText type="display" style={styles.heroTitle} numberOfLines={2}>
+              {spotlight.title}
+            </ThemedText>
+            <View style={styles.heroFooter}>
+              <ThemedText type="title" style={{ color: '#FFFFFF' }}>
+                {formatMoney(spotlight.price)}
+              </ThemedText>
+              <View style={[styles.heroCta, { backgroundColor: theme.burntOrange }]}>
+                <ThemedText type="button" style={{ color: '#FFFFFF' }}>
+                  {t('home.viewListing')}
+                </ThemedText>
               </View>
-            ) : null}
+            </View>
           </View>
         </Pressable>
+      ) : (
+        <Pressable
+          onPress={() => router.push('/search')}
+          style={[styles.emptyHero, { backgroundColor: theme.earth }]}>
+          <View style={[styles.emptyHeroOrb, { backgroundColor: theme.gold }]} />
+          <View style={[styles.emptyHeroOrbTwo, { backgroundColor: theme.forestGreen }]} />
+          <View style={styles.emptyHeroCopy}>
+            <ThemedText type="label" style={{ color: theme.accent }}>
+              {t('home.sections.freshEyebrow')}
+            </ThemedText>
+            <ThemedText type="display" style={{ color: '#FFFFFF' }}>
+              {t('home.sections.freshTitle')}
+            </ThemedText>
+            <ThemedText type="body" style={{ color: '#F1E5DF' }}>
+              {t('home.sections.freshDescription')}
+            </ThemedText>
+          </View>
+          <View style={[styles.heroCta, { backgroundColor: theme.accent, alignSelf: 'flex-start' }]}>
+            <ThemedText type="button" style={{ color: theme.earth }}>
+              {t('common.search')}
+            </ThemedText>
+          </View>
+        </Pressable>
+      )}
+
+      {featured.length ? (
+        <>
+          <SectionHeader
+            eyebrow={t('home.sections.featuredEyebrow')}
+            title={t('home.sections.featuredTitle')}
+            onPress={() => router.push('/search')}
+          />
+          <FlatList
+            data={featured}
+            horizontal
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.horizontalCard}>
+                <ListingCard
+                  listing={item}
+                  sellerName={sellers.find((seller) => seller.id === item.sellerId)?.brandName}
+                  onPress={() => router.push(`/listing/${item.id}`)}
+                />
+              </View>
+            )}
+            showsHorizontalScrollIndicator={false}
+          />
+        </>
       ) : null}
 
-      <View style={styles.section}>
-        <SectionTitle
-          eyebrow={t('home.sections.featuredEyebrow')}
-          title={t('home.sections.featuredTitle')}
-          description={t('home.sections.featuredDescription')}
-        />
-        <FlatList
-          data={featured}
-          horizontal
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.horizontalCard}>
-              <ListingCard
-                listing={item}
-                sellerName={sellers.find((seller) => seller.id === item.sellerId)?.brandName}
-                onPress={() => router.push(`/listing/${item.id}`)}
-              />
-            </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <SectionTitle
-          eyebrow={t('home.sections.restaurantsEyebrow')}
-          title={t('home.sections.restaurantsTitle')}
-          description={t('home.sections.restaurantsDescription')}
-        />
-        <FlatList
-          data={restaurants}
-          horizontal
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.horizontalCard}>
-              <ListingCard
-                listing={item}
-                sellerName={sellers.find((seller) => seller.id === item.sellerId)?.brandName}
-                onPress={() => router.push(`/listing/${item.id}`)}
-              />
-            </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <SectionTitle
-          eyebrow={t('home.sections.shopsEyebrow')}
-          title={t('home.sections.shopsTitle')}
-          description={t('home.sections.shopsDescription')}
-        />
-        <FlatList
-          data={shops}
-          horizontal
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.horizontalSeller}>
-              <SellerCard seller={item} onPress={() => router.push(`/seller/${item.id}`)} />
-            </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <SectionTitle
-          eyebrow={t('home.sections.freshEyebrow')}
-          title={t('home.sections.freshTitle')}
-          description={t('home.sections.freshDescription')}
-        />
-        <View style={styles.grid}>
-          {latest.map((item) => (
-            <View key={item.id} style={styles.gridItem}>
-              <ListingCard
-                listing={item}
-                sellerName={sellers.find((seller) => seller.id === item.sellerId)?.brandName}
-                onPress={() => router.push(`/listing/${item.id}`)}
-              />
-            </View>
-          ))}
+      <View style={[styles.discoveryBand, { backgroundColor: theme.forestGreen }]}>
+        <View style={[styles.discoveryOrb, { backgroundColor: theme.accent }]} />
+        <View style={styles.discoveryCopy}>
+          <ThemedText type="label" style={{ color: '#FFFFFF' }}>
+            {t('home.sections.shopsEyebrow')}
+          </ThemedText>
+          <ThemedText type="title" style={{ color: '#FFFFFF' }}>
+            {t('home.sections.shopsTitle')}
+          </ThemedText>
+          <ThemedText type="body" style={{ color: '#E5F2E8' }}>
+            {t('home.sections.shopsDescription')}
+          </ThemedText>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <SectionTitle
-          eyebrow={t('home.sections.servicesEyebrow')}
-          title={t('home.sections.servicesTitle')}
-          description={t('home.sections.servicesDescription')}
-        />
-        <View style={styles.grid}>
-          {services.map((item) => (
-            <View key={item.id} style={styles.gridItem}>
-              <ListingCard
-                listing={item}
-                sellerName={sellers.find((seller) => seller.id === item.sellerId)?.brandName}
-                onPress={() => router.push(`/listing/${item.id}`)}
-              />
-            </View>
-          ))}
-        </View>
-      </View>
+      <FlatList
+        data={shops}
+        horizontal
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.horizontalSeller}>
+            <SellerCard seller={item} onPress={() => router.push(`/seller/${item.id}`)} />
+          </View>
+        )}
+        showsHorizontalScrollIndicator={false}
+      />
+
+      {latest.length ? (
+        <>
+          <SectionHeader
+            eyebrow={t('home.sections.freshEyebrow')}
+            title={t('home.sections.freshTitle')}
+            onPress={() => router.push('/search')}
+          />
+          <View style={styles.grid}>
+            {latest.map((item) => (
+              <View key={item.id} style={styles.gridItem}>
+                <ListingCard
+                  listing={item}
+                  sellerName={sellers.find((seller) => seller.id === item.sellerId)?.brandName}
+                  onPress={() => router.push(`/listing/${item.id}`)}
+                />
+              </View>
+            ))}
+          </View>
+        </>
+      ) : null}
     </AppScreen>
+  );
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  onPress,
+}: {
+  eyebrow: string;
+  title: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionCopy}>
+        <ThemedText type="label" themeColor="burntOrange">
+          {eyebrow}
+        </ThemedText>
+        <ThemedText type="title">{title}</ThemedText>
+      </View>
+      <Pressable
+        onPress={onPress}
+        style={[styles.sectionArrow, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <SymbolView
+          tintColor={theme.text}
+          size={18}
+          name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
+        />
+      </Pressable>
+    </View>
   );
 }
 
@@ -250,131 +343,216 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.md,
     alignItems: 'center',
-    flexWrap: 'wrap',
+    gap: Spacing.md,
   },
-  headerCopy: {
+  headerActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  cartButton: {
+    borderColor: '#35150C',
+  },
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
   },
-  headerText: {
-    gap: 2,
+  locationIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  locationCopy: {
+    flex: 1,
+    gap: 1,
   },
   searchBar: {
     borderWidth: 1,
     borderRadius: Radius.large,
-    padding: Spacing.lg,
+    padding: Spacing.sm,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     gap: Spacing.md,
-    flexWrap: 'wrap',
   },
-  searchLeft: {
-    flexDirection: 'row',
+  searchIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.medium,
     alignItems: 'center',
-    gap: Spacing.md,
-    flexBasis: 280,
-    flexGrow: 1,
+    justifyContent: 'center',
   },
   searchCopy: {
+    flex: 1,
     gap: 2,
+    minWidth: 0,
   },
-  searchPill: {
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+  filterButton: {
+    width: 42,
+    height: 42,
+    borderRadius: Radius.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  quickFilters: {
+  categories: {
+    gap: Spacing.md,
+  },
+  category: {
+    minWidth: 154,
+    minHeight: 88,
+    borderRadius: Radius.large,
+    borderWidth: 1,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
   },
-  quickFilter: {
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+  categoryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: Radius.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  spotlight: {
-    minHeight: 430,
-    borderRadius: Radius.large,
+  hero: {
+    minHeight: 440,
+    borderRadius: Radius.xlarge,
     overflow: 'hidden',
     padding: Spacing.xl,
-    borderWidth: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: Spacing.lg,
-    position: 'relative',
+    justifyContent: 'space-between',
   },
-  spotlightGlow: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    top: -70,
-    left: -60,
-    opacity: 0.45,
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(53, 21, 12, 0.52)',
   },
-  spotlightCopy: {
-    flexBasis: 300,
-    flexGrow: 1,
-    gap: Spacing.lg,
-    zIndex: 1,
-  },
-  spotlightTop: {
+  heroTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  heroBadge: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  heroArrow: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(53,21,12,0.32)',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroContent: {
+    gap: Spacing.md,
+    zIndex: 1,
+  },
+  emptyHero: {
+    minHeight: 360,
+    borderRadius: Radius.xlarge,
+    padding: Spacing.xl,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    gap: Spacing.lg,
+  },
+  emptyHeroCopy: {
+    gap: Spacing.sm,
+    maxWidth: 560,
+    zIndex: 1,
+  },
+  emptyHeroOrb: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    right: -50,
+    top: -70,
+    opacity: 0.2,
+  },
+  emptyHeroOrbTwo: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    right: 100,
+    top: 120,
+    opacity: 0.24,
+  },
+  heroSeller: {
+    color: '#FFFFFF',
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    maxWidth: 620,
+  },
+  heroFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.md,
     flexWrap: 'wrap',
   },
-  spotlightBody: {
-    gap: Spacing.md,
-  },
-  spotlightFooter: {
-    gap: Spacing.md,
-    alignItems: 'flex-start',
-  },
-  spotlightArt: {
-    flexBasis: 260,
-    flexGrow: 0.9,
-    minWidth: 220,
-    minHeight: 260,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  spotlightBloom: {
-    position: 'absolute',
-    width: 230,
-    height: 230,
-    borderWidth: 3,
-    borderRadius: 74,
-    transform: [{ rotate: '18deg' }],
-    opacity: 0.75,
-  },
-  spotlightImageFrame: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-  },
-  spotlightFallback: {
-    width: 170,
-    height: 170,
-    borderRadius: 85,
+  heroCta: {
+    minHeight: 48,
+    borderRadius: Radius.medium,
+    paddingHorizontal: Spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  section: {
-    gap: Spacing.lg,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  sectionCopy: {
+    gap: Spacing.xs,
+    flex: 1,
+  },
+  sectionArrow: {
+    width: 46,
+    height: 46,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   horizontalCard: {
-    width: 306,
+    width: 292,
     marginRight: Spacing.md,
+  },
+  discoveryBand: {
+    minHeight: 190,
+    borderRadius: Radius.xlarge,
+    padding: Spacing.xl,
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  discoveryOrb: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    right: -40,
+    top: -60,
+    opacity: 0.22,
+  },
+  discoveryCopy: {
+    maxWidth: 520,
+    gap: Spacing.sm,
   },
   horizontalSeller: {
     width: 300,
@@ -387,7 +565,11 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     minWidth: 280,
-    flexBasis: 320,
+    flexBasis: 300,
     flexGrow: 1,
+  },
+  pressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
   },
 });

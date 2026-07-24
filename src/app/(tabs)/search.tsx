@@ -1,24 +1,17 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ListingCard } from '@/components/cards/listing-card';
-import { AppInput } from '@/components/ui/app-input';
+import { ThemedText } from '@/components/themed-text';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
-import { SectionTitle } from '@/components/ui/section-title';
-import { StatusPill } from '@/components/ui/status-pill';
-import { Radius, Spacing } from '@/constants/theme';
-import {
-  getDeliveryModeLabel,
-  getListingTypeLabel,
-  getSellerTypeLabel,
-} from '@/lib/i18n';
+import { Radius, Shadows, Spacing } from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
+import { getDeliveryModeLabel, getListingTypeLabel, getSellerTypeLabel } from '@/lib/i18n';
 import { useAosell } from '@/providers/aosell-provider';
-import { ThemedText } from '@/components/themed-text';
 
 const toggleOptions = {
   type: ['all', 'product', 'meal', 'service'],
@@ -32,99 +25,171 @@ export default function SearchScreen() {
   const theme = useTheme();
   const { t } = useLocale();
   const { searchListings, sellers } = useAosell();
+  const params = useLocalSearchParams<{ type?: string; deliveryMode?: string }>();
+  const initialType = toggleOptions.type.includes(params.type as (typeof toggleOptions.type)[number])
+    ? (params.type as (typeof toggleOptions.type)[number])
+    : 'all';
+  const initialDelivery = toggleOptions.deliveryMode.includes(
+    params.deliveryMode as (typeof toggleOptions.deliveryMode)[number],
+  )
+    ? (params.deliveryMode as (typeof toggleOptions.deliveryMode)[number])
+    : 'all';
   const [query, setQuery] = useState('');
-  const [type, setType] = useState<(typeof toggleOptions.type)[number]>('all');
-  const [deliveryMode, setDeliveryMode] = useState<(typeof toggleOptions.deliveryMode)[number]>('all');
+  const [type, setType] = useState<(typeof toggleOptions.type)[number]>(initialType);
+  const [deliveryMode, setDeliveryMode] =
+    useState<(typeof toggleOptions.deliveryMode)[number]>(initialDelivery);
   const [sellerType, setSellerType] = useState<(typeof toggleOptions.sellerType)[number]>('all');
-  const [countryCode, setCountryCode] = useState('DE');
+  const [countryCode] = useState('DE');
   const [city, setCity] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   const results = searchListings({ query, type, deliveryMode, sellerType, countryCode, city });
 
   return (
     <AppScreen>
-      <View style={[styles.hero, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <SectionTitle
-          eyebrow={t('searchScreen.eyebrow')}
-          title={t('searchScreen.title')}
-          description={t('searchScreen.description')}
-        />
-
-        <View style={[styles.searchFrame, { backgroundColor: theme.background, borderColor: theme.border }]}>
-          <View style={styles.searchLead}>
-            <SymbolView
-              tintColor={theme.textSecondary}
-              size={18}
-              name={{ ios: 'magnifyingglass', android: 'search', web: 'magnifyingglass' }}
-            />
-            <View style={styles.searchInputWrap}>
-              <AppInput
-                label={t('searchScreen.question')}
-                value={query}
-                onChangeText={setQuery}
-                placeholder={t('searchScreen.queryPlaceholder')}
-              />
-            </View>
-          </View>
-          <View style={styles.cityRow}>
-            {quickCities.map((item) => {
-              const active = city.toLowerCase() === item.toLowerCase();
-              return (
-                <Pressable
-                  key={item}
-                  onPress={() => setCity(active ? '' : item)}
-                  style={[
-                    styles.cityChip,
-                    {
-                      backgroundColor: active ? theme.earth : theme.backgroundElement,
-                      borderColor: active ? theme.earth : theme.border,
-                    },
-                  ]}>
-                  <ThemedText type="button" style={{ color: active ? theme.background : theme.text }}>
-                    {item}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerCopy}>
+          <ThemedText type="label" themeColor="burntOrange">
+            {t('searchScreen.eyebrow')}
+          </ThemedText>
+          <ThemedText type="display">{t('searchScreen.title')}</ThemedText>
+          <ThemedText type="body" themeColor="textSecondary">
+            {t('searchScreen.description')}
+          </ThemedText>
+        </View>
+        <View style={[styles.headerMark, { backgroundColor: theme.cyan }]}>
+          <SymbolView
+            tintColor={theme.earth}
+            size={28}
+            name={{ ios: 'sparkle.magnifyingglass', android: 'search', web: 'search' }}
+          />
         </View>
       </View>
 
-      <View style={[styles.filterPanel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <View style={styles.filterHeader}>
-          <ThemedText type="headline">{t('searchScreen.refine')}</ThemedText>
-          <StatusPill label={t('searchScreen.results', { count: results.length })} tone="brand" />
-        </View>
-        <View style={styles.inlineFields}>
-          <View style={styles.field}>
-            <AppInput label={t('common.country')} value={countryCode} onChangeText={setCountryCode} placeholder="DE" />
-          </View>
-          <View style={styles.field}>
-            <AppInput label={t('common.city')} value={city} onChangeText={setCity} placeholder="Berlin" />
-          </View>
-        </View>
+      <View style={[styles.searchShell, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, Shadows.card]}>
+        <SymbolView
+          tintColor={theme.text}
+          size={22}
+          name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+        />
+        <TextInput
+          autoCapitalize="none"
+          autoCorrect={false}
+          onChangeText={setQuery}
+          placeholder={t('searchScreen.queryPlaceholder')}
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.searchInput, { color: theme.text }]}
+          value={query}
+        />
+        <Pressable
+          onPress={() => setShowFilters((current) => !current)}
+          style={[styles.filterToggle, { backgroundColor: showFilters ? theme.accent : theme.backgroundSelected }]}>
+          <SymbolView
+            tintColor={theme.earth}
+            size={19}
+            name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }}
+          />
+        </Pressable>
+      </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          <FilterRow kind="type" label={t('searchScreen.labels.type')} value={type} options={toggleOptions.type} onSelect={setType} />
-        </ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cityRow}>
+        {quickCities.map((item) => {
+          const active = city.toLowerCase() === item.toLowerCase();
+          return (
+            <Pressable
+              key={item}
+              onPress={() => setCity(active ? '' : item)}
+              style={[
+                styles.cityChip,
+                {
+                  backgroundColor: active ? theme.text : theme.backgroundElement,
+                  borderColor: active ? theme.text : theme.border,
+                },
+              ]}>
+              <SymbolView
+                tintColor={active ? theme.accent : theme.textSecondary}
+                size={14}
+                name={{ ios: 'location.fill', android: 'location_on', web: 'location_on' }}
+              />
+              <ThemedText type="button" style={{ color: active ? '#FFFFFF' : theme.text }}>
+                {item}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
+        {toggleOptions.type.map((option) => {
+          const active = option === type;
+          const color =
+            option === 'meal'
+              ? theme.coral
+              : option === 'product'
+                ? theme.violet
+                : option === 'service'
+                  ? theme.cyan
+                  : theme.accent;
+          return (
+            <Pressable
+              key={option}
+              onPress={() => setType(option)}
+              style={[
+                styles.typeChip,
+                {
+                  backgroundColor: active ? color : theme.backgroundElement,
+                  borderColor: active ? theme.text : theme.border,
+                },
+              ]}>
+              <ThemedText type="button" style={{ color: active ? theme.earth : theme.text }}>
+                {getListingTypeLabel(option)}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {showFilters ? (
+        <View style={[styles.filterPanel, { backgroundColor: theme.text }]}>
+          <View style={styles.filterPanelHeader}>
+            <View>
+              <ThemedText type="label" style={{ color: theme.accent }}>
+                {t('searchScreen.refine')}
+              </ThemedText>
+              <ThemedText type="headline" style={{ color: '#FFFFFF' }}>
+                {t('searchScreen.results', { count: results.length })}
+              </ThemedText>
+            </View>
+            <Pressable onPress={() => setShowFilters(false)} style={styles.closeButton}>
+              <SymbolView
+                tintColor="#FFFFFF"
+                size={18}
+                name={{ ios: 'xmark', android: 'close', web: 'close' }}
+              />
+            </Pressable>
+          </View>
           <FilterRow
             kind="deliveryMode"
             label={t('searchScreen.labels.delivery')}
             value={deliveryMode}
             options={toggleOptions.deliveryMode}
-            onSelect={setDeliveryMode}
+            onSelect={(value) =>
+              setDeliveryMode(value as (typeof toggleOptions.deliveryMode)[number])
+            }
           />
-        </ScrollView>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
           <FilterRow
             kind="sellerType"
             label={t('searchScreen.labels.seller')}
             value={sellerType}
             options={toggleOptions.sellerType}
-            onSelect={setSellerType}
+            onSelect={(value) => setSellerType(value as (typeof toggleOptions.sellerType)[number])}
           />
-        </ScrollView>
+        </View>
+      ) : null}
+
+      <View style={styles.resultsHeader}>
+        <ThemedText type="headline">{t('searchScreen.results', { count: results.length })}</ThemedText>
+        <View style={[styles.resultDot, { backgroundColor: theme.accent }]} />
       </View>
 
       {results.length ? (
@@ -140,10 +205,7 @@ export default function SearchScreen() {
           ))}
         </View>
       ) : (
-        <EmptyState
-          title={t('searchScreen.noResultsTitle')}
-          description={t('searchScreen.noResultsDescription')}
-        />
+        <EmptyState title={t('searchScreen.noResultsTitle')} description={t('searchScreen.noResultsDescription')} />
       )}
     </AppScreen>
   );
@@ -156,28 +218,21 @@ function FilterRow({
   value,
   onSelect,
 }: {
-  kind: 'type' | 'deliveryMode' | 'sellerType';
+  kind: 'deliveryMode' | 'sellerType';
   label: string;
   options: readonly string[];
   value: string;
   onSelect: (value: string) => void;
 }) {
   const theme = useTheme();
-  const renderOptionLabel = (option: string) => {
-    if (kind === 'type') {
-      return getListingTypeLabel(option as 'all' | 'product' | 'meal' | 'service');
-    }
-
-    if (kind === 'deliveryMode') {
-      return getDeliveryModeLabel(option as 'all' | 'aosell' | 'seller');
-    }
-
-    return getSellerTypeLabel(option as 'all' | 'shop' | 'restaurant' | 'individual');
-  };
+  const renderOptionLabel = (option: string) =>
+    kind === 'deliveryMode'
+      ? getDeliveryModeLabel(option as 'all' | 'aosell' | 'seller')
+      : getSellerTypeLabel(option as 'all' | 'shop' | 'restaurant' | 'individual');
 
   return (
     <View style={styles.filterRow}>
-      <ThemedText type="label" themeColor="textSecondary">
+      <ThemedText type="label" style={{ color: '#B9B6C0' }}>
         {label}
       </ThemedText>
       <View style={styles.filterOptions}>
@@ -188,13 +243,13 @@ function FilterRow({
               key={option}
               onPress={() => onSelect(option)}
               style={[
-                styles.filterChip,
+                styles.darkFilter,
                 {
-                  backgroundColor: active ? theme.earth : theme.background,
-                  borderColor: active ? theme.earth : theme.border,
+                  backgroundColor: active ? theme.accent : '#25252D',
+                  borderColor: active ? theme.accent : '#3A3A44',
                 },
               ]}>
-              <ThemedText type="button" style={{ color: active ? theme.background : theme.text }}>
+              <ThemedText type="button" style={{ color: active ? theme.earth : '#FFFFFF' }}>
                 {renderOptionLabel(option)}
               </ThemedText>
             </Pressable>
@@ -206,75 +261,111 @@ function FilterRow({
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    borderWidth: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  headerCopy: {
+    flex: 1,
+    gap: Spacing.sm,
+  },
+  headerMark: {
+    width: 58,
+    height: 58,
     borderRadius: Radius.large,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '5deg' }],
+  },
+  searchShell: {
+    minHeight: 64,
+    borderWidth: 1.5,
+    borderRadius: Radius.large,
+    paddingHorizontal: Spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 17,
+    minHeight: 58,
+  },
+  filterToggle: {
+    width: 42,
+    height: 42,
+    borderRadius: Radius.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cityRow: {
+    gap: Spacing.sm,
+  },
+  cityChip: {
+    minHeight: 42,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  typeRow: {
+    gap: Spacing.sm,
+  },
+  typeChip: {
+    minHeight: 46,
+    borderRadius: Radius.medium,
+    borderWidth: 1.5,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterPanel: {
+    borderRadius: Radius.xlarge,
     padding: Spacing.xl,
     gap: Spacing.lg,
   },
-  searchFrame: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  searchLead: {
+  filterPanelHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  searchInputWrap: {
-    flex: 1,
-  },
-  cityRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  cityChip: {
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  filterPanel: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  filterHeader: {
-    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.md,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: '#3A3A44',
     alignItems: 'center',
-    flexWrap: 'wrap',
-  },
-  inlineFields: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    flexWrap: 'wrap',
-  },
-  field: {
-    minWidth: 180,
-    flexGrow: 1,
-  },
-  filterScroll: {
-    gap: Spacing.md,
+    justifyContent: 'center',
   },
   filterRow: {
     gap: Spacing.sm,
   },
   filterOptions: {
     flexDirection: 'row',
-    gap: Spacing.sm,
     flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
-  filterChip: {
+  darkFilter: {
     borderWidth: 1,
     borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+  },
+  resultsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  resultDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   grid: {
     flexDirection: 'row',
@@ -282,7 +373,7 @@ const styles = StyleSheet.create({
     gap: Spacing.lg,
   },
   gridItem: {
-    flexBasis: 320,
+    flexBasis: 300,
     flexGrow: 1,
     minWidth: 280,
   },

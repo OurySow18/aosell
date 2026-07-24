@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     top: -70,
     right: -60,
-    opacity: 0.35,
+    opacity: 0.1,
   },
   header: {
     flexDirection: 'row',

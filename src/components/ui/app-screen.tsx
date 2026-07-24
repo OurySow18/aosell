@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -12,13 +12,17 @@ type AppScreenProps = {
 
 export function AppScreen({ children, padded = true }: AppScreenProps) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const horizontalInset = padded ? Spacing.lg * 2 : 0;
+  const innerWidth = Math.min(Math.max(width - horizontalInset, 0), MaxContentWidth);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
         contentContainerStyle={[styles.content, padded && styles.padded]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
-        <View style={styles.inner}>{children}</View>
+        <View style={[styles.inner, { width: innerWidth }]}>{children}</View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -30,16 +34,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
+    alignItems: 'center',
   },
   padded: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xxxl + 84,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xxxl + 92,
   },
   inner: {
-    width: '100%',
+    minWidth: 0,
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    gap: Spacing.xl,
+    gap: Spacing.xxl,
   },
 });

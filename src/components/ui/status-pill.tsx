@@ -14,13 +14,13 @@ export function StatusPill({
   const theme = useTheme();
   const palette =
     tone === 'success'
-      ? { background: theme.success, text: theme.background }
+      ? { background: theme.success, text: '#FFFFFF' }
       : tone === 'warning'
-        ? { background: theme.warning, text: theme.text }
+        ? { background: theme.warning, text: theme.earth }
         : tone === 'error'
-          ? { background: theme.error, text: theme.background }
+          ? { background: theme.error, text: '#FFFFFF' }
           : tone === 'brand'
-            ? { background: theme.earth, text: theme.background }
+            ? { background: theme.accent, text: theme.earth }
             : { background: theme.backgroundSelected, text: theme.text };
 
   return (
@@ -35,8 +35,8 @@ export function StatusPill({
 const styles = StyleSheet.create({
   pill: {
     alignSelf: 'flex-start',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: Radius.pill,
   },
 });

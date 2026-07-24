@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     borderRadius: 110,
     top: -100,
     right: -80,
-    opacity: 0.45,
+    opacity: 0.12,
   },
   heroTop: {
     flexDirection: 'row',
