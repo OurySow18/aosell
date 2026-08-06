@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
@@ -19,7 +19,9 @@ function SessionBootScreen() {
   const { t } = useLocale();
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      edges={['top', 'right', 'bottom', 'left']}
+      style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <View style={[styles.bootPanel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <View style={[styles.bootAccent, { backgroundColor: theme.violet }]} />
         <AosellLogo />
@@ -69,7 +71,7 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <LocaleProvider>
         <AosellProvider>
           <RootNavigator />

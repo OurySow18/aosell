@@ -25,6 +25,7 @@ import { demoListings, demoSellers } from '@/services/mock-data';
 import { translate } from '@/lib/i18n';
 import { getNextStatuses } from '@/lib/utils/order';
 import { getPrimaryListingImage } from '@/lib/utils/listing-media';
+import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 
 type SearchFilters = {
   query?: string;
@@ -256,8 +257,8 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       firstName: input.firstName,
       lastName: input.lastName,
       displayName: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
-      city: 'Berlin',
-      countryCode: 'DE',
+      city: DEFAULT_CITY,
+      countryCode: DEFAULT_COUNTRY_CODE,
     };
 
     await UserRepository.ensureProfile(user, profileSeed);

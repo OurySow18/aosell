@@ -1,15 +1,23 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Radius, Shadows } from '@/constants/theme';
+import {
+  BottomTabBarGap,
+  BottomTabBarHeight,
+  Radius,
+  Shadows,
+} from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function TabsLayout() {
   const theme = useTheme();
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Math.max(insets.bottom, BottomTabBarGap);
 
   return (
     <Tabs
@@ -20,11 +28,11 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: theme.earth,
           borderTopColor: 'transparent',
-          height: 72,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 10 : 8,
+          height: BottomTabBarHeight,
+          paddingTop: 6,
+          paddingBottom: 6,
           marginHorizontal: 12,
-          marginBottom: 10,
+          bottom: bottomOffset,
           borderRadius: Radius.xlarge,
           position: 'absolute',
           borderWidth: 1,
@@ -32,9 +40,9 @@ export default function TabsLayout() {
           ...Shadows.float,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '800',
-          letterSpacing: 0.2,
+          fontSize: 9,
+          fontWeight: '700',
+          letterSpacing: 0,
         },
       }}>
       <Tabs.Screen

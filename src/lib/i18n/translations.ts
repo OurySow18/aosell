@@ -11,6 +11,7 @@ export const translations = {
       search: 'Search',
       continue: 'Continue',
       cancel: 'Cancel',
+      back: 'Back',
       replace: 'Replace',
       backHome: 'Back home',
       backToCart: 'Back to cart',
@@ -60,7 +61,7 @@ export const translations = {
       video: 'Video',
       featured: 'Featured',
       locations: {
-        berlinGermany: 'Berlin, Germany',
+        bremenGermany: 'Bremen, Germany',
       },
     },
     tabs: {
@@ -118,7 +119,7 @@ export const translations = {
       discoveringFrom: 'Discovering from',
       germanyLaunch: 'Germany launch',
       searchPlaceholder: 'Search products, meals, services',
-      searchHint: 'Jollof, decor, tailoring, Berlin',
+      searchHint: 'Jollof, decor, tailoring, Bremen',
       viewListing: 'View listing',
       sections: {
         featuredEyebrow: 'Featured today',
@@ -455,6 +456,7 @@ export const translations = {
       search: 'Rechercher',
       continue: 'Continuer',
       cancel: 'Annuler',
+      back: 'Retour',
       replace: 'Remplacer',
       backHome: 'Retour à l’accueil',
       backToCart: 'Retour au panier',
@@ -504,7 +506,7 @@ export const translations = {
       video: 'Vidéo',
       featured: 'En avant',
       locations: {
-        berlinGermany: 'Berlin, Allemagne',
+        bremenGermany: 'Bremen, Allemagne',
       },
     },
     tabs: {
@@ -562,7 +564,7 @@ export const translations = {
       discoveringFrom: 'Découverte depuis',
       germanyLaunch: 'Lancement Allemagne',
       searchPlaceholder: 'Rechercher produits, repas, services',
-      searchHint: 'jollof, déco, couture, Berlin',
+      searchHint: 'jollof, déco, couture, Bremen',
       viewListing: 'Voir l’annonce',
       sections: {
         featuredEyebrow: 'Aujourd’hui',
@@ -899,6 +901,7 @@ export const translations = {
       search: 'Suchen',
       continue: 'Weiter',
       cancel: 'Abbrechen',
+      back: 'Zurück',
       replace: 'Ersetzen',
       backHome: 'Zur Startseite',
       backToCart: 'Zurück zum Warenkorb',
@@ -948,14 +951,14 @@ export const translations = {
       video: 'Video',
       featured: 'Empfohlen',
       locations: {
-        berlinGermany: 'Berlin, Deutschland',
+        bremenGermany: 'Bremen, Deutschland',
       },
     },
     tabs: {
       home: 'Start',
       search: 'Suche',
       add: 'Hinzufügen',
-      orders: 'Bestellungen',
+      orders: 'Aufträge',
       profile: 'Profil',
     },
     boot: {
@@ -1006,7 +1009,7 @@ export const translations = {
       discoveringFrom: 'Entdecken aus',
       germanyLaunch: 'Deutschland-Launch',
       searchPlaceholder: 'Produkte, Mahlzeiten, Services suchen',
-      searchHint: 'Jollof, Deko, Schneiderei, Berlin',
+      searchHint: 'Jollof, Deko, Schneiderei, Bremen',
       viewListing: 'Angebot ansehen',
       sections: {
         featuredEyebrow: 'Heute empfohlen',

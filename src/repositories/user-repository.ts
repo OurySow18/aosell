@@ -18,6 +18,7 @@ import {
 } from '@/lib/firebase/mappers';
 import type { Address, AppUser, UserProfile } from '@/types/domain';
 import type { FirestoreAddressDoc, FirestoreUserProfileDoc } from '@/types/firestore';
+import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 
 export type UserProfileSeed = Partial<
   Pick<
@@ -40,8 +41,8 @@ function buildDefaultProfile(user: AppUser, seed: UserProfileSeed = {}): UserPro
     lastName,
     displayName,
     bio: seed.bio,
-    countryCode: seed.countryCode?.trim() || 'DE',
-    city: seed.city?.trim() || 'Berlin',
+    countryCode: seed.countryCode?.trim() || DEFAULT_COUNTRY_CODE,
+    city: seed.city?.trim() || DEFAULT_CITY,
     preferredLanguage: seed.preferredLanguage,
     addresses: [],
     createdAt: new Date().toISOString(),

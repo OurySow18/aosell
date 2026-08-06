@@ -8,6 +8,7 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { Radius, Spacing } from '@/constants/theme';
+import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 import { getDeliveryModeLabel, getSellerTypeLabel } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
 import { sellerProfileSchema } from '@/lib/validations/seller-profile';
@@ -25,8 +26,8 @@ export default function SellerOnboardingScreen() {
   const [type, setType] = useState<(typeof sellerTypes)[number]>('shop');
   const [brandName, setBrandName] = useState('');
   const [description, setDescription] = useState('');
-  const [city, setCity] = useState('Berlin');
-  const [countryCode, setCountryCode] = useState('DE');
+  const [city, setCity] = useState(DEFAULT_CITY);
+  const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [selectedDeliveryModes, setSelectedDeliveryModes] = useState<string[]>(['aosell']);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { AosellLogo } from '@/components/brand/aosell-logo';
 import { ListingCard } from '@/components/cards/listing-card';
 import { SellerCard } from '@/components/cards/seller-card';
 import { ThemedText } from '@/components/themed-text';
@@ -53,33 +52,12 @@ export default function HomeScreen() {
 
   return (
     <AppScreen>
-      <View style={styles.header}>
-        <AosellLogo compact />
-        <View style={styles.headerActions}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/notifications')}
-            style={[styles.iconButton, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-            <SymbolView
-              tintColor={theme.text}
-              size={20}
-              name={{ ios: 'bell.fill', android: 'notifications', web: 'notifications' }}
-            />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/cart')}
-            style={[styles.iconButton, styles.cartButton, { backgroundColor: theme.earth }]}>
-            <SymbolView
-              tintColor={theme.accent}
-              size={20}
-              name={{ ios: 'bag.fill', android: 'shopping_bag', web: 'shopping_bag' }}
-            />
-          </Pressable>
-        </View>
-      </View>
-
-      <Pressable onPress={() => router.push('/search')} style={styles.locationRow}>
+      <Pressable
+        onPress={() => router.push('/search')}
+        style={[
+          styles.locationRow,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
         <View
           style={[
             styles.locationIcon,
@@ -95,7 +73,7 @@ export default function HomeScreen() {
           <ThemedText type="label" themeColor="textSecondary">
             {t('home.discoveringFrom')}
           </ThemedText>
-          <ThemedText type="headline">{t('common.locations.berlinGermany')}</ThemedText>
+          <ThemedText type="headline">{t('common.locations.bremenGermany')}</ThemedText>
         </View>
         <SymbolView
           tintColor={theme.text}
@@ -104,59 +82,32 @@ export default function HomeScreen() {
         />
       </Pressable>
 
-      <Pressable
-        onPress={() => router.push('/search')}
-        style={[styles.searchBar, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, Shadows.card]}>
-        <View style={[styles.searchIcon, { backgroundColor: theme.text }]}>
-          <SymbolView
-            tintColor={theme.accent}
-            size={20}
-            name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
-          />
-        </View>
-        <View style={styles.searchCopy}>
-          <ThemedText type="button">{t('home.searchPlaceholder')}</ThemedText>
-          <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={1}>
-            {t('home.searchHint')}
-          </ThemedText>
-        </View>
-        <View style={[styles.filterButton, { backgroundColor: theme.backgroundSelected }]}>
-          <SymbolView
-            tintColor={theme.text}
-            size={18}
-            name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }}
-          />
-        </View>
-      </Pressable>
-
-      <FlatList
-        contentContainerStyle={styles.categories}
-        data={categories}
-        horizontal
-        keyExtractor={(item) => item.label}
-        renderItem={({ item }) => (
+      <View style={styles.categories}>
+        {categories.map((item) => (
           <Pressable
+            key={item.label}
             onPress={() => router.push(item.route as never)}
             style={({ pressed }) => [
               styles.category,
               { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               pressed && styles.pressed,
             ]}>
-            <View style={[styles.categoryIcon, { backgroundColor: item.surface }]}>
-              <SymbolView tintColor={item.accent} size={24} name={item.icon} />
+            <View style={styles.categoryTop}>
+              <View style={[styles.categoryIcon, { backgroundColor: item.surface }]}>
+                <SymbolView tintColor={item.accent} size={21} name={item.icon} />
+              </View>
+              <SymbolView
+                tintColor={item.accent}
+                size={16}
+                name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }}
+              />
             </View>
-            <ThemedText type="headline" style={{ color: theme.text }}>
+            <ThemedText type="button" numberOfLines={2} style={{ color: theme.text }}>
               {item.label}
             </ThemedText>
-            <SymbolView
-              tintColor={item.accent}
-              size={17}
-              name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }}
-            />
           </Pressable>
-        )}
-        showsHorizontalScrollIndicator={false}
-      />
+        ))}
+      </View>
 
       {spotlight ? (
         <Pressable
@@ -216,7 +167,7 @@ export default function HomeScreen() {
             <ThemedText type="label" style={{ color: theme.accent }}>
               {t('home.sections.freshEyebrow')}
             </ThemedText>
-            <ThemedText type="display" style={{ color: '#FFFFFF' }}>
+            <ThemedText type="display" style={styles.emptyHeroTitle}>
               {t('home.sections.freshTitle')}
             </ThemedText>
             <ThemedText type="body" style={{ color: '#F1E5DF' }}>
@@ -340,31 +291,14 @@ function SectionHeader({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  cartButton: {
-    borderColor: '#35150C',
-  },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+    minHeight: 72,
+    borderWidth: 1,
+    borderRadius: Radius.large,
+    padding: Spacing.md,
   },
   locationIcon: {
     width: 44,
@@ -378,55 +312,35 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 1,
   },
-  searchBar: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  searchIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchCopy: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  filterButton: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   categories: {
-    gap: Spacing.md,
-  },
-  category: {
-    minWidth: 154,
-    minHeight: 88,
-    borderRadius: Radius.large,
-    borderWidth: 1,
-    padding: Spacing.md,
     flexDirection: 'row',
-    alignItems: 'center',
     gap: Spacing.sm,
   },
-  categoryIcon: {
-    width: 42,
-    height: 42,
+  category: {
+    minWidth: 0,
+    minHeight: 104,
+    flex: 1,
     borderRadius: Radius.medium,
+    borderWidth: 1,
+    padding: Spacing.sm,
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  categoryTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.xs,
+  },
+  categoryIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: Radius.small,
     alignItems: 'center',
     justifyContent: 'center',
   },
   hero: {
-    minHeight: 440,
+    minHeight: 340,
     borderRadius: Radius.xlarge,
     overflow: 'hidden',
     padding: Spacing.xl,
@@ -461,7 +375,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   emptyHero: {
-    minHeight: 360,
+    minHeight: 290,
     borderRadius: Radius.xlarge,
     padding: Spacing.xl,
     overflow: 'hidden',
@@ -472,6 +386,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     maxWidth: 560,
     zIndex: 1,
+  },
+  emptyHeroTitle: {
+    color: '#FFFFFF',
+    fontSize: 38,
+    lineHeight: 42,
   },
   emptyHeroOrb: {
     position: 'absolute',
@@ -535,7 +454,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   discoveryBand: {
-    minHeight: 190,
+    minHeight: 150,
     borderRadius: Radius.xlarge,
     padding: Spacing.xl,
     overflow: 'hidden',

@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Radius, Spacing } from '@/constants/theme';
+import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 import { getSellerTypeLabel } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
@@ -47,8 +48,8 @@ export default function CheckoutScreen() {
     phoneNumber: '',
     line1: '',
     postalCode: '',
-    city: '',
-    countryCode: 'DE',
+    city: DEFAULT_CITY,
+    countryCode: DEFAULT_COUNTRY_CODE,
     instructions: '',
   });
   const [error, setError] = useState('');
@@ -97,8 +98,8 @@ export default function CheckoutScreen() {
       phoneNumber: '',
       line1: '',
       postalCode: '',
-      city: '',
-      countryCode: 'DE',
+      city: DEFAULT_CITY,
+      countryCode: DEFAULT_COUNTRY_CODE,
       instructions: '',
     });
     setError('');

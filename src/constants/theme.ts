@@ -105,8 +105,5 @@ export const Shadows = {
 
 export const MaxContentWidth = 1180;
 
-export const BottomTabInset = Platform.select({
-  ios: 8,
-  android: 12,
-  default: 0,
-});
+export const BottomTabBarHeight = 68;
+export const BottomTabBarGap = 10;

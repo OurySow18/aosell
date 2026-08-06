@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Radius, Shadows, Spacing } from '@/constants/theme';
+import { DEFAULT_CITY } from '@/constants/location';
 import { useLocale } from '@/hooks/use-locale';
 import { useTheme } from '@/hooks/use-theme';
 import { getDeliveryModeLabel, getListingTypeLabel, getSellerTypeLabel } from '@/lib/i18n';
@@ -19,7 +20,7 @@ const toggleOptions = {
   sellerType: ['all', 'shop', 'restaurant', 'individual'],
 } as const;
 
-const quickCities = ['Berlin', 'Hamburg', 'Munich'];
+const quickCities = [DEFAULT_CITY, 'Berlin', 'Hamburg', 'Munich'];
 
 export default function SearchScreen() {
   const theme = useTheme();
@@ -47,25 +48,6 @@ export default function SearchScreen() {
 
   return (
     <AppScreen>
-      <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <ThemedText type="label" themeColor="burntOrange">
-            {t('searchScreen.eyebrow')}
-          </ThemedText>
-          <ThemedText type="display">{t('searchScreen.title')}</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">
-            {t('searchScreen.description')}
-          </ThemedText>
-        </View>
-        <View style={[styles.headerMark, { backgroundColor: theme.cyan }]}>
-          <SymbolView
-            tintColor={theme.earth}
-            size={28}
-            name={{ ios: 'sparkle.magnifyingglass', android: 'search', web: 'search' }}
-          />
-        </View>
-      </View>
-
       <View style={[styles.searchShell, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, Shadows.card]}>
         <SymbolView
           tintColor={theme.text}
@@ -261,24 +243,6 @@ function FilterRow({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  headerCopy: {
-    flex: 1,
-    gap: Spacing.sm,
-  },
-  headerMark: {
-    width: 58,
-    height: 58,
-    borderRadius: Radius.large,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '5deg' }],
-  },
   searchShell: {
     minHeight: 64,
     borderWidth: 1.5,

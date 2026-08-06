@@ -8,6 +8,7 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { Radius, Spacing } from '@/constants/theme';
+import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 import {
   getDeliveryModeLabel,
   getListingStatusLabel,
@@ -37,8 +38,10 @@ export default function ListingEditorScreen() {
   const [amount, setAmount] = useState(String(existing?.price.amountCents ?? 0));
   const [type, setType] = useState<(typeof listingTypes)[number]>(existing?.type ?? 'product');
   const [deliveryMode, setDeliveryMode] = useState<(typeof deliveryModes)[number]>(existing?.deliveryMode ?? 'aosell');
-  const [city, setCity] = useState(existing?.city ?? currentSellerProfile?.city ?? 'Berlin');
-  const [countryCode, setCountryCode] = useState(existing?.countryCode ?? currentSellerProfile?.countryCode ?? 'DE');
+  const [city, setCity] = useState(existing?.city ?? currentSellerProfile?.city ?? DEFAULT_CITY);
+  const [countryCode, setCountryCode] = useState(
+    existing?.countryCode ?? currentSellerProfile?.countryCode ?? DEFAULT_COUNTRY_CODE,
+  );
   const [status, setStatus] = useState<(typeof listingStatuses)[number]>(existing?.status ?? 'draft');
   const [tags, setTags] = useState(existing?.tags.join(', ') ?? '');
   const [categories, setCategories] = useState(existing?.categories.join(', ') ?? '');
