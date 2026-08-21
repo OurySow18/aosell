@@ -26,7 +26,7 @@ export function ListingCard({
   const { t } = useLocale();
   const primaryImage = getPrimaryListingImage(listing);
   const categoryAccent =
-    listing.type === 'meal' ? theme.coral : listing.type === 'service' ? theme.cyan : theme.violet;
+    listing.type === 'meal' ? theme.coral : listing.type === 'service' ? theme.forestGreen : theme.clay;
   const categorySurface =
     listing.type === 'meal'
       ? '#FBE5DC'

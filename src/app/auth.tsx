@@ -151,9 +151,9 @@ export default function AuthScreen() {
 
   return (
     <AppScreen padded={false}>
-      <View style={styles.page}>
-        <View style={styles.shell}>
-          <View style={styles.artStage}>
+      <View style={[styles.page, { backgroundColor: theme.background }]}>
+        <View style={[styles.shell, { backgroundColor: theme.backgroundElement }]}>
+          <View style={[styles.artStage, { backgroundColor: theme.backgroundElement }]}>
             <Image
               contentFit="cover"
               source={authHeroImage}
@@ -177,27 +177,27 @@ export default function AuthScreen() {
             </View>
 
             <View style={styles.phoneRow}>
-              <Pressable style={styles.countryButton}>
+              <Pressable style={[styles.countryButton, { backgroundColor: theme.background }]}>
                 <GermanFlag />
                 <SymbolView
-                  tintColor="#35150C"
+                  tintColor={theme.text}
                   size={17}
                   name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' }}
                 />
               </Pressable>
-              <View style={styles.phoneField}>
+              <View style={[styles.phoneField, { backgroundColor: theme.background }]}>
                 <TextInput
                   inputMode="tel"
                   keyboardType="phone-pad"
                   onChangeText={setPhoneDraft}
                   placeholder={t('auth.phonePlaceholder')}
-                  placeholderTextColor="#5E5E62"
-                  style={styles.phoneInput}
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.phoneInput, { color: theme.text }]}
                   textContentType="telephoneNumber"
                   value={phoneDraft}
                 />
                 <SymbolView
-                  tintColor="#35150C"
+                  tintColor={theme.text}
                   size={27}
                   name={{
                     ios: 'person.crop.circle.badge.plus',
@@ -210,15 +210,19 @@ export default function AuthScreen() {
 
             <Pressable
               onPress={() => handleUnavailable('phone')}
-              style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}>
+              style={({ pressed }) => [
+                styles.continueButton,
+                { backgroundColor: theme.earth },
+                pressed && styles.pressed,
+              ]}>
               <ThemedText type="headline" style={styles.continueText}>
                 {t('common.continue')}
               </ThemedText>
             </Pressable>
 
             {info ? (
-              <View style={styles.infoBox}>
-                <ThemedText type="bodySmall" style={styles.infoText}>
+              <View style={[styles.infoBox, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                <ThemedText type="bodySmall" themeColor="burntOrange">
                   {info}
                 </ThemedText>
               </View>
@@ -245,7 +249,7 @@ export default function AuthScreen() {
             </View>
 
             {showEmailForm ? (
-              <View style={styles.emailCard}>
+              <View style={[styles.emailCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
                 <View style={styles.modeTabs}>
                   {(['signup', 'signin'] as const).map((nextMode) => {
                     const active = nextMode === mode;
@@ -256,8 +260,11 @@ export default function AuthScreen() {
                           setMode(nextMode);
                           setError('');
                         }}
-                        style={[styles.modeTab, active && styles.modeTabActive]}>
-                        <ThemedText type="button" style={{ color: active ? '#FFFFFF' : '#35150C' }}>
+                        style={[
+                          styles.modeTab,
+                          { backgroundColor: active ? theme.earth : theme.backgroundElement },
+                        ]}>
+                        <ThemedText type="button" style={{ color: active ? '#FFFFFF' : theme.text }}>
                           {nextMode === 'signup' ? t('common.createAccount') : t('common.signIn')}
                         </ThemedText>
                       </Pressable>
@@ -274,7 +281,14 @@ export default function AuthScreen() {
                           <Pressable
                             key={nextRole}
                             onPress={() => setRole(nextRole)}
-                            style={[styles.roleCard, active && styles.roleCardActive]}>
+                            style={[
+                              styles.roleCard,
+                              {
+                                backgroundColor: theme.backgroundElement,
+                                borderColor: active ? theme.earth : theme.border,
+                                borderWidth: active ? 2 : 1,
+                              },
+                            ]}>
                             <ThemedText type="button">
                               {nextRole === 'buyer' ? t('auth.buyer') : t('auth.seller')}
                             </ThemedText>
@@ -345,6 +359,7 @@ export default function AuthScreen() {
                   onPress={() => void handleSubmit()}
                   style={[
                     styles.continueButton,
+                    { backgroundColor: theme.earth },
                     isSubmitting && styles.disabled,
                   ]}>
                   <ThemedText type="headline" style={styles.continueText}>
@@ -357,7 +372,7 @@ export default function AuthScreen() {
             <Pressable
               onPress={() => setShowEmailForm((current) => !current)}
               style={styles.moreButton}>
-              <ThemedText type="headline" style={styles.moreButtonText}>
+              <ThemedText type="headline" style={{ color: theme.text }}>
                 {showEmailForm ? t('auth.hideMore') : t('auth.showMore')}
               </ThemedText>
             </Pressable>
@@ -368,11 +383,11 @@ export default function AuthScreen() {
               onPress={() => revealEmailForm('signin')}
               style={styles.findAccountButton}>
               <SymbolView
-                tintColor="#35150C"
+                tintColor={theme.text}
                 size={24}
                 name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
               />
-              <ThemedText type="headline" style={styles.findAccountText}>
+              <ThemedText type="headline" style={{ color: theme.text }}>
                 {t('auth.findAccount')}
               </ThemedText>
             </Pressable>
@@ -380,20 +395,28 @@ export default function AuthScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => router.replace('/home')}
-              style={({ pressed }) => [styles.guestButton, pressed && styles.pressed]}>
-              <ThemedText type="headline" style={styles.guestButtonText}>
+              style={({ pressed }) => [
+                styles.guestButton,
+                { borderColor: theme.earth },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="headline" style={[styles.guestButtonText, { color: theme.text }]}>
                 {t('auth.continueAsGuest')}
               </ThemedText>
-              <View style={styles.guestButtonIcon}>
+              <View
+                style={[
+                  styles.guestButtonIcon,
+                  { borderColor: theme.earth, backgroundColor: theme.backgroundElement },
+                ]}>
                 <SymbolView
-                  tintColor="#35150C"
+                  tintColor={theme.text}
                   size={20}
                   name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
                 />
               </View>
             </Pressable>
 
-            <ThemedText type="bodySmall" style={styles.legalCopy}>
+            <ThemedText type="bodySmall" themeColor="textSecondary" style={styles.legalCopy}>
               {t('auth.legal')}
             </ThemedText>
           </View>
@@ -404,15 +427,16 @@ export default function AuthScreen() {
 }
 
 function DividerLabel() {
+  const theme = useTheme();
   const { t } = useLocale();
 
   return (
     <View style={styles.dividerRow}>
-      <View style={styles.dividerLine} />
-      <ThemedText type="body" style={styles.dividerText}>
+      <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+      <ThemedText type="body" themeColor="textSecondary">
         {t('common.or')}
       </ThemedText>
-      <View style={styles.dividerLine} />
+      <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
     </View>
   );
 }
@@ -428,8 +452,10 @@ function GermanFlag() {
 }
 
 function PromoBadge({ style }: { style: object }) {
+  const theme = useTheme();
+
   return (
-    <View style={[styles.discountTag, style]}>
+    <View style={[styles.discountTag, { backgroundColor: theme.burntOrange }, style]}>
       <ThemedText type="headline" style={styles.discountText}>
         %
       </ThemedText>
@@ -446,26 +472,32 @@ function AuthOptionButton({
   onPress: () => void;
   type: 'apple' | 'google' | 'email';
 }) {
+  const theme = useTheme();
+
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.optionButton, pressed && styles.pressed]}>
+      style={({ pressed }) => [
+        styles.optionButton,
+        { backgroundColor: theme.background },
+        pressed && styles.pressed,
+      ]}>
       <View style={styles.optionIcon}>
         {type === 'email' ? (
           <SymbolView
-            tintColor="#35150C"
+            tintColor={theme.text}
             size={25}
             name={{ ios: 'envelope', android: 'mail', web: 'mail' }}
           />
         ) : (
           <ThemedText
             type="headline"
-            style={[styles.providerLetter, type === 'google' && styles.googleLetter]}>
+            style={[{ color: theme.text }, type === 'google' && styles.googleLetter]}>
             {type === 'google' ? 'G' : 'A'}
           </ThemedText>
         )}
       </View>
-      <ThemedText type="headline" style={styles.optionLabel}>
+      <ThemedText type="headline" style={{ color: theme.text }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -475,19 +507,16 @@ function AuthOptionButton({
 const styles = StyleSheet.create({
   page: {
     minHeight: '100%',
-    backgroundColor: '#EEEEEE',
     alignItems: 'center',
   },
   shell: {
     width: '100%',
     maxWidth: 480,
-    backgroundColor: '#FFFFFF',
   },
   artStage: {
     height: 320,
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
   },
   heroBrand: {
     position: 'absolute',
@@ -506,7 +535,6 @@ const styles = StyleSheet.create({
     minWidth: 46,
     height: 46,
     borderRadius: 12,
-    backgroundColor: '#E54416',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -550,7 +578,6 @@ const styles = StyleSheet.create({
     width: 116,
     minHeight: 64,
     borderRadius: Radius.medium,
-    backgroundColor: '#EEEEEE',
     paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -580,7 +607,6 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 64,
     borderRadius: Radius.medium,
-    backgroundColor: '#EEEEEE',
     paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -590,13 +616,11 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     minHeight: 60,
-    color: '#35150C',
     fontSize: 18,
   },
   continueButton: {
     minHeight: 64,
     borderRadius: Radius.medium,
-    backgroundColor: '#35150C',
     paddingHorizontal: Spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
@@ -608,12 +632,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   infoBox: {
+    borderWidth: 1,
     borderRadius: Radius.small,
-    backgroundColor: '#FFF1E8',
     padding: Spacing.md,
-  },
-  infoText: {
-    color: '#8A351F',
   },
   dividerRow: {
     flexDirection: 'row',
@@ -623,10 +644,6 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#4A4A4A',
-  },
-  dividerText: {
-    color: '#666666',
   },
   optionList: {
     gap: Spacing.md,
@@ -634,7 +651,6 @@ const styles = StyleSheet.create({
   optionButton: {
     minHeight: 64,
     borderRadius: Radius.medium,
-    backgroundColor: '#EEEEEE',
     paddingHorizontal: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -646,37 +662,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  providerLetter: {
-    color: '#35150C',
-    fontSize: 22,
-    lineHeight: 25,
-  },
   googleLetter: {
     color: '#4285F4',
     fontWeight: '800',
-  },
-  optionLabel: {
-    color: '#35150C',
-    fontSize: 20,
-    lineHeight: 25,
-    fontWeight: '500',
   },
   moreButton: {
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  moreButtonText: {
-    color: '#35150C',
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '500',
-  },
   emailCard: {
     borderRadius: Radius.large,
     borderWidth: 1,
-    borderColor: '#D6D6D6',
-    backgroundColor: '#F7F7F7',
     padding: Spacing.lg,
     gap: Spacing.md,
   },
@@ -688,13 +685,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 46,
     borderRadius: Radius.small,
-    backgroundColor: '#E5E5E5',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.md,
-  },
-  modeTabActive: {
-    backgroundColor: '#35150C',
   },
   roleRow: {
     flexDirection: 'row',
@@ -704,16 +697,9 @@ const styles = StyleSheet.create({
   roleCard: {
     flexBasis: 160,
     flexGrow: 1,
-    borderWidth: 1,
-    borderColor: '#D5D5D5',
     borderRadius: Radius.medium,
-    backgroundColor: '#FFFFFF',
     padding: Spacing.md,
     gap: Spacing.xs,
-  },
-  roleCardActive: {
-    borderColor: '#35150C',
-    borderWidth: 2,
   },
   inlineFields: {
     flexDirection: 'row',
@@ -731,16 +717,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.md,
   },
-  findAccountText: {
-    color: '#35150C',
-    fontSize: 20,
-    lineHeight: 25,
-    fontWeight: '500',
-  },
   guestButton: {
     minHeight: 62,
     borderWidth: 1.5,
-    borderColor: '#35150C',
     borderRadius: Radius.medium,
     backgroundColor: '#FFF1D2',
     paddingHorizontal: Spacing.lg,
@@ -750,7 +729,6 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   guestButtonText: {
-    color: '#35150C',
     flexShrink: 1,
   },
   guestButtonIcon: {
@@ -758,13 +736,10 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1.5,
-    borderColor: '#35150C',
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   legalCopy: {
-    color: '#686868',
     lineHeight: 20,
     marginTop: Spacing.lg,
   },

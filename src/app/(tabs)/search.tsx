@@ -108,9 +108,9 @@ export default function SearchScreen() {
             option === 'meal'
               ? theme.coral
               : option === 'product'
-                ? theme.violet
+                ? theme.clay
                 : option === 'service'
-                  ? theme.cyan
+                  ? theme.forestGreen
                   : theme.accent;
           return (
             <Pressable

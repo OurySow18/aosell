@@ -3,49 +3,26 @@ import '@/global.css';
 import { Platform } from 'react-native';
 
 export const Colors = {
-  light: {
-    text: '#35150C',
-    textSecondary: '#6E625D',
-    background: '#EEEEEE',
-    backgroundElement: '#FFFFFF',
-    backgroundSelected: '#F4ECE6',
-    border: '#DED5CF',
-    earth: '#35150C',
-    gold: '#F3A712',
-    burntOrange: '#E54416',
-    forestGreen: '#16813A',
-    success: '#16813A',
-    warning: '#E7A419',
-    error: '#C93C2F',
-    accent: '#F3A712',
-    violet: '#7B4A2E',
-    coral: '#E54416',
-    cyan: '#16813A',
-    overlay: 'rgba(53, 21, 12, 0.26)',
-  },
-  dark: {
-    text: '#35150C',
-    textSecondary: '#6E625D',
-    background: '#EEEEEE',
-    backgroundElement: '#FFFFFF',
-    backgroundSelected: '#F4ECE6',
-    border: '#DED5CF',
-    earth: '#35150C',
-    gold: '#F3A712',
-    burntOrange: '#E54416',
-    forestGreen: '#16813A',
-    success: '#16813A',
-    warning: '#E7A419',
-    error: '#C93C2F',
-    accent: '#F3A712',
-    violet: '#7B4A2E',
-    coral: '#E54416',
-    cyan: '#16813A',
-    overlay: 'rgba(53, 21, 12, 0.34)',
-  },
+  text: '#35150C',
+  textSecondary: '#6E625D',
+  background: '#EEEEEE',
+  backgroundElement: '#FFFFFF',
+  backgroundSelected: '#F4ECE6',
+  border: '#DED5CF',
+  earth: '#35150C',
+  gold: '#F3A712',
+  burntOrange: '#BF3813',
+  forestGreen: '#16813A',
+  success: '#16813A',
+  warning: '#D97706',
+  error: '#C93C2F',
+  accent: '#F3A712',
+  clay: '#7B4A2E',
+  coral: '#BF3813',
+  overlay: 'rgba(53, 21, 12, 0.26)',
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light;
+export type ThemeColor = keyof typeof Colors;
 
 export const Fonts = {
   heading: Platform.select({

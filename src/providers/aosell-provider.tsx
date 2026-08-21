@@ -24,17 +24,9 @@ import { UserProfileSeed, UserRepository } from '@/repositories/user-repository'
 import { demoListings, demoSellers } from '@/services/mock-data';
 import { translate } from '@/lib/i18n';
 import { getNextStatuses } from '@/lib/utils/order';
-import { getPrimaryListingImage } from '@/lib/utils/listing-media';
+import { computeCartTotals, resolveAddToCart } from '@/lib/cart';
+import { searchListings as filterListings, type ListingSearchFilters } from '@/lib/search';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
-
-type SearchFilters = {
-  query?: string;
-  type?: Listing['type'] | 'all';
-  sellerType?: SellerType | 'all';
-  deliveryMode?: DeliveryMode | 'all';
-  countryCode?: string;
-  city?: string;
-};
 
 type SaveListingInput = {
   id?: string;
@@ -96,7 +88,7 @@ type AosellContextValue = {
   saveListing: (input: SaveListingInput) => Promise<Listing | null>;
   getListingById: (id: string) => Listing | undefined;
   getSellerById: (id: string) => SellerProfile | undefined;
-  searchListings: (filters: SearchFilters) => Listing[];
+  searchListings: (filters: ListingSearchFilters) => Listing[];
   addToCart: (listingId: string, forceReplace?: boolean) => Promise<AddToCartResult>;
   updateCartQuantity: (listingId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -310,68 +302,8 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     return sellers.find((seller) => seller.id === id);
   }
 
-  function searchListings(filters: SearchFilters) {
-    return listings.filter((listing) => {
-      const seller = getSellerById(listing.sellerId);
-      const query = filters.query?.trim().toLowerCase();
-      const haystack = [
-        listing.title,
-        listing.description,
-        listing.tags.join(' '),
-        listing.categories.join(' '),
-        listing.city,
-        seller?.brandName ?? '',
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      if (listing.status !== 'active') {
-        return false;
-      }
-      if (query && !haystack.includes(query)) {
-        return false;
-      }
-      if (filters.type && filters.type !== 'all' && listing.type !== filters.type) {
-        return false;
-      }
-      if (filters.sellerType && filters.sellerType !== 'all' && seller?.type !== filters.sellerType) {
-        return false;
-      }
-      if (
-        filters.deliveryMode &&
-        filters.deliveryMode !== 'all' &&
-        listing.deliveryMode !== filters.deliveryMode
-      ) {
-        return false;
-      }
-      if (filters.countryCode && listing.countryCode !== filters.countryCode.toUpperCase()) {
-        return false;
-      }
-      if (filters.city && listing.city.toLowerCase() !== filters.city.toLowerCase()) {
-        return false;
-      }
-      return true;
-    });
-  }
-
-  function computeCart(currentItems: Cart['items'], sellerId: string): Cart {
-    const subtotalAmount = currentItems.reduce(
-      (total, item) => total + item.unitPriceSnapshot.amountCents * item.quantity,
-      0
-    );
-    const deliveryFeeAmount = currentItems.length ? 450 : 0;
-
-    return {
-      id: currentUser?.id ?? 'anonymous-cart',
-      buyerUserId: currentUser?.id ?? 'anonymous-user',
-      sellerId,
-      items: currentItems,
-      subtotal: { amountCents: subtotalAmount, currency: 'EUR' },
-      deliveryFee: { amountCents: deliveryFeeAmount, currency: 'EUR' },
-      total: { amountCents: subtotalAmount + deliveryFeeAmount, currency: 'EUR' },
-      createdAt: cart?.createdAt ?? new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+  function searchListings(filters: ListingSearchFilters) {
+    return filterListings(listings, sellers, filters);
   }
 
   async function addToCart(listingId: string, forceReplace = false): Promise<AddToCartResult> {
@@ -380,31 +312,20 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     }
 
     const listing = getListingById(listingId);
-    if (!listing) {
+    const decision = resolveAddToCart({ cart, listing, forceReplace });
+
+    if (decision.kind === 'not-found') {
       return { ok: false, requiresReplace: false };
     }
-
-    if (cart && cart.sellerId !== listing.sellerId && !forceReplace) {
+    if (decision.kind === 'requires-replace') {
       return { ok: false, requiresReplace: true };
     }
 
-    const currentItems =
-      cart && (cart.sellerId === listing.sellerId || forceReplace) ? [...cart.items] : [];
-    const existingItem = currentItems.find((item) => item.listingId === listing.id);
-
-    if (existingItem) {
-      existingItem.quantity += 1;
-    } else {
-      currentItems.push({
-        listingId: listing.id,
-        titleSnapshot: listing.title,
-        unitPriceSnapshot: listing.price,
-        quantity: 1,
-        imageUrl: getPrimaryListingImage(listing)?.url,
-      });
-    }
-
-    const nextCart = computeCart(currentItems, listing.sellerId);
+    const nextCart = computeCartTotals(decision.items, decision.sellerId, {
+      buyerUserId: currentUser.id,
+      createdAt: cart?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
     await CartRepository.save(nextCart);
     setCart(nextCart);
     return { ok: true, requiresReplace: false };
@@ -425,7 +346,11 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const nextCart = computeCart(nextItems, cart.sellerId);
+    const nextCart = computeCartTotals(nextItems, cart.sellerId, {
+      buyerUserId: currentUser.id,
+      createdAt: cart.createdAt,
+      updatedAt: new Date().toISOString(),
+    });
     await CartRepository.save(nextCart);
     setCart(nextCart);
   }

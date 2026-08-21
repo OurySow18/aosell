@@ -23,7 +23,7 @@ function SessionBootScreen() {
       edges={['top', 'right', 'bottom', 'left']}
       style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <View style={[styles.bootPanel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <View style={[styles.bootAccent, { backgroundColor: theme.violet }]} />
+        <View style={[styles.bootAccent, { backgroundColor: theme.clay }]} />
         <AosellLogo />
         <View style={styles.copy}>
           <ThemedText type="headline">{t('boot.title')}</ThemedText>
