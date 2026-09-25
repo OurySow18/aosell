@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase/config';
 import { logFirestoreListenerError } from '@/lib/firebase/listener-errors';
 import { fromFirestoreListingDoc, toFirestoreListingDoc } from '@/lib/firebase/mappers';
 import { demoListings } from '@/services/mock-data';
-import type { Listing, SellerProfile } from '@/types/domain';
+import type { Listing, ListingCondimentEntry, SellerProfile } from '@/types/domain';
 import type { FirestoreListingDoc } from '@/types/firestore';
 
 export const ListingRepository = {
@@ -55,6 +55,8 @@ export const ListingRepository = {
       tags: string[];
       categories: string[];
       hasVideo: boolean;
+      dishId?: string;
+      condiments: ListingCondimentEntry[];
     },
     existing?: Listing
   ) {
@@ -76,6 +78,8 @@ export const ListingRepository = {
       media: existing?.media ?? [],
       attributes: existing?.attributes ?? [],
       inventory: existing?.inventory ?? { isUnlimited: input.type === 'service', quantity: input.type === 'service' ? undefined : 10 },
+      dishId: input.dishId,
+      condiments: input.condiments,
       linkedVideoUrl: input.hasVideo ? existing?.linkedVideoUrl ?? 'https://example.com/listing-video.mp4' : undefined,
       isFeatured: existing?.isFeatured ?? false,
       publishedAt: input.status === 'active' ? existing?.publishedAt ?? new Date().toISOString() : undefined,

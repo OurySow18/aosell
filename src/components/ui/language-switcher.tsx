@@ -1,10 +1,8 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Radius, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import type { Locale } from '@/lib/i18n';
-import { ThemedText } from '@/components/themed-text';
 
 const options: Array<{ locale: Locale; label: string }> = [
   { locale: 'en', label: 'EN' },
@@ -13,15 +11,15 @@ const options: Array<{ locale: Locale; label: string }> = [
 ];
 
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { locale, setLocale, t } = useLocale();
 
   return (
     <View style={styles.container}>
       {!compact ? (
-        <ThemedText type="label" themeColor="textSecondary">
+        <Text style={[styles.label, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>
           {t('common.language')}
-        </ThemedText>
+        </Text>
       ) : null}
       <View style={styles.row}>
         {options.map((option) => {
@@ -36,14 +34,19 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
               style={[
                 styles.option,
                 {
-                  backgroundColor: active ? theme.earth : theme.backgroundElement,
-                  borderColor: active ? theme.earth : theme.border,
+                  borderRadius: theme.radii.pill,
+                  backgroundColor: active ? theme.colors.text : theme.colors.surface,
+                  borderColor: active ? theme.colors.text : theme.colors.border,
                   minWidth: compact ? 54 : 68,
                 },
               ]}>
-              <ThemedText type="button" style={{ color: active ? theme.background : theme.text }}>
+              <Text
+                style={[
+                  styles.optionText,
+                  { color: active ? theme.colors.background : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
+                ]}>
                 {option.label}
-              </ThemedText>
+              </Text>
             </Pressable>
           );
         })}
@@ -53,20 +56,9 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: Spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  option: {
-    minHeight: 40,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  container: { gap: 8 },
+  row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  option: { minHeight: 40, paddingHorizontal: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  optionText: { fontSize: 15, lineHeight: 20 },
 });

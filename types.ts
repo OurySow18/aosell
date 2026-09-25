@@ -8,6 +8,24 @@ export type UserRole = "buyer" | "seller" | "admin";
 export type SellerType = "shop" | "restaurant" | "individual";
 export type ListingType = "product" | "meal" | "service";
 export type DeliveryMode = "aosell" | "seller";
+export type Cuisine =
+  | "senegalese"
+  | "guinean"
+  | "ivorian"
+  | "malian"
+  | "cameroonian"
+  | "congolese"
+  | "nigerian"
+  | "ghanaian"
+  | "beninese"
+  | "togolese";
+export type CondimentCategory =
+  | "spice"
+  | "protein"
+  | "vegetable"
+  | "starch"
+  | "seasoning"
+  | "other";
 export type ListingStatus =
   | "draft"
   | "active"
@@ -46,6 +64,8 @@ export type VerificationStatus =
   | "verified"
   | "rejected";
 export type MediaType = "image" | "video";
+export type PostMediaType = "image" | "video" | "text";
+export type PostLinkTargetType = "listing" | "seller";
 
 export interface Money {
   amountCents: number;
@@ -120,8 +140,69 @@ export interface SellerProfile {
   ratingCount?: number;
   isOpen?: boolean;
   tags: string[];
+  cuisineSpecialties: Cuisine[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+export interface Dish {
+  id: UUID;
+  cuisine: Cuisine;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl?: string;
+  defaultCondimentIds: UUID[];
+  createdBySellerId?: UUID;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface Condiment {
+  id: UUID;
+  name: string;
+  normalizedName: string;
+  aliases: string[];
+  category?: CondimentCategory;
+  createdBySellerId?: UUID;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface ListingCondimentEntry {
+  condimentId: UUID;
+  nameSnapshot: string;
+}
+
+export interface PostLinkTarget {
+  type: PostLinkTargetType;
+  listingId?: UUID;
+  sellerId?: UUID;
+}
+
+export interface Post {
+  id: UUID;
+  sellerId: UUID;
+  mediaType: PostMediaType;
+  mediaUrl?: string;
+  mediaWidth?: number;
+  mediaHeight?: number;
+  mediaDurationSeconds?: number;
+  caption: string;
+  linkTarget: PostLinkTarget;
+  likeCount: number;
+  commentCount: number;
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface PostComment {
+  id: UUID;
+  postId: UUID;
+  authorUserId: UUID;
+  authorDisplayNameSnapshot: string;
+  body: string;
+  createdAt: ISODateString;
 }
 
 export interface ListingMedia {
@@ -167,6 +248,8 @@ export interface Listing {
   media: ListingMedia[];
   attributes: ListingAttribute[];
   inventory: Inventory;
+  dishId?: UUID;
+  condiments: ListingCondimentEntry[];
   averageRating?: number;
   reviewCount?: number;
   linkedVideoUrl?: string;
@@ -191,6 +274,8 @@ export interface Cart {
   items: CartItem[];
   subtotal: Money;
   deliveryFee: Money;
+  discount: Money;
+  promoCode?: string;
   total: Money;
   createdAt: ISODateString;
   updatedAt: ISODateString;
@@ -322,4 +407,7 @@ export interface DatabaseSchema {
   deliveries: Delivery;
   reviews: Review;
   notifications: Notification;
+  dishes: Dish;
+  condiments: Condiment;
+  posts: Post;
 }

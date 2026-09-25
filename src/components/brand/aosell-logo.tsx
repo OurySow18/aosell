@@ -1,8 +1,7 @@
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { palette, typography } from '@/constants/theme';
 
 const officialLogo = require('../../../assets/images/aosell-logo-official.png');
 const officialMark = require('../../../assets/images/aosell-mark-official.png');
@@ -21,43 +20,30 @@ export function AosellLogo({ compact = false }: { compact?: boolean }) {
       <View style={styles.markFrame}>
         <Image contentFit="contain" source={officialMark} style={styles.mark} />
       </View>
-      <ThemedText type="title" style={styles.wordmark}>
-        AoSell
-      </ThemedText>
+      <Text style={styles.wordmark}>AoSell</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fullLockup: {
-    alignItems: 'flex-start',
-  },
-  fullLogo: {
-    width: 156,
-    height: 168,
-  },
-  compactLockup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
+  fullLockup: { alignItems: 'flex-start' },
+  fullLogo: { width: 156, height: 168 },
+  compactLockup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   markFrame: {
     width: 52,
     height: 52,
-    borderRadius: Radius.medium,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DED5CF',
+    borderColor: '#EFE4C4',
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mark: {
-    width: 48,
-    height: 50,
-  },
+  mark: { width: 48, height: 50 },
   wordmark: {
-    color: '#35150C',
+    color: palette.ink,
+    fontFamily: typography.fontFamily.headingHeavy,
     fontSize: 25,
     lineHeight: 30,
     letterSpacing: -0.8,

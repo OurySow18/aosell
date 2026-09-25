@@ -1,12 +1,16 @@
 import type {
     Address,
     AppUser,
+    Condiment,
     Delivery,
+    Dish,
     ISODateString,
     Listing,
     Notification,
     Order,
     Payment,
+    Post,
+    PostComment,
     Review,
     SellerProfile,
     UserProfile,
@@ -45,6 +49,9 @@ export const COLLECTIONS = {
   deliveries: "deliveries",
   reviews: "reviews",
   notifications: "notifications",
+  dishes: "dishes",
+  condiments: "condiments",
+  posts: "posts",
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
@@ -116,6 +123,8 @@ export interface FirestoreCartDoc {
   items: FirestoreCartItemDoc[];
   subtotalAmountCents: number;
   deliveryFeeAmountCents: number;
+  discountAmountCents: number;
+  promoCode?: string;
   totalAmountCents: number;
   currency: "EUR";
   createdAt: FirestoreDate;
@@ -205,6 +214,39 @@ export interface FirestoreNotificationDoc extends Omit<
   createdAt: FirestoreDate;
 }
 
+export interface FirestoreDishDoc extends Omit<
+  Dish,
+  "createdAt" | "updatedAt"
+> {
+  createdAt: FirestoreDate;
+  updatedAt: FirestoreDate;
+  searchTokens: string[];
+}
+
+export interface FirestoreCondimentDoc extends Omit<
+  Condiment,
+  "createdAt" | "updatedAt"
+> {
+  createdAt: FirestoreDate;
+  updatedAt: FirestoreDate;
+  searchTokens: string[];
+}
+
+export interface FirestorePostDoc extends Omit<
+  Post,
+  "createdAt" | "updatedAt"
+> {
+  createdAt: FirestoreDate;
+  updatedAt: FirestoreDate;
+}
+
+export interface FirestorePostCommentDoc extends Omit<
+  PostComment,
+  "createdAt"
+> {
+  createdAt: FirestoreDate;
+}
+
 /**
  * Suggested document paths.
  */
@@ -219,6 +261,11 @@ export type DeliveryDocPath = `deliveries/${string}`;
 export type ReviewDocPath = `reviews/${string}`;
 export type UserNotificationDocPath = `notifications/${string}/items/${string}`;
 export type CartDocPath = `carts/${string}`;
+export type DishDocPath = `dishes/${string}`;
+export type CondimentDocPath = `condiments/${string}`;
+export type PostDocPath = `posts/${string}`;
+export type PostLikeDocPath = `posts/${string}/likes/${string}`;
+export type PostCommentDocPath = `posts/${string}/comments/${string}`;
 
 /**
  * Collection map for repository typing.
@@ -234,6 +281,9 @@ export interface FirestoreCollectionMap {
   deliveries: FirestoreDeliveryDoc;
   reviews: FirestoreReviewDoc;
   notifications: FirestoreNotificationDoc;
+  dishes: FirestoreDishDoc;
+  condiments: FirestoreCondimentDoc;
+  posts: FirestorePostDoc;
 }
 
 export type FirestoreCollectionKey = keyof FirestoreCollectionMap;
@@ -301,6 +351,7 @@ export type SellerNormalizer = FirestoreNormalizer<
 export interface FirestoreSubcollections {
   "user_profiles/{userId}/addresses": FirestoreAddressDoc;
   "notifications/{userId}/items": FirestoreNotificationDoc;
+  "posts/{postId}/comments": FirestorePostCommentDoc;
 }
 
 /**

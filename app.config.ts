@@ -13,7 +13,6 @@ const config: ExpoConfig = {
   scheme: 'aosell',
   userInterfaceStyle: 'automatic',
   ios: {
-    icon: './assets/expo.icon',
     bundleIdentifier: 'com.amasow.aosell',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -23,7 +22,6 @@ const config: ExpoConfig = {
     adaptiveIcon: {
       backgroundColor: '#F5EFE6',
       foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
@@ -35,6 +33,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-router',
+    'expo-video',
     [
       'expo-splash-screen',
       {

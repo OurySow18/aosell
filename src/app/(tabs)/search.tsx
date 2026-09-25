@@ -1,18 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ListingCard } from '@/components/cards/listing-card';
-import { ThemedText } from '@/components/themed-text';
-import { AppScreen } from '@/components/ui/app-screen';
-import { EmptyState } from '@/components/ui/empty-state';
-import { Radius, Shadows, Spacing } from '@/constants/theme';
 import { DEFAULT_CITY } from '@/constants/location';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
 import { getDeliveryModeLabel, getListingTypeLabel, getSellerTypeLabel } from '@/lib/i18n';
 import { useAosell } from '@/providers/aosell-provider';
+
+type AppTheme = ReturnType<typeof useAppTheme>;
 
 const toggleOptions = {
   type: ['all', 'product', 'meal', 'service'],
@@ -23,7 +22,7 @@ const toggleOptions = {
 const quickCities = [DEFAULT_CITY, 'Berlin', 'Hamburg', 'Munich'];
 
 export default function SearchScreen() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const { searchListings, sellers } = useAosell();
   const params = useLocalSearchParams<{ type?: string; deliveryMode?: string }>();
@@ -47,166 +46,199 @@ export default function SearchScreen() {
   const results = searchListings({ query, type, deliveryMode, sellerType, countryCode, city });
 
   return (
-    <AppScreen>
-      <View style={[styles.searchShell, { backgroundColor: theme.backgroundElement, borderColor: theme.border }, Shadows.card]}>
-        <SymbolView
-          tintColor={theme.text}
-          size={22}
-          name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
-        />
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          onChangeText={setQuery}
-          placeholder={t('searchScreen.queryPlaceholder')}
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.searchInput, { color: theme.text }]}
-          value={query}
-        />
-        <Pressable
-          onPress={() => setShowFilters((current) => !current)}
-          style={[styles.filterToggle, { backgroundColor: showFilters ? theme.accent : theme.backgroundSelected }]}>
-          <SymbolView
-            tintColor={theme.earth}
-            size={19}
-            name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }}
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: theme.spacing[8] }]}
+        showsVerticalScrollIndicator={false}>
+        <View
+          style={[
+            styles.searchShell,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg },
+            theme.shadows.sm,
+          ]}>
+          <SymbolView tintColor={theme.colors.text} size={22} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} />
+          <TextInput
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={setQuery}
+            placeholder={t('searchScreen.queryPlaceholder')}
+            placeholderTextColor={theme.colors.textMuted}
+            style={[styles.searchInput, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}
+            value={query}
           />
-        </Pressable>
-      </View>
+          <Pressable
+            onPress={() => setShowFilters((current) => !current)}
+            style={[
+              styles.filterToggle,
+              {
+                backgroundColor: showFilters ? theme.colors.accent : theme.colors.surfaceMuted,
+                borderRadius: theme.radii.md,
+              },
+            ]}>
+            <SymbolView
+              tintColor={showFilters ? theme.colors.onAccent : theme.colors.text}
+              size={19}
+              name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }}
+            />
+          </Pressable>
+        </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cityRow}>
-        {quickCities.map((item) => {
-          const active = city.toLowerCase() === item.toLowerCase();
-          return (
-            <Pressable
-              key={item}
-              onPress={() => setCity(active ? '' : item)}
-              style={[
-                styles.cityChip,
-                {
-                  backgroundColor: active ? theme.text : theme.backgroundElement,
-                  borderColor: active ? theme.text : theme.border,
-                },
-              ]}>
-              <SymbolView
-                tintColor={active ? theme.accent : theme.textSecondary}
-                size={14}
-                name={{ ios: 'location.fill', android: 'location_on', web: 'location_on' }}
-              />
-              <ThemedText type="button" style={{ color: active ? '#FFFFFF' : theme.text }}>
-                {item}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cityRow}>
+          {quickCities.map((item) => {
+            const active = city.toLowerCase() === item.toLowerCase();
+            return (
+              <Pressable
+                key={item}
+                onPress={() => setCity(active ? '' : item)}
+                style={[
+                  styles.cityChip,
+                  {
+                    borderRadius: theme.radii.pill,
+                    backgroundColor: active ? theme.colors.text : theme.colors.surface,
+                    borderColor: active ? theme.colors.text : theme.colors.border,
+                  },
+                ]}>
+                <SymbolView
+                  tintColor={active ? theme.colors.background : theme.colors.textMuted}
+                  size={14}
+                  name={{ ios: 'location.fill', android: 'location_on', web: 'location_on' }}
+                />
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    { color: active ? theme.colors.background : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
+                  ]}>
+                  {item}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
-        {toggleOptions.type.map((option) => {
-          const active = option === type;
-          const color =
-            option === 'meal'
-              ? theme.coral
-              : option === 'product'
-                ? theme.clay
-                : option === 'service'
-                  ? theme.forestGreen
-                  : theme.accent;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => setType(option)}
-              style={[
-                styles.typeChip,
-                {
-                  backgroundColor: active ? color : theme.backgroundElement,
-                  borderColor: active ? theme.text : theme.border,
-                },
-              ]}>
-              <ThemedText type="button" style={{ color: active ? theme.earth : theme.text }}>
-                {getListingTypeLabel(option)}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
+          {toggleOptions.type.map((option) => {
+            const active = option === type;
+            const color =
+              option === 'meal'
+                ? theme.colors.secondary
+                : option === 'product'
+                  ? theme.colors.warning
+                  : option === 'service'
+                    ? theme.colors.success
+                    : theme.colors.accent;
+            return (
+              <Pressable
+                key={option}
+                onPress={() => setType(option)}
+                style={[
+                  styles.typeChip,
+                  {
+                    borderRadius: theme.radii.md,
+                    backgroundColor: active ? color : theme.colors.surface,
+                    borderColor: active ? color : theme.colors.border,
+                  },
+                ]}>
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    { color: active ? '#FFFFFF' : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
+                  ]}>
+                  {getListingTypeLabel(option)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
-      {showFilters ? (
-        <View style={[styles.filterPanel, { backgroundColor: theme.text }]}>
-          <View style={styles.filterPanelHeader}>
-            <View>
-              <ThemedText type="label" style={{ color: theme.accent }}>
-                {t('searchScreen.refine')}
-              </ThemedText>
-              <ThemedText type="headline" style={{ color: '#FFFFFF' }}>
-                {t('searchScreen.results', { count: results.length })}
-              </ThemedText>
+        {showFilters ? (
+          <View style={[styles.filterPanel, { backgroundColor: theme.colors.text, borderRadius: theme.radii.sheet }]}>
+            <View style={styles.filterPanelHeader}>
+              <View>
+                <Text style={[styles.eyebrow, { color: theme.colors.accent, fontFamily: theme.typography.caption.fontFamily }]}>
+                  {t('searchScreen.refine')}
+                </Text>
+                <Text style={[styles.filterTitle, { color: theme.colors.background, fontFamily: theme.typography.heading.fontFamily }]}>
+                  {t('searchScreen.results', { count: results.length })}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setShowFilters(false)}
+                style={[styles.closeButton, { borderRadius: theme.radii.pill, borderColor: 'rgba(255,255,255,0.24)' }]}>
+                <SymbolView tintColor={theme.colors.background} size={18} name={{ ios: 'xmark', android: 'close', web: 'close' }} />
+              </Pressable>
             </View>
-            <Pressable onPress={() => setShowFilters(false)} style={styles.closeButton}>
-              <SymbolView
-                tintColor="#FFFFFF"
-                size={18}
-                name={{ ios: 'xmark', android: 'close', web: 'close' }}
-              />
-            </Pressable>
+            <FilterRow
+              theme={theme}
+              kind="deliveryMode"
+              label={t('searchScreen.labels.delivery')}
+              value={deliveryMode}
+              options={toggleOptions.deliveryMode}
+              onSelect={(value) => setDeliveryMode(value as (typeof toggleOptions.deliveryMode)[number])}
+            />
+            <FilterRow
+              theme={theme}
+              kind="sellerType"
+              label={t('searchScreen.labels.seller')}
+              value={sellerType}
+              options={toggleOptions.sellerType}
+              onSelect={(value) => setSellerType(value as (typeof toggleOptions.sellerType)[number])}
+            />
           </View>
-          <FilterRow
-            kind="deliveryMode"
-            label={t('searchScreen.labels.delivery')}
-            value={deliveryMode}
-            options={toggleOptions.deliveryMode}
-            onSelect={(value) =>
-              setDeliveryMode(value as (typeof toggleOptions.deliveryMode)[number])
-            }
-          />
-          <FilterRow
-            kind="sellerType"
-            label={t('searchScreen.labels.seller')}
-            value={sellerType}
-            options={toggleOptions.sellerType}
-            onSelect={(value) => setSellerType(value as (typeof toggleOptions.sellerType)[number])}
-          />
-        </View>
-      ) : null}
+        ) : null}
 
-      <View style={styles.resultsHeader}>
-        <ThemedText type="headline">{t('searchScreen.results', { count: results.length })}</ThemedText>
-        <View style={[styles.resultDot, { backgroundColor: theme.accent }]} />
-      </View>
-
-      {results.length ? (
-        <View style={styles.grid}>
-          {results.map((listing) => (
-            <View key={listing.id} style={styles.gridItem}>
-              <ListingCard
-                listing={listing}
-                sellerName={sellers.find((seller) => seller.id === listing.sellerId)?.brandName}
-                onPress={() => router.push(`/listing/${listing.id}`)}
-              />
-            </View>
-          ))}
+        <View style={styles.resultsHeader}>
+          <Text style={[styles.resultsTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {t('searchScreen.results', { count: results.length })}
+          </Text>
+          <View style={[styles.resultDot, { backgroundColor: theme.colors.accent }]} />
         </View>
-      ) : (
-        <EmptyState title={t('searchScreen.noResultsTitle')} description={t('searchScreen.noResultsDescription')} />
-      )}
-    </AppScreen>
+
+        {results.length ? (
+          <View style={styles.grid}>
+            {results.map((listing) => (
+              <View key={listing.id} style={styles.gridItem}>
+                <ListingCard
+                  listing={listing}
+                  sellerName={sellers.find((seller) => seller.id === listing.sellerId)?.brandName}
+                  onPress={() => router.push(`/listing/${listing.id}`)}
+                />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.emptyState,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg },
+            ]}>
+            <Text style={[styles.emptyTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {t('searchScreen.noResultsTitle')}
+            </Text>
+            <Text style={[styles.emptyDescription, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
+              {t('searchScreen.noResultsDescription')}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 function FilterRow({
+  theme,
   kind,
   label,
   options,
   value,
   onSelect,
 }: {
+  theme: AppTheme;
   kind: 'deliveryMode' | 'sellerType';
   label: string;
   options: readonly string[];
   value: string;
   onSelect: (value: string) => void;
 }) {
-  const theme = useTheme();
   const renderOptionLabel = (option: string) =>
     kind === 'deliveryMode'
       ? getDeliveryModeLabel(option as 'all' | 'aosell' | 'seller')
@@ -214,9 +246,9 @@ function FilterRow({
 
   return (
     <View style={styles.filterRow}>
-      <ThemedText type="label" style={{ color: '#B9B6C0' }}>
+      <Text style={[styles.filterRowLabel, { color: 'rgba(255,255,255,0.6)', fontFamily: theme.typography.caption.fontFamily }]}>
         {label}
-      </ThemedText>
+      </Text>
       <View style={styles.filterOptions}>
         {options.map((option) => {
           const active = option === value;
@@ -227,13 +259,18 @@ function FilterRow({
               style={[
                 styles.darkFilter,
                 {
-                  backgroundColor: active ? theme.accent : '#25252D',
-                  borderColor: active ? theme.accent : '#3A3A44',
+                  borderRadius: theme.radii.pill,
+                  backgroundColor: active ? theme.colors.accent : 'rgba(255,255,255,0.08)',
+                  borderColor: active ? theme.colors.accent : 'rgba(255,255,255,0.16)',
                 },
               ]}>
-              <ThemedText type="button" style={{ color: active ? theme.earth : '#FFFFFF' }}>
+              <Text
+                style={[
+                  styles.chipLabel,
+                  { color: active ? theme.colors.onAccent : '#FFFFFF', fontFamily: theme.typography.label.fontFamily },
+                ]}>
                 {renderOptionLabel(option)}
-              </ThemedText>
+              </Text>
             </Pressable>
           );
         })}
@@ -243,102 +280,31 @@ function FilterRow({
 }
 
 const styles = StyleSheet.create({
-  searchShell: {
-    minHeight: 64,
-    borderWidth: 1.5,
-    borderRadius: Radius.large,
-    paddingHorizontal: Spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 17,
-    minHeight: 58,
-  },
-  filterToggle: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cityRow: {
-    gap: Spacing.sm,
-  },
-  cityChip: {
-    minHeight: 42,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  typeRow: {
-    gap: Spacing.sm,
-  },
-  typeChip: {
-    minHeight: 46,
-    borderRadius: Radius.medium,
-    borderWidth: 1.5,
-    paddingHorizontal: Spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterPanel: {
-    borderRadius: Radius.xlarge,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  filterPanelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: '#3A3A44',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterRow: {
-    gap: Spacing.sm,
-  },
-  filterOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  darkFilter: {
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  resultDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
-  },
-  gridItem: {
-    flexBasis: 300,
-    flexGrow: 1,
-    minWidth: 280,
-  },
+  safeArea: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 12, gap: 16 },
+  searchShell: { minHeight: 60, borderWidth: 1, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  searchInput: { flex: 1, fontSize: 15, minHeight: 56 },
+  filterToggle: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  cityRow: { gap: 8 },
+  cityChip: { minHeight: 40, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  typeRow: { gap: 8 },
+  typeChip: { minHeight: 44, borderWidth: 1, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  chipLabel: { fontSize: 13, lineHeight: 18 },
+  filterPanel: { padding: 20, gap: 16 },
+  filterPanelHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  eyebrow: { fontSize: 11, lineHeight: 14, letterSpacing: 0.3, textTransform: 'uppercase' },
+  filterTitle: { fontSize: 17, lineHeight: 22, marginTop: 4 },
+  closeButton: { width: 38, height: 38, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  filterRow: { gap: 8 },
+  filterRowLabel: { fontSize: 13, lineHeight: 18 },
+  filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  darkFilter: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 9 },
+  resultsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  resultsTitle: { fontSize: 17, lineHeight: 22 },
+  resultDot: { width: 8, height: 8, borderRadius: 4 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  gridItem: { flexBasis: 300, flexGrow: 1, minWidth: 280 },
+  emptyState: { borderWidth: 1, padding: 24, gap: 8 },
+  emptyTitle: { fontSize: 17, lineHeight: 22 },
+  emptyDescription: { fontSize: 14, lineHeight: 20 },
 });

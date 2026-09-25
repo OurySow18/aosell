@@ -1,6 +1,10 @@
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Poppins_600SemiBold, Poppins_700Bold, Poppins_800ExtraBold } from '@expo-google-fonts/poppins';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +17,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { AosellProvider } from '@/providers/aosell-provider';
 import { LocaleProvider } from '@/providers/locale-provider';
 import { useAosell } from '@/providers/aosell-provider';
+
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function SessionBootScreen() {
   const theme = useTheme();
@@ -59,6 +65,8 @@ function RootNavigator() {
         <Stack.Screen name="checkout/success" />
         <Stack.Screen name="listing/[listingId]" />
         <Stack.Screen name="listing/edit/[listingId]" />
+        <Stack.Screen name="post/[postId]" />
+        <Stack.Screen name="post/create" />
         <Stack.Screen name="orders/[orderId]" />
         <Stack.Screen name="seller/[sellerId]" />
         <Stack.Screen name="seller-onboarding" />
@@ -70,6 +78,26 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Poppins_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      void SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <LocaleProvider>

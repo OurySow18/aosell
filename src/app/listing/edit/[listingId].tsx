@@ -2,34 +2,41 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { DishCatalogPanel } from '@/components/dish/dish-catalog-panel';
 import { AppButton } from '@/components/ui/app-button';
 import { AppInput } from '@/components/ui/app-input';
 import { AppScreen } from '@/components/ui/app-screen';
+import { CondimentTagInput } from '@/components/ui/condiment-tag-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { Radius, Spacing } from '@/constants/theme';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 import {
+  getCuisineLabel,
   getDeliveryModeLabel,
   getListingStatusLabel,
   getListingTypeLabel,
 } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
+import { cuisineOptions } from '@/lib/validations/seller-profile';
 import { listingSchema } from '@/lib/validations/listing';
 import { useTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
 import { ThemedText } from '@/components/themed-text';
+import type { Cuisine, Dish } from '@/types/domain';
 
 const listingTypes = ['product', 'meal', 'service'] as const;
 const listingStatuses = ['draft', 'active', 'paused', 'hidden', 'archived'] as const;
 const deliveryModes = ['aosell', 'seller'] as const;
+
+type DishMode = 'none' | 'catalog-picked' | 'creating-new';
 
 export default function ListingEditorScreen() {
   const params = useLocalSearchParams<{ listingId?: string | string[] }>();
   const listingId = Array.isArray(params.listingId) ? params.listingId[0] : params.listingId ?? 'new';
   const theme = useTheme();
   const { t } = useLocale();
-  const { currentSellerProfile, getListingById, saveListing } = useAosell();
+  const { currentSellerProfile, dishes, condiments, getListingById, saveListing } = useAosell();
   const existing = listingId === 'new' ? undefined : getListingById(listingId);
 
   const [title, setTitle] = useState(existing?.title ?? '');
@@ -46,8 +53,33 @@ export default function ListingEditorScreen() {
   const [tags, setTags] = useState(existing?.tags.join(', ') ?? '');
   const [categories, setCategories] = useState(existing?.categories.join(', ') ?? '');
   const [hasVideo, setHasVideo] = useState(Boolean(existing?.linkedVideoUrl));
+  const [dishMode, setDishMode] = useState<DishMode>(existing?.dishId ? 'catalog-picked' : 'none');
+  const [selectedDishId, setSelectedDishId] = useState<string | undefined>(existing?.dishId);
+  const [newDishCuisine, setNewDishCuisine] = useState<Cuisine | undefined>(
+    currentSellerProfile?.cuisineSpecialties[0],
+  );
+  const [condimentInputs, setCondimentInputs] = useState<string[]>(
+    existing?.condiments.map((entry) => entry.nameSnapshot) ?? [],
+  );
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function handlePickDish(dish: Dish) {
+    setDishMode('catalog-picked');
+    setSelectedDishId(dish.id);
+    setTitle(dish.name);
+    setDescription(dish.description);
+    setCondimentInputs(
+      dish.defaultCondimentIds
+        .map((id) => condiments.find((condiment) => condiment.id === id)?.name)
+        .filter((name): name is string => Boolean(name)),
+    );
+  }
+
+  function handleStartNewDish() {
+    setDishMode('creating-new');
+    setSelectedDishId(undefined);
+  }
 
   if (!currentSellerProfile) {
     return (
@@ -87,11 +119,25 @@ export default function ListingEditorScreen() {
       return;
     }
 
+    if (dishMode === 'creating-new' && !newDishCuisine) {
+      setError(t('listingEditor.invalid'));
+      return;
+    }
+
+    const dishSelection =
+      dishMode === 'catalog-picked' && selectedDishId
+        ? ({ kind: 'existing', dishId: selectedDishId } as const)
+        : dishMode === 'creating-new' && newDishCuisine
+          ? ({ kind: 'new', cuisine: newDishCuisine, name: parsed.data.title, description: parsed.data.description } as const)
+          : ({ kind: 'none' } as const);
+
     setIsSubmitting(true);
     try {
       const result = await saveListing({
         id: existing?.id,
         ...parsed.data,
+        dishSelection,
+        condimentInputs,
       });
 
       if (result) {
@@ -125,6 +171,42 @@ export default function ListingEditorScreen() {
             />
           ))}
         </View>
+
+        {type === 'meal' ? (
+          <View style={[styles.dishSection, { backgroundColor: theme.background, borderColor: theme.border }]}>
+            <DishCatalogPanel
+              cuisines={currentSellerProfile.cuisineSpecialties}
+              dishes={dishes}
+              condiments={condiments}
+              onPick={handlePickDish}
+              onStartNewDish={handleStartNewDish}
+            />
+
+            {dishMode === 'creating-new' ? (
+              <View style={styles.row}>
+                {cuisineOptions.map((cuisine) => (
+                  <AppButton
+                    key={cuisine}
+                    label={getCuisineLabel(cuisine)}
+                    variant={newDishCuisine === cuisine ? 'secondary' : 'ghost'}
+                    onPress={() => setNewDishCuisine(cuisine)}
+                  />
+                ))}
+              </View>
+            ) : null}
+
+            {dishMode !== 'none' ? (
+              <CondimentTagInput
+                label={t('listingEditor.condimentsLabel')}
+                values={condimentInputs}
+                onChange={setCondimentInputs}
+                suggestions={condiments}
+                placeholder={t('listingEditor.condimentsPlaceholder')}
+              />
+            ) : null}
+          </View>
+        ) : null}
+
         <View style={styles.row}>
           {deliveryModes.map((option) => (
             <AppButton
@@ -189,5 +271,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.md,
+  },
+  dishSection: {
+    borderWidth: 1,
+    borderRadius: Radius.large,
+    padding: Spacing.lg,
+    gap: Spacing.lg,
   },
 });

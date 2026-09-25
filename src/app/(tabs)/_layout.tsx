@@ -1,100 +1,85 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  BottomTabBarGap,
-  BottomTabBarHeight,
-  Radius,
-  Shadows,
-} from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
+
+const TAB_CONTENT_HEIGHT = 56;
+const ICON_ZONE = { width: 56, height: 30 };
 
 export default function TabsLayout() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
-  const bottomOffset = Math.max(insets.bottom, BottomTabBarGap);
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.accent,
-        tabBarInactiveTintColor: '#C8BBB5',
         tabBarStyle: {
-          backgroundColor: theme.earth,
-          borderTopColor: 'transparent',
-          height: BottomTabBarHeight,
-          paddingTop: 6,
-          paddingBottom: 6,
-          marginHorizontal: 12,
-          bottom: bottomOffset,
-          borderRadius: Radius.xlarge,
-          position: 'absolute',
-          borderWidth: 1,
-          borderColor: '#593126',
-          ...Shadows.float,
+          backgroundColor: theme.colors.tabBar,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.border,
+          height: TAB_CONTENT_HEIGHT + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: insets.bottom,
+          paddingHorizontal: 6,
         },
-        tabBarLabelStyle: {
-          fontSize: 9,
-          fontWeight: '700',
-          letterSpacing: 0,
-        },
+        tabBarShowLabel: false,
       }}>
       <Tabs.Screen
         name="home"
         options={{
-          title: t('tabs.home'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView tintColor={color} size={18} name={{ ios: 'house.fill', android: 'home', web: 'home' }} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              label={t('tabs.home')}
+              icon={{ ios: 'house', android: 'home', web: 'home' }}
+              iconActive={{ ios: 'house.fill', android: 'home', web: 'home' }}
+              theme={theme}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: t('tabs.search'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              tintColor={color}
-              size={18}
-              name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              label={t('tabs.search')}
+              icon={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+              theme={theme}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="add"
+        name="feed"
         options={{
-          title: t('tabs.add'),
-          tabBarIcon: () => (
-            <View
-              style={[
-                styles.addButton,
-                { backgroundColor: theme.accent, borderColor: theme.earth },
-              ]}>
-              <SymbolView
-                tintColor={theme.earth}
-                size={22}
-                name={{ ios: 'plus', android: 'add', web: 'add' }}
-              />
-            </View>
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              label={t('tabs.feed')}
+              icon={{ ios: 'play.rectangle.on.rectangle', android: 'dynamic_feed', web: 'dynamic_feed' }}
+              theme={theme}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
-          title: t('tabs.orders'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              tintColor={color}
-              size={18}
-              name={{ ios: 'shippingbox.fill', android: 'inbox', web: 'inbox' }}
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              label={t('tabs.orders')}
+              icon={{ ios: 'shippingbox', android: 'inbox', web: 'inbox' }}
+              iconActive={{ ios: 'shippingbox.fill', android: 'inbox', web: 'inbox' }}
+              theme={theme}
             />
           ),
         }}
@@ -102,24 +87,79 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: t('tabs.profile'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView tintColor={color} size={18} name={{ ios: 'person.fill', android: 'person', web: 'person' }} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              focused={focused}
+              label={t('tabs.profile')}
+              icon={{ ios: 'person', android: 'person', web: 'person' }}
+              iconActive={{ ios: 'person.fill', android: 'person', web: 'person' }}
+              theme={theme}
+            />
           ),
         }}
       />
+      <Tabs.Screen name="add" options={{ href: null }} />
     </Tabs>
   );
 }
 
+type SymbolName = React.ComponentProps<typeof SymbolView>['name'];
+
+function TabIcon({
+  focused,
+  label,
+  icon,
+  iconActive,
+  theme,
+}: {
+  focused: boolean;
+  label: string;
+  icon: SymbolName;
+  iconActive?: SymbolName;
+  theme: ReturnType<typeof useAppTheme>;
+}) {
+  return (
+    <View style={styles.column}>
+      <View
+        style={[
+          styles.iconZone,
+          focused && { backgroundColor: theme.colors.accent, borderRadius: theme.radii.xl - 1 },
+        ]}>
+        <SymbolView
+          tintColor={focused ? theme.colors.tabIconActive : theme.colors.tabIcon}
+          size={22}
+          name={(focused && iconActive) || icon}
+        />
+      </View>
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.label,
+          {
+            color: focused ? (theme.dark ? theme.colors.accent : theme.colors.text) : theme.colors.tabIcon,
+            fontFamily: focused ? 'Inter_700Bold' : 'Inter_500Medium',
+          },
+        ]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  addButton: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.medium,
+  column: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  iconZone: {
+    width: ICON_ZONE.width,
+    height: ICON_ZONE.height,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -13,
-    borderWidth: 2,
+  },
+  label: {
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.2,
   },
 });

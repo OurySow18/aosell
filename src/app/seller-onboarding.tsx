@@ -9,12 +9,13 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { Radius, Spacing } from '@/constants/theme';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
-import { getDeliveryModeLabel, getSellerTypeLabel } from '@/lib/i18n';
+import { getCuisineLabel, getDeliveryModeLabel, getSellerTypeLabel } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
-import { sellerProfileSchema } from '@/lib/validations/seller-profile';
+import { cuisineOptions, sellerProfileSchema } from '@/lib/validations/seller-profile';
 import { useTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
 import { ThemedText } from '@/components/themed-text';
+import type { Cuisine } from '@/types/domain';
 
 const sellerTypes = ['shop', 'restaurant', 'individual'] as const;
 const deliveryModes = ['aosell', 'seller'] as const;
@@ -29,6 +30,7 @@ export default function SellerOnboardingScreen() {
   const [city, setCity] = useState(DEFAULT_CITY);
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [selectedDeliveryModes, setSelectedDeliveryModes] = useState<string[]>(['aosell']);
+  const [cuisineSpecialties, setCuisineSpecialties] = useState<Cuisine[]>([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,6 +64,12 @@ export default function SellerOnboardingScreen() {
     );
   }
 
+  function toggleCuisine(cuisine: Cuisine) {
+    setCuisineSpecialties((current) =>
+      current.includes(cuisine) ? current.filter((item) => item !== cuisine) : [...current, cuisine]
+    );
+  }
+
   async function handleSubmit() {
     const parsed = sellerProfileSchema.safeParse({
       type,
@@ -70,6 +78,7 @@ export default function SellerOnboardingScreen() {
       city,
       countryCode,
       deliveryModes: selectedDeliveryModes,
+      cuisineSpecialties,
     });
 
     if (!parsed.success) {
@@ -108,6 +117,22 @@ export default function SellerOnboardingScreen() {
               onPress={() => setType(option)}
             />
           ))}
+        </View>
+        <View style={styles.cuisineBlock}>
+          <ThemedText type="headline">{t('sellerOnboarding.cuisineSpecialtiesTitle')}</ThemedText>
+          <ThemedText type="bodySmall" themeColor="textSecondary">
+            {t('sellerOnboarding.cuisineSpecialtiesHint')}
+          </ThemedText>
+          <View style={styles.row}>
+            {cuisineOptions.map((cuisine) => (
+              <AppButton
+                key={cuisine}
+                label={getCuisineLabel(cuisine)}
+                variant={cuisineSpecialties.includes(cuisine) ? 'secondary' : 'ghost'}
+                onPress={() => toggleCuisine(cuisine)}
+              />
+            ))}
+          </View>
         </View>
         <AppInput label={t('sellerOnboarding.brandName')} value={brandName} onChangeText={setBrandName} placeholder={t('sellerOnboarding.brandPlaceholder')} />
         <AppInput
@@ -171,5 +196,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.md,
+  },
+  cuisineBlock: {
+    gap: Spacing.sm,
   },
 });

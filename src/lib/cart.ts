@@ -3,16 +3,33 @@ import { getPrimaryListingImage } from '@/lib/utils/listing-media';
 
 export const CART_DELIVERY_FEE_CENTS = 450;
 
+export type PromoCode = {
+  code: string;
+  labelKey: string;
+  rate: number;
+};
+
+const PROMO_CODES: Record<string, PromoCode> = {
+  BREMEN10: { code: 'BREMEN10', labelKey: 'cart.promo.bremen10', rate: 0.1 },
+};
+
+export function resolvePromoCode(input: string): PromoCode | null {
+  const normalized = input.trim().toUpperCase();
+  return PROMO_CODES[normalized] ?? null;
+}
+
 export function computeCartTotals(
   items: CartItem[],
   sellerId: string,
-  context: { buyerUserId: string; createdAt: string; updatedAt: string },
+  context: { buyerUserId: string; createdAt: string; updatedAt: string; promoCode?: string },
 ): Cart {
   const subtotalAmount = items.reduce(
     (total, item) => total + item.unitPriceSnapshot.amountCents * item.quantity,
     0,
   );
   const deliveryFeeAmount = items.length ? CART_DELIVERY_FEE_CENTS : 0;
+  const promo = context.promoCode ? resolvePromoCode(context.promoCode) : null;
+  const discountAmount = promo ? Math.round(subtotalAmount * promo.rate) : 0;
 
   return {
     id: context.buyerUserId,
@@ -21,7 +38,9 @@ export function computeCartTotals(
     items,
     subtotal: { amountCents: subtotalAmount, currency: 'EUR' },
     deliveryFee: { amountCents: deliveryFeeAmount, currency: 'EUR' },
-    total: { amountCents: subtotalAmount + deliveryFeeAmount, currency: 'EUR' },
+    discount: { amountCents: discountAmount, currency: 'EUR' },
+    promoCode: promo?.code,
+    total: { amountCents: subtotalAmount + deliveryFeeAmount - discountAmount, currency: 'EUR' },
     createdAt: context.createdAt,
     updatedAt: context.updatedAt,
   };

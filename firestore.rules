@@ -67,12 +67,75 @@ service cloud.firestore {
         && request.resource.data.price.amountCents is int
         && request.resource.data.price.amountCents >= 0
         && isValidCurrency(request.resource.data.price.currency)
-        && request.resource.data.isFeatured is bool;
+        && request.resource.data.isFeatured is bool
+        && (!('dishId' in request.resource.data) || request.resource.data.dishId is string)
+        && request.resource.data.condiments is list;
     }
 
     function isSafeListingUpdate() {
       return request.resource.data.sellerId == resource.data.sellerId
         && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isValidCuisine(value) {
+      return value in [
+        'senegalese', 'guinean', 'ivorian', 'malian', 'cameroonian',
+        'congolese', 'nigerian', 'ghanaian', 'beninese', 'togolese'
+      ];
+    }
+
+    function isValidDishData() {
+      return request.resource.data.cuisine is string && isValidCuisine(request.resource.data.cuisine)
+        && request.resource.data.name is string
+        && request.resource.data.slug is string
+        && request.resource.data.description is string
+        && request.resource.data.defaultCondimentIds is list
+        && request.resource.data.searchTokens is list
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+    }
+
+    function isValidCondimentData() {
+      return request.resource.data.name is string
+        && request.resource.data.normalizedName is string
+        && request.resource.data.aliases is list
+        && request.resource.data.searchTokens is list
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+    }
+
+    function isValidLinkTarget() {
+      return request.resource.data.linkTarget is map
+        && request.resource.data.linkTarget.type in ['listing', 'seller']
+        && (
+          (request.resource.data.linkTarget.type == 'seller'
+            && request.resource.data.linkTarget.sellerId == request.resource.data.sellerId)
+          ||
+          (request.resource.data.linkTarget.type == 'listing'
+            && request.resource.data.linkTarget.listingId is string
+            && listingDoc(request.resource.data.linkTarget.listingId).data.sellerId == request.resource.data.sellerId)
+        );
+    }
+
+    function isValidPostData() {
+      return request.resource.data.sellerId is string
+        && request.resource.data.mediaType in ['image', 'video', 'text']
+        && (request.resource.data.mediaType == 'text' || request.resource.data.mediaUrl is string)
+        && request.resource.data.caption is string
+        && isValidLinkTarget()
+        && request.resource.data.likeCount == 0
+        && request.resource.data.commentCount == 0
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+    }
+
+    function isValidCommentData(postId) {
+      return request.resource.data.postId == postId
+        && request.resource.data.authorUserId == request.auth.uid
+        && request.resource.data.authorDisplayNameSnapshot is string
+        && request.resource.data.body is string
+        && request.resource.data.body.size() > 0
+        && isValidTimestamp(request.resource.data.createdAt);
     }
 
     function isValidOrderStatusTransition(oldStatus, newStatus) {
@@ -135,6 +198,15 @@ service cloud.firestore {
           && isValidTimestamp(request.resource.data.createdAt)
           && isValidTimestamp(request.resource.data.updatedAt);
         allow update: if isOwner(userId) || isAdmin();
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /follows/{sellerId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId)
+          && request.resource.data.sellerId == sellerId
+          && isValidTimestamp(request.resource.data.createdAt);
+        allow update: if false;
         allow delete: if isOwner(userId) || isAdmin();
       }
     }
@@ -288,6 +360,50 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isAdmin();
       allow create, update, delete: if isOwner(userId) || isAdmin();
     }
+
+    match /dishes/{dishId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.createdBySellerId is string
+        && isSellerOwnerBySellerId(request.resource.data.createdBySellerId)
+        && isValidDishData();
+      allow update, delete: if isAdmin();
+    }
+
+    match /condiments/{condimentId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.createdBySellerId is string
+        && isSellerOwnerBySellerId(request.resource.data.createdBySellerId)
+        && isValidCondimentData();
+      allow update, delete: if isAdmin();
+    }
+
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && isSellerOwnerBySellerId(request.resource.data.sellerId)
+        && isValidPostData();
+      allow update: if false;
+      allow delete: if isSellerOwnerBySellerId(resource.data.sellerId) || isAdmin();
+
+      match /likes/{userId} {
+        allow read: if true;
+        allow create: if isOwner(userId)
+          && request.resource.data.postId == postId
+          && request.resource.data.userId == userId
+          && isValidTimestamp(request.resource.data.createdAt);
+        allow update: if false;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn() && isValidCommentData(postId);
+        allow update: if false;
+        allow delete: if isSignedIn() && (resource.data.authorUserId == request.auth.uid || isAdmin());
+      }
+    }
   }
 }
 
@@ -352,6 +468,17 @@ service firebase.storage {
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
       allow delete: if isSignedIn() && request.auth.uid == userId || isAdmin();
+    }
+
+    function canManagePostMedia(sellerId) {
+      return isSignedIn()
+        && firestore.get(/databases/(default)/documents/seller_profiles/$(sellerId)).data.ownerUserId == request.auth.uid;
+    }
+
+    match /post-media/{sellerId}/{fileName} {
+      allow read: if true;
+      allow write: if canManagePostMedia(sellerId) && (isValidImageUpload() || isValidVideoUpload());
+      allow delete: if canManagePostMedia(sellerId) || isAdmin();
     }
   }
 }

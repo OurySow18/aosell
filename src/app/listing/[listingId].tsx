@@ -1,21 +1,20 @@
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { ListingCard } from '@/components/cards/listing-card';
 import { SellerCard } from '@/components/cards/seller-card';
 import { ListingGallery } from '@/components/listings/listing-gallery';
-import { AppButton } from '@/components/ui/app-button';
-import { AppScreen } from '@/components/ui/app-screen';
-import { EmptyState } from '@/components/ui/empty-state';
-import { StatusPill } from '@/components/ui/status-pill';
-import { Radius, Spacing } from '@/constants/theme';
-import { getDeliveryModeLabel, getListingTypeLabel } from '@/lib/i18n';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
+import { getDeliveryModeLabel, getListingTypeLabel } from '@/lib/i18n';
 import { formatDate, formatMoney } from '@/lib/utils/format';
 import { useAosell } from '@/providers/aosell-provider';
+
+type AppTheme = ReturnType<typeof useAppTheme>;
 
 export default function ListingDetailScreen() {
   const params = useLocalSearchParams<{
@@ -24,45 +23,17 @@ export default function ListingDetailScreen() {
   }>();
   const listingId = Array.isArray(params.listingId) ? params.listingId[0] : params.listingId ?? '';
   const intent = Array.isArray(params.intent) ? params.intent[0] : params.intent;
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const { currentUser, getListingById, getSellerById, addToCart, listings } = useAosell();
   const [isAdding, setIsAdding] = useState(false);
   const [didRecoverIntent, setDidRecoverIntent] = useState(false);
   const listing = getListingById(listingId);
 
-  useEffect(() => {
-    if (!currentUser || !listing || intent !== 'cart' || didRecoverIntent) {
+  async function handleAddToCart(forceReplace = false) {
+    if (!listing) {
       return;
     }
-
-    setDidRecoverIntent(true);
-    void handleAddToCart();
-  }, [currentUser, didRecoverIntent, intent, listing?.id]);
-
-  if (!listing) {
-    return (
-      <AppScreen>
-        <EmptyState title={t('listingDetail.notFoundTitle')} description={t('listingDetail.notFoundDescription')} />
-      </AppScreen>
-    );
-  }
-
-  const seller = getSellerById(listing.sellerId);
-  const moreFromSeller = listings
-    .filter((item) => item.sellerId === listing.sellerId && item.id !== listing.id && item.status === 'active')
-    .slice(0, 3);
-  const primaryCategory = listing.categories[0] ?? t('listingDetail.general');
-  const categoryText = listing.categories.length ? listing.categories.join(', ') : t('listingDetail.general');
-  const tagText = listing.tags.length ? listing.tags.join(', ') : t('listingDetail.noTags');
-  const stockLabel = listing.inventory.isUnlimited
-    ? t('listingDetail.availableOnDemand')
-    : t('listingDetail.leftCount', { count: listing.inventory.quantity ?? 0 });
-  const ratingLabel = listing.averageRating
-    ? t('listingDetail.reviews', { rating: listing.averageRating.toFixed(1), count: listing.reviewCount ?? 0 })
-    : t('listingDetail.newListing');
-
-  async function handleAddToCart(forceReplace = false) {
     setIsAdding(true);
     const result = await addToCart(listing.id, forceReplace);
     setIsAdding(false);
@@ -70,11 +41,7 @@ export default function ListingDetailScreen() {
     if (result.requiresAuth) {
       router.push({
         pathname: '/auth',
-        params: {
-          mode: 'signup',
-          role: 'buyer',
-          returnTo: `/listing/${listing.id}?intent=cart`,
-        },
+        params: { mode: 'signup', role: 'buyer', returnTo: `/listing/${listing.id}?intent=cart` },
       });
       return;
     }
@@ -82,13 +49,7 @@ export default function ListingDetailScreen() {
     if (result.requiresReplace) {
       Alert.alert(t('listingDetail.replaceCartTitle'), t('listingDetail.replaceCartDescription'), [
         { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.replace'),
-          style: 'destructive',
-          onPress: () => {
-            void handleAddToCart(true);
-          },
-        },
+        { text: t('common.replace'), style: 'destructive', onPress: () => void handleAddToCart(true) },
       ]);
       return;
     }
@@ -98,19 +59,44 @@ export default function ListingDetailScreen() {
     }
   }
 
-  return (
-    <AppScreen>
-      <View style={styles.topSection}>
-        <View style={styles.galleryColumn}>
-          <ListingGallery listing={listing} />
-        </View>
+  useEffect(() => {
+    if (!currentUser || !listing || intent !== 'cart' || didRecoverIntent) {
+      return;
+    }
+    setDidRecoverIntent(true);
+    void handleAddToCart();
+  }, [currentUser, didRecoverIntent, intent, listing?.id]);
 
-        <View
-          style={[
-            styles.summaryCard,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <View style={[styles.summaryGlow, { backgroundColor: theme.gold }]} />
+  if (!listing) {
+    return (
+      <SafeAreaView style={[styles.notFound, { backgroundColor: theme.colors.background }]}>
+        <Text style={[styles.notFoundTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+          {t('listingDetail.notFoundTitle')}
+        </Text>
+        <Text style={[styles.notFoundBody, { color: theme.colors.textMuted }]}>{t('listingDetail.notFoundDescription')}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  const seller = getSellerById(listing.sellerId);
+  const moreFromSeller = listings
+    .filter((item) => item.sellerId === listing.sellerId && item.id !== listing.id && item.status === 'active')
+    .slice(0, 3);
+  const categoryText = listing.categories.length ? listing.categories.join(', ') : t('listingDetail.general');
+  const tagText = listing.tags.length ? listing.tags.join(', ') : t('listingDetail.noTags');
+  const stockLabel = listing.inventory.isUnlimited
+    ? t('listingDetail.availableOnDemand')
+    : t('listingDetail.leftCount', { count: listing.inventory.quantity ?? 0 });
+  const ratingLabel = listing.averageRating
+    ? t('listingDetail.reviews', { rating: listing.averageRating.toFixed(1), count: listing.reviewCount ?? 0 })
+    : t('listingDetail.newListing');
+
+  return (
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: theme.spacing[8] }]} showsVerticalScrollIndicator={false}>
+        <ListingGallery listing={listing} />
+
+        <View style={styles.storeStripWrap}>
           <Pressable
             disabled={!seller}
             onPress={() => {
@@ -120,351 +106,263 @@ export default function ListingDetailScreen() {
             }}
             style={[
               styles.storeStrip,
-              { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg },
             ]}>
-            <View
-              style={[
-                styles.storeAvatar,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-              ]}>
-              <ThemedText type="headline" style={{ color: theme.text }}>
+            <View style={[styles.storeAvatar, { backgroundColor: theme.colors.accentTint, borderRadius: theme.radii.md }]}>
+              <Text style={[styles.storeAvatarText, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
                 {(seller?.brandName ?? 'AS').slice(0, 2).toUpperCase()}
-              </ThemedText>
+              </Text>
             </View>
             <View style={styles.storeCopy}>
-              <ThemedText type="button">{seller?.brandName ?? t('listingDetail.sellerFallback')}</ThemedText>
-              <ThemedText type="bodySmall" themeColor="textSecondary">
+              <Text style={[styles.storeName, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]} numberOfLines={1}>
+                {seller?.brandName ?? t('listingDetail.sellerFallback')}
+              </Text>
+              <Text style={[styles.storeMeta, { color: theme.colors.textMuted }]} numberOfLines={1}>
                 {listing.city}, {listing.countryCode}
-              </ThemedText>
+              </Text>
             </View>
-            <StatusPill label={getDeliveryModeLabel(listing.deliveryMode)} tone="neutral" />
+            <View style={[styles.deliveryPill, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.pill }]}>
+              <Text style={[styles.deliveryPillText, { color: theme.colors.text, fontFamily: theme.typography.micro.fontFamily }]}>
+                {getDeliveryModeLabel(listing.deliveryMode)}
+              </Text>
+            </View>
           </Pressable>
+        </View>
 
+        <View style={styles.summarySection}>
           <View style={styles.tags}>
-            <StatusPill label={getListingTypeLabel(listing.type)} tone="brand" />
-            <StatusPill label={primaryCategory} tone="neutral" />
-            {listing.linkedVideoUrl ? <StatusPill label={t('listingDetail.videoIncluded')} tone="warning" /> : null}
+            <Pill label={getListingTypeLabel(listing.type)} tone="accent" theme={theme} />
+            {listing.categories[0] ? <Pill label={listing.categories[0]} tone="neutral" theme={theme} /> : null}
+            {listing.linkedVideoUrl ? <Pill label={t('listingDetail.videoIncluded')} tone="warning" theme={theme} /> : null}
           </View>
 
-          <View style={styles.summaryCopy}>
-            <ThemedText type="title">{listing.title}</ThemedText>
-            <ThemedText type="title" style={{ color: theme.forestGreen }}>
-              {formatMoney(listing.price)}
-            </ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              {listing.description}
-            </ThemedText>
-          </View>
-
-          <View style={styles.quickMeta}>
-            <View
-              style={[
-                styles.quickMetaCard,
-                { backgroundColor: theme.background, borderColor: theme.border },
-              ]}>
-              <ThemedText type="label" themeColor="burntOrange">
-                {t('listingDetail.delivery')}
-              </ThemedText>
-              <ThemedText type="headline">
-                {listing.deliveryMode === 'aosell'
-                  ? t('listingDetail.deliveryHandledByAosell')
-                  : t('listingDetail.deliveryHandledBySeller')}
-              </ThemedText>
-            </View>
-            <View
-              style={[
-                styles.quickMetaCard,
-                { backgroundColor: theme.background, borderColor: theme.border },
-              ]}>
-              <ThemedText type="label" themeColor="burntOrange">
-                {t('listingDetail.availability')}
-              </ThemedText>
-              <ThemedText type="headline">{stockLabel}</ThemedText>
-            </View>
-            <View
-              style={[
-                styles.quickMetaCard,
-                { backgroundColor: theme.background, borderColor: theme.border },
-              ]}>
-              <ThemedText type="label" themeColor="burntOrange">
-                {t('listingDetail.rating')}
-              </ThemedText>
-              <ThemedText type="headline">{ratingLabel}</ThemedText>
-            </View>
-          </View>
-
-          <View style={[styles.buyCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
-            <View style={styles.buyCopy}>
-              <ThemedText type="headline">{t('listingDetail.readyToOrder')}</ThemedText>
-              <ThemedText type="bodySmall" themeColor="textSecondary">
-                {t('listingDetail.readyDescription')}
-              </ThemedText>
-            </View>
-            <AppButton
-              disabled={isAdding}
-              fullWidth
-              label={t('common.addToCart')}
-              onPress={() => {
-                void handleAddToCart();
-              }}
-            />
-            <AppButton
-              disabled={isAdding}
-              fullWidth
-              label={t('common.orderNow')}
-              variant="secondary"
-              onPress={() => {
-                void handleAddToCart();
-              }}
-            />
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.infoGrid}>
-        <View
-          style={[
-            styles.infoCard,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <ThemedText type="headline">{t('listingDetail.about')}</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">
+          <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>{listing.title}</Text>
+          <Text style={[styles.price, { color: theme.colors.success, fontFamily: theme.typography.title.fontFamily }]}>
+            {formatMoney(listing.price)}
+          </Text>
+          <Text style={[styles.description, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
             {listing.description}
-          </ThemedText>
-          <View style={styles.infoList}>
-            <DetailLine
-              label={t('listingDetail.published')}
-              value={listing.publishedAt ? formatDate(listing.publishedAt) : formatDate(listing.createdAt)}
-            />
-            <DetailLine label={t('listingDetail.category')} value={categoryText} />
-            <DetailLine label={t('listingDetail.tags')} value={tagText} />
+          </Text>
+        </View>
+
+        <View style={[styles.quickMetaBand, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+          <QuickMetaCell
+            label={t('listingDetail.delivery')}
+            value={listing.deliveryMode === 'aosell' ? t('listingDetail.deliveryHandledByAosell') : t('listingDetail.deliveryHandledBySeller')}
+            theme={theme}
+          />
+          <View style={[styles.quickMetaDivider, { backgroundColor: theme.colors.border }]} />
+          <QuickMetaCell label={t('listingDetail.availability')} value={stockLabel} theme={theme} />
+          <View style={[styles.quickMetaDivider, { backgroundColor: theme.colors.border }]} />
+          <QuickMetaCell label={t('listingDetail.rating')} value={ratingLabel} theme={theme} />
+        </View>
+
+        <View style={[styles.buyCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+          <View style={styles.buyCopy}>
+            <Text style={[styles.buyTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {t('listingDetail.readyToOrder')}
+            </Text>
+            <Text style={[styles.buyDescription, { color: theme.colors.textMuted }]}>{t('listingDetail.readyDescription')}</Text>
+          </View>
+          <Pressable
+            disabled={isAdding}
+            onPress={() => void handleAddToCart()}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md, opacity: isAdding ? theme.motion.disabledOpacity : 1 },
+            ]}>
+            <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }]}>
+              {t('common.addToCart')}
+            </Text>
+          </Pressable>
+          <Pressable
+            disabled={isAdding}
+            onPress={() => void handleAddToCart()}
+            style={[
+              styles.secondaryButton,
+              { borderColor: theme.colors.text, borderRadius: theme.radii.md, opacity: isAdding ? theme.motion.disabledOpacity : 1 },
+            ]}>
+            <Text style={[styles.secondaryButtonText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
+              {t('common.orderNow')}
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.infoGrid}>
+          <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <Text style={[styles.infoTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {t('listingDetail.about')}
+            </Text>
+            <Text style={[styles.infoBody, { color: theme.colors.textMuted }]}>{listing.description}</Text>
+            <View style={styles.infoList}>
+              <DetailLine
+                label={t('listingDetail.published')}
+                value={listing.publishedAt ? formatDate(listing.publishedAt) : formatDate(listing.createdAt)}
+                theme={theme}
+              />
+              <DetailLine label={t('listingDetail.category')} value={categoryText} theme={theme} />
+              <DetailLine label={t('listingDetail.tags')} value={tagText} theme={theme} />
+            </View>
+          </View>
+
+          <View style={[styles.infoCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <Text style={[styles.infoTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {t('listingDetail.deliveryDetails')}
+            </Text>
+            <Text style={[styles.infoBody, { color: theme.colors.textMuted }]}>
+              {t('listingDetail.deliveryDetailsDescription', {
+                who: listing.deliveryMode === 'aosell' ? 'AoSell' : t('auth.seller').toLowerCase(),
+              })}
+            </Text>
+            <View style={styles.infoList}>
+              <DetailLine
+                label={t('listingDetail.store')}
+                value={seller ? `${seller.brandName}, ${seller.city}` : `${listing.city}, ${listing.countryCode}`}
+                theme={theme}
+              />
+              <DetailLine
+                label={t('common.delivery')}
+                value={listing.deliveryMode === 'aosell' ? t('listingDetail.deliveryAvailableAosell') : t('listingDetail.deliveryAvailableSeller')}
+                theme={theme}
+              />
+              <DetailLine label={t('listingDetail.checkout')} value={t('listingDetail.oneStorePerOrder')} theme={theme} />
+            </View>
           </View>
         </View>
 
-        <View
-          style={[
-            styles.infoCard,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <ThemedText type="headline">{t('listingDetail.deliveryDetails')}</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">
-            {t('listingDetail.deliveryDetailsDescription', {
-              who: listing.deliveryMode === 'aosell' ? 'AoSell' : t('auth.seller').toLowerCase(),
-            })}
-          </ThemedText>
-          <View style={styles.infoList}>
-            <DetailLine
-              label={t('listingDetail.store')}
-              value={seller ? `${seller.brandName}, ${seller.city}` : `${listing.city}, ${listing.countryCode}`}
-            />
-            <DetailLine
-              label={t('common.delivery')}
-              value={listing.deliveryMode === 'aosell' ? t('listingDetail.deliveryAvailableAosell') : t('listingDetail.deliveryAvailableSeller')}
-            />
-            <DetailLine label={t('listingDetail.checkout')} value={t('listingDetail.oneStorePerOrder')} />
-          </View>
-        </View>
-      </View>
+        {seller ? <SellerCard seller={seller} onPress={() => router.push(`/seller/${seller.id}`)} /> : null}
 
-      {seller ? <SellerCard seller={seller} onPress={() => router.push(`/seller/${seller.id}`)} /> : null}
+        {listing.attributes.length ? (
+          <View style={[styles.attributeCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <Text style={[styles.infoTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {t('listingDetail.itemDetails')}
+            </Text>
+            <View style={styles.attributeList}>
+              {listing.attributes.map((attribute) => (
+                <View
+                  key={attribute.key}
+                  style={[styles.attributeRow, { backgroundColor: theme.colors.background, borderColor: theme.colors.border, borderRadius: theme.radii.md }]}>
+                  <Text style={[styles.attributeLabel, { color: theme.colors.accent, fontFamily: theme.typography.micro.fontFamily }]}>
+                    {attribute.label}
+                  </Text>
+                  <Text style={[styles.attributeValue, { color: theme.colors.text }]}>{String(attribute.value)}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
-      {listing.attributes.length ? (
-        <View
-          style={[
-            styles.attributeCard,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <ThemedText type="headline">{t('listingDetail.itemDetails')}</ThemedText>
-          <View style={styles.attributeList}>
-            {listing.attributes.map((attribute) => (
-              <View
-                key={attribute.key}
-                style={[
-                  styles.attributeRow,
-                  { backgroundColor: theme.background, borderColor: theme.border },
-                ]}>
-                <ThemedText type="label" themeColor="burntOrange">
-                  {attribute.label}
-                </ThemedText>
-                <ThemedText type="body">{String(attribute.value)}</ThemedText>
-              </View>
-            ))}
+        {moreFromSeller.length ? (
+          <View style={styles.relatedSection}>
+            <View style={styles.relatedCopy}>
+              <Text style={[styles.infoTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+                {t('listingDetail.moreFromSeller', { seller: seller?.brandName ?? t('auth.seller').toLowerCase() })}
+              </Text>
+              <Text style={[styles.infoBody, { color: theme.colors.textMuted }]}>{t('listingDetail.moreFromSellerDescription')}</Text>
+            </View>
+            <View style={styles.relatedGrid}>
+              {moreFromSeller.map((item) => (
+                <View key={item.id} style={styles.relatedItem}>
+                  <ListingCard listing={item} sellerName={seller?.brandName} onPress={() => router.push(`/listing/${item.id}`)} />
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
-      ) : null}
-
-      {moreFromSeller.length ? (
-        <View style={styles.relatedSection}>
-          <View style={styles.relatedCopy}>
-            <ThemedText type="headline">{t('listingDetail.moreFromSeller', { seller: seller?.brandName ?? t('auth.seller').toLowerCase() })}</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              {t('listingDetail.moreFromSellerDescription')}
-            </ThemedText>
-          </View>
-          <View style={styles.relatedGrid}>
-            {moreFromSeller.map((item) => (
-              <View key={item.id} style={styles.relatedItem}>
-                <ListingCard
-                  listing={item}
-                  sellerName={seller?.brandName}
-                  onPress={() => router.push(`/listing/${item.id}`)}
-                />
-              </View>
-            ))}
-          </View>
-        </View>
-      ) : null}
-    </AppScreen>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-function DetailLine({ label, value }: { label: string; value: string }) {
+function Pill({ label, tone, theme }: { label: string; tone: 'accent' | 'neutral' | 'warning'; theme: AppTheme }) {
+  const backgroundColor = tone === 'accent' ? theme.colors.accent : tone === 'warning' ? theme.colors.warning : theme.colors.surfaceMuted;
+  const color = tone === 'accent' ? theme.colors.onAccent : tone === 'warning' ? '#FFFFFF' : theme.colors.text;
+  return (
+    <View style={[styles.pill, { backgroundColor, borderRadius: theme.radii.pill }]}>
+      <Text style={[styles.pillText, { color, fontFamily: theme.typography.label.fontFamily }]}>{label}</Text>
+    </View>
+  );
+}
+
+function QuickMetaCell({ label, value, theme }: { label: string; value: string; theme: AppTheme }) {
+  return (
+    <View style={styles.quickMetaCell}>
+      <Text style={[styles.quickMetaLabel, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={[styles.quickMetaValue, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function DetailLine({ label, value, theme }: { label: string; value: string; theme: AppTheme }) {
   return (
     <View style={styles.detailLine}>
-      <ThemedText type="bodySmall" themeColor="textSecondary">
-        {label}
-      </ThemedText>
-      <ThemedText type="button">{value}</ThemedText>
+      <Text style={[styles.detailLabel, { color: theme.colors.textMuted }]}>{label}</Text>
+      <Text style={[styles.detailValue, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  topSection: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xl,
-  },
-  galleryColumn: {
-    flexBasis: 420,
-    flexGrow: 1.2,
-    minWidth: 300,
-  },
-  summaryCard: {
-    flexBasis: 340,
-    flexGrow: 1,
-    minWidth: 280,
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  summaryGlow: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    top: -90,
-    right: -70,
-    opacity: 0.12,
-  },
-  storeStrip: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    flexWrap: 'wrap',
-  },
-  storeAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  storeCopy: {
-    gap: 2,
-    flexBasis: 180,
-    flexGrow: 1,
-  },
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  summaryCopy: {
-    gap: Spacing.md,
-  },
-  quickMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  quickMetaCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-    flexBasis: 170,
-    flexGrow: 1,
-  },
-  buyCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  buyCopy: {
-    gap: Spacing.xs,
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
-  },
-  infoCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-    flexBasis: 320,
-    flexGrow: 1,
-    minWidth: 280,
-  },
-  infoList: {
-    gap: Spacing.sm,
-  },
-  detailLine: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.md,
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-  },
-  attributeCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  attributeList: {
-    gap: Spacing.md,
-  },
-  attributeRow: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-  },
-  relatedSection: {
-    gap: Spacing.lg,
-  },
-  relatedCopy: {
-    gap: Spacing.xs,
-  },
-  relatedGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
-  },
-  relatedItem: {
-    flexBasis: 320,
-    flexGrow: 1,
-    minWidth: 280,
-  },
+  safeArea: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 12, gap: 16 },
+  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20 },
+  notFoundTitle: { fontSize: 17, lineHeight: 24 },
+  notFoundBody: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
+
+  storeStripWrap: {},
+  storeStrip: { borderWidth: 1, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  storeAvatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  storeAvatarText: { fontSize: 15, lineHeight: 20 },
+  storeCopy: { gap: 2, flexBasis: 140, flexGrow: 1 },
+  storeName: { fontSize: 15, lineHeight: 20 },
+  storeMeta: { fontSize: 13, lineHeight: 18 },
+  deliveryPill: { paddingHorizontal: 10, paddingVertical: 7 },
+  deliveryPillText: { fontSize: 11, lineHeight: 14 },
+
+  summarySection: { gap: 10 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: { paddingHorizontal: 12, paddingVertical: 7 },
+  pillText: { fontSize: 13, lineHeight: 18 },
+  title: { fontSize: 22, lineHeight: 28 },
+  price: { fontSize: 22, lineHeight: 28 },
+  description: { fontSize: 15, lineHeight: 22 },
+
+  quickMetaBand: { flexDirection: 'row', borderWidth: 1, overflow: 'hidden' },
+  quickMetaCell: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 14, paddingHorizontal: 6 },
+  quickMetaDivider: { width: 1 },
+  quickMetaLabel: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  quickMetaValue: { fontSize: 15, lineHeight: 20, textAlign: 'center' },
+
+  buyCard: { borderWidth: 1, padding: 16, gap: 12 },
+  buyCopy: { gap: 4 },
+  buyTitle: { fontSize: 17, lineHeight: 22 },
+  buyDescription: { fontSize: 13, lineHeight: 18 },
+  primaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center' },
+  primaryButtonText: { fontSize: 15, lineHeight: 20 },
+  secondaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
+  secondaryButtonText: { fontSize: 15, lineHeight: 20 },
+
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  infoCard: { borderWidth: 1, padding: 16, gap: 12, flexBasis: 320, flexGrow: 1, minWidth: 280 },
+  infoTitle: { fontSize: 17, lineHeight: 22 },
+  infoBody: { fontSize: 14, lineHeight: 20 },
+  infoList: { gap: 8 },
+  detailLine: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' },
+  detailLabel: { fontSize: 13, lineHeight: 18 },
+  detailValue: { fontSize: 14, lineHeight: 20 },
+
+  attributeCard: { borderWidth: 1, padding: 16, gap: 12 },
+  attributeList: { gap: 10 },
+  attributeRow: { borderWidth: 1, padding: 12, gap: 3 },
+  attributeLabel: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  attributeValue: { fontSize: 15, lineHeight: 20 },
+
+  relatedSection: { gap: 12 },
+  relatedCopy: { gap: 4 },
+  relatedGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  relatedItem: { flexBasis: 300, flexGrow: 1, minWidth: 260 },
 });

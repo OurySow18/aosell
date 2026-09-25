@@ -4,18 +4,26 @@ import type {
   Address,
   AppUser,
   Cart,
+  Condiment,
+  Dish,
   Listing,
   Notification,
   Order,
+  Post,
+  PostComment,
   SellerProfile,
   UserProfile,
 } from '@/types/domain';
 import type {
   FirestoreAddressDoc,
   FirestoreCartDoc,
+  FirestoreCondimentDoc,
+  FirestoreDishDoc,
   FirestoreListingDoc,
   FirestoreNotificationDoc,
   FirestoreOrderDoc,
+  FirestorePostCommentDoc,
+  FirestorePostDoc,
   FirestoreSellerProfileDoc,
   FirestoreUserDoc,
   FirestoreUserProfileDoc,
@@ -167,6 +175,7 @@ export function fromFirestoreSellerProfileDoc(
     ratingCount: doc.ratingCount,
     isOpen: doc.isOpen,
     tags: doc.tags ?? [],
+    cuisineSpecialties: doc.cuisineSpecialties ?? [],
     createdAt: toIsoDate(doc.createdAt),
     updatedAt: toIsoDate(doc.updatedAt),
   };
@@ -201,6 +210,8 @@ export function fromFirestoreListingDoc(id: string, doc: FirestoreListingDoc): L
     media: doc.media ?? [],
     attributes: doc.attributes ?? [],
     inventory: doc.inventory ?? { isUnlimited: true },
+    dishId: doc.dishId,
+    condiments: doc.condiments ?? [],
     averageRating: doc.averageRating,
     reviewCount: doc.reviewCount,
     linkedVideoUrl: doc.linkedVideoUrl,
@@ -243,6 +254,8 @@ export function fromFirestoreCartDoc(id: string, doc: FirestoreCartDoc): Cart {
     })),
     subtotal: { amountCents: doc.subtotalAmountCents, currency: doc.currency },
     deliveryFee: { amountCents: doc.deliveryFeeAmountCents, currency: doc.currency },
+    discount: { amountCents: doc.discountAmountCents ?? 0, currency: doc.currency },
+    promoCode: doc.promoCode,
     total: { amountCents: doc.totalAmountCents, currency: doc.currency },
     createdAt: toIsoDate(doc.createdAt),
     updatedAt: toIsoDate(doc.updatedAt),
@@ -263,6 +276,8 @@ export function toFirestoreCartDoc(cart: Cart): FirestoreCartDoc {
     })),
     subtotalAmountCents: cart.subtotal.amountCents,
     deliveryFeeAmountCents: cart.deliveryFee.amountCents,
+    discountAmountCents: cart.discount.amountCents,
+    promoCode: cart.promoCode,
     totalAmountCents: cart.total.amountCents,
     currency: cart.total.currency,
     createdAt: toTimestamp(cart.createdAt),
@@ -382,5 +397,98 @@ export function toFirestoreNotificationDoc(
   return {
     ...notification,
     createdAt: toTimestamp(notification.createdAt),
+  };
+}
+
+export function fromFirestoreDishDoc(id: string, doc: FirestoreDishDoc): Dish {
+  return {
+    id,
+    cuisine: doc.cuisine,
+    name: doc.name ?? '',
+    slug: doc.slug ?? id,
+    description: doc.description ?? '',
+    imageUrl: doc.imageUrl,
+    defaultCondimentIds: doc.defaultCondimentIds ?? [],
+    createdBySellerId: doc.createdBySellerId,
+    createdAt: toIsoDate(doc.createdAt),
+    updatedAt: toIsoDate(doc.updatedAt),
+  };
+}
+
+export function toFirestoreDishDoc(dish: Dish, searchTokens: string[]): FirestoreDishDoc {
+  return {
+    ...dish,
+    createdAt: toTimestamp(dish.createdAt),
+    updatedAt: toTimestamp(dish.updatedAt),
+    searchTokens,
+  };
+}
+
+export function fromFirestoreCondimentDoc(id: string, doc: FirestoreCondimentDoc): Condiment {
+  return {
+    id,
+    name: doc.name ?? '',
+    normalizedName: doc.normalizedName ?? '',
+    aliases: doc.aliases ?? [],
+    category: doc.category,
+    createdBySellerId: doc.createdBySellerId,
+    createdAt: toIsoDate(doc.createdAt),
+    updatedAt: toIsoDate(doc.updatedAt),
+  };
+}
+
+export function toFirestoreCondimentDoc(
+  condiment: Condiment,
+  searchTokens: string[]
+): FirestoreCondimentDoc {
+  return {
+    ...condiment,
+    createdAt: toTimestamp(condiment.createdAt),
+    updatedAt: toTimestamp(condiment.updatedAt),
+    searchTokens,
+  };
+}
+
+export function fromFirestorePostDoc(id: string, doc: FirestorePostDoc): Post {
+  return {
+    id,
+    sellerId: doc.sellerId,
+    mediaType: doc.mediaType,
+    mediaUrl: doc.mediaUrl,
+    mediaWidth: doc.mediaWidth,
+    mediaHeight: doc.mediaHeight,
+    mediaDurationSeconds: doc.mediaDurationSeconds,
+    caption: doc.caption ?? '',
+    linkTarget: doc.linkTarget,
+    likeCount: doc.likeCount ?? 0,
+    commentCount: doc.commentCount ?? 0,
+    createdAt: toIsoDate(doc.createdAt),
+    updatedAt: toIsoDate(doc.updatedAt),
+  };
+}
+
+export function toFirestorePostDoc(post: Post): FirestorePostDoc {
+  return {
+    ...post,
+    createdAt: toTimestamp(post.createdAt),
+    updatedAt: toTimestamp(post.updatedAt),
+  };
+}
+
+export function fromFirestorePostCommentDoc(id: string, doc: FirestorePostCommentDoc): PostComment {
+  return {
+    id,
+    postId: doc.postId,
+    authorUserId: doc.authorUserId,
+    authorDisplayNameSnapshot: doc.authorDisplayNameSnapshot ?? '',
+    body: doc.body ?? '',
+    createdAt: toIsoDate(doc.createdAt),
+  };
+}
+
+export function toFirestorePostCommentDoc(comment: PostComment): FirestorePostCommentDoc {
+  return {
+    ...comment,
+    createdAt: toTimestamp(comment.createdAt),
   };
 }

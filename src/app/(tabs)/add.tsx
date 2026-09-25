@@ -70,6 +70,7 @@ export default function AddScreen() {
       </View>
       <View style={styles.actions}>
         <AppButton fullWidth label={t('common.createListing')} onPress={() => router.push('/listing/edit/new')} />
+        <AppButton fullWidth label={t('common.createPost')} variant="secondary" onPress={() => router.push('/post/create')} />
         <AppButton fullWidth label={t('common.openSellerCenter')} variant="secondary" onPress={() => router.push('/seller-center')} />
       </View>
     </AppScreen>

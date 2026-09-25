@@ -4,29 +4,48 @@ import type {
   Address,
   AppUser,
   Cart,
+  Condiment,
+  Cuisine,
   DeliveryMode,
+  Dish,
   Listing,
+  ListingCondimentEntry,
   ListingStatus,
   Notification,
   Order,
   OrderStatus,
+  Post,
+  PostComment,
+  PostLinkTarget,
+  PostMediaType,
   SellerProfile,
   SellerType,
   UserProfile,
 } from '@/types/domain';
 import { AuthRepository } from '@/repositories/auth-repository';
 import { CartRepository } from '@/repositories/cart-repository';
+import { CondimentRepository } from '@/repositories/condiment-repository';
+import { DishRepository } from '@/repositories/dish-repository';
+import { FollowRepository } from '@/repositories/follow-repository';
 import { ListingRepository } from '@/repositories/listing-repository';
 import { NotificationRepository } from '@/repositories/notification-repository';
 import { OrderRepository } from '@/repositories/order-repository';
+import { PostRepository } from '@/repositories/post-repository';
 import { SellerRepository } from '@/repositories/seller-repository';
 import { UserProfileSeed, UserRepository } from '@/repositories/user-repository';
-import { demoListings, demoSellers } from '@/services/mock-data';
+import { demoCondiments, demoDishes, demoListings, demoPosts, demoSellers } from '@/services/mock-data';
 import { translate } from '@/lib/i18n';
 import { getNextStatuses } from '@/lib/utils/order';
-import { computeCartTotals, resolveAddToCart } from '@/lib/cart';
+import { computeCartTotals, resolveAddToCart, resolvePromoCode } from '@/lib/cart';
+import { resolveCondimentEntries } from '@/lib/condiments';
+import { slugifyDishName } from '@/lib/dishes';
 import { searchListings as filterListings, type ListingSearchFilters } from '@/lib/search';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
+
+type DishSelection =
+  | { kind: 'none' }
+  | { kind: 'existing'; dishId: string }
+  | { kind: 'new'; cuisine: Cuisine; name: string; description: string; imageUrl?: string };
 
 type SaveListingInput = {
   id?: string;
@@ -42,6 +61,8 @@ type SaveListingInput = {
   tags: string[];
   categories: string[];
   hasVideo: boolean;
+  dishSelection: DishSelection;
+  condimentInputs: string[];
 };
 
 type CreateSellerProfileInput = {
@@ -51,6 +72,7 @@ type CreateSellerProfileInput = {
   city: string;
   countryCode: string;
   deliveryModes: DeliveryMode[];
+  cuisineSpecialties: Cuisine[];
 };
 
 type AddToCartResult = {
@@ -78,6 +100,9 @@ type AosellContextValue = {
   sellers: SellerProfile[];
   currentSellerProfile: SellerProfile | null;
   listings: Listing[];
+  dishes: Dish[];
+  condiments: Condiment[];
+  feedPosts: Post[];
   cart: Cart | null;
   orders: Order[];
   notifications: Notification[];
@@ -85,13 +110,31 @@ type AosellContextValue = {
   signUp: (input: SignUpInput) => Promise<AppUser | null>;
   logout: () => Promise<void>;
   createSellerProfile: (input: CreateSellerProfileInput) => Promise<SellerProfile | null>;
+  setSellerOpen: (isOpen: boolean) => Promise<void>;
   saveListing: (input: SaveListingInput) => Promise<Listing | null>;
   getListingById: (id: string) => Listing | undefined;
   getSellerById: (id: string) => SellerProfile | undefined;
+  getDishById: (id: string) => Dish | undefined;
+  getPostById: (id: string) => Post | undefined;
   searchListings: (filters: ListingSearchFilters) => Listing[];
+  createPost: (input: {
+    mediaType: PostMediaType;
+    mediaUrl?: string;
+    mediaWidth?: number;
+    mediaHeight?: number;
+    mediaDurationSeconds?: number;
+    caption: string;
+    linkTarget: PostLinkTarget;
+  }) => Promise<Post | null>;
+  toggleLike: (postId: string, liked: boolean) => Promise<void>;
+  addPostComment: (postId: string, body: string) => Promise<PostComment | null>;
+  deletePost: (postId: string) => Promise<void>;
   addToCart: (listingId: string, forceReplace?: boolean) => Promise<AddToCartResult>;
   updateCartQuantity: (listingId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
+  applyPromoCode: (code: string) => Promise<{ ok: boolean }>;
+  followedSellerIds: string[];
+  toggleFollow: (sellerId: string, following: boolean) => Promise<void>;
   addAddress: (address: Omit<Address, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Address | null>;
   placeOrder: (addressId: string) => Promise<Order | null>;
   advanceOrderStatus: (orderId: string, nextStatus: OrderStatus) => Promise<void>;
@@ -128,10 +171,14 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     demoListings.filter((listing) => listing.status === 'active')
   );
   const [ownedListings, setOwnedListings] = useState<Listing[]>([]);
+  const [dishes, setDishes] = useState<Dish[]>(demoDishes);
+  const [condiments, setCondiments] = useState<Condiment[]>(demoCondiments);
+  const [feedPosts, setFeedPosts] = useState<Post[]>(demoPosts);
   const [cart, setCart] = useState<Cart | null>(null);
   const [buyerOrders, setBuyerOrders] = useState<Order[]>([]);
   const [sellerOrders, setSellerOrders] = useState<Order[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [followedSellerIds, setFollowedSellerIds] = useState<string[]>([]);
 
   const listings = mergeById(publicListings, ownedListings);
   const orders = mergeById(buyerOrders, sellerOrders);
@@ -150,6 +197,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
           setBuyerOrders([]);
           setSellerOrders([]);
           setNotifications([]);
+          setFollowedSellerIds([]);
         }
       },
       () => {
@@ -159,11 +207,17 @@ export function AosellProvider({ children }: { children: ReactNode }) {
 
     const unsubscribeSellers = SellerRepository.subscribePublic(setSellers);
     const unsubscribeListings = ListingRepository.subscribePublicActive(setPublicListings);
+    const unsubscribeDishes = DishRepository.subscribeCatalog(setDishes);
+    const unsubscribeCondiments = CondimentRepository.subscribeCatalog(setCondiments);
+    const unsubscribePosts = PostRepository.subscribeFeed(setFeedPosts);
 
     return () => {
       unsubscribeAuth();
       unsubscribeSellers();
       unsubscribeListings();
+      unsubscribeDishes();
+      unsubscribeCondiments();
+      unsubscribePosts();
     };
   }, []);
 
@@ -194,6 +248,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       currentUser.id,
       setCurrentSellerProfile
     );
+    const unsubscribeFollows = FollowRepository.subscribeFollowedSellerIds(currentUser.id, setFollowedSellerIds);
 
     return () => {
       isActive = false;
@@ -203,6 +258,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       unsubscribeBuyerOrders();
       unsubscribeNotifications();
       unsubscribeOwnedSeller();
+      unsubscribeFollows();
     };
   }, [currentUser?.id]);
 
@@ -276,13 +332,54 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     return profile;
   }
 
+  async function setSellerOpen(isOpen: boolean) {
+    if (!currentSellerProfile) {
+      return;
+    }
+
+    await SellerRepository.setOpenStatus(currentSellerProfile.id, isOpen);
+    setCurrentSellerProfile((current) => (current ? { ...current, isOpen } : current));
+    setSellers((current) => current.map((seller) => (seller.id === currentSellerProfile.id ? { ...seller, isOpen } : seller)));
+  }
+
   async function saveListing(input: SaveListingInput) {
     if (!currentSellerProfile) {
       return null;
     }
 
+    const { matched, toCreate } = resolveCondimentEntries(input.condimentInputs, condiments);
+    const createdCondiments = toCreate.length
+      ? await CondimentRepository.createMany(currentSellerProfile, toCreate)
+      : [];
+    if (createdCondiments.length) {
+      setCondiments((current) => mergeById(current, createdCondiments));
+    }
+    const resolvedCondiments: ListingCondimentEntry[] = [...matched, ...createdCondiments].map(
+      (condiment) => ({ condimentId: condiment.id, nameSnapshot: condiment.name })
+    );
+
+    let dishId: string | undefined;
+    if (input.dishSelection.kind === 'existing') {
+      dishId = input.dishSelection.dishId;
+    } else if (input.dishSelection.kind === 'new') {
+      const newDish = await DishRepository.create(currentSellerProfile, {
+        cuisine: input.dishSelection.cuisine,
+        name: input.dishSelection.name,
+        slug: slugifyDishName(input.dishSelection.name),
+        description: input.dishSelection.description,
+        imageUrl: input.dishSelection.imageUrl,
+        defaultCondimentIds: resolvedCondiments.map((entry) => entry.condimentId),
+      });
+      setDishes((current) => mergeById(current, [newDish]));
+      dishId = newDish.id;
+    }
+
     const existing = input.id ? getListingById(input.id) : undefined;
-    const listing = await ListingRepository.save(currentSellerProfile, input, existing);
+    const listing = await ListingRepository.save(
+      currentSellerProfile,
+      { ...input, dishId, condiments: resolvedCondiments },
+      existing
+    );
 
     setOwnedListings((current) => mergeById(current, [listing]));
     if (listing.status === 'active') {
@@ -302,8 +399,71 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     return sellers.find((seller) => seller.id === id);
   }
 
+  function getDishById(id: string) {
+    return dishes.find((dish) => dish.id === id);
+  }
+
   function searchListings(filters: ListingSearchFilters) {
     return filterListings(listings, sellers, filters);
+  }
+
+  function getPostById(id: string) {
+    return feedPosts.find((post) => post.id === id);
+  }
+
+  async function createPost(input: {
+    mediaType: PostMediaType;
+    mediaUrl?: string;
+    mediaWidth?: number;
+    mediaHeight?: number;
+    mediaDurationSeconds?: number;
+    caption: string;
+    linkTarget: PostLinkTarget;
+  }) {
+    if (!currentSellerProfile) {
+      return null;
+    }
+
+    const post = await PostRepository.create(currentSellerProfile, input);
+    setFeedPosts((current) => mergeById(current, [post]));
+    return post;
+  }
+
+  async function toggleLike(postId: string, liked: boolean) {
+    if (!currentUser) {
+      return;
+    }
+
+    await PostRepository.setLiked(postId, currentUser.id, liked);
+    // Optimistic bump: the Cloud Function's own FieldValue.increment write will
+    // land a moment later via the feed's onSnapshot and settle on the same
+    // value — this isn't double-counting, just an instant local echo.
+    setFeedPosts((current) =>
+      current.map((post) =>
+        post.id === postId ? { ...post, likeCount: post.likeCount + (liked ? 1 : -1) } : post
+      )
+    );
+  }
+
+  async function addPostComment(postId: string, body: string) {
+    if (!currentUser || !userProfile) {
+      return null;
+    }
+
+    const comment = await PostRepository.addComment(
+      postId,
+      { userId: currentUser.id, displayName: userProfile.displayName },
+      body
+    );
+    setFeedPosts((current) =>
+      current.map((post) => (post.id === postId ? { ...post, commentCount: post.commentCount + 1 } : post))
+    );
+    return comment;
+  }
+
+  async function deletePost(postId: string) {
+    await PostRepository.delete(postId);
+    setFeedPosts((current) => current.filter((post) => post.id !== postId));
   }
 
   async function addToCart(listingId: string, forceReplace = false): Promise<AddToCartResult> {
@@ -325,6 +485,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       buyerUserId: currentUser.id,
       createdAt: cart?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      promoCode: forceReplace ? undefined : cart?.promoCode,
     });
     await CartRepository.save(nextCart);
     setCart(nextCart);
@@ -350,6 +511,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       buyerUserId: currentUser.id,
       createdAt: cart.createdAt,
       updatedAt: new Date().toISOString(),
+      promoCode: cart.promoCode,
     });
     await CartRepository.save(nextCart);
     setCart(nextCart);
@@ -362,6 +524,37 @@ export function AosellProvider({ children }: { children: ReactNode }) {
 
     await CartRepository.clear(currentUser.id);
     setCart(null);
+  }
+
+  async function applyPromoCode(code: string): Promise<{ ok: boolean }> {
+    if (!currentUser || !cart) {
+      return { ok: false };
+    }
+
+    if (!resolvePromoCode(code)) {
+      return { ok: false };
+    }
+
+    const nextCart = computeCartTotals(cart.items, cart.sellerId, {
+      buyerUserId: currentUser.id,
+      createdAt: cart.createdAt,
+      updatedAt: new Date().toISOString(),
+      promoCode: code,
+    });
+    await CartRepository.save(nextCart);
+    setCart(nextCart);
+    return { ok: true };
+  }
+
+  async function toggleFollow(sellerId: string, following: boolean) {
+    if (!currentUser) {
+      return;
+    }
+
+    await FollowRepository.setFollowing(currentUser.id, sellerId, following);
+    setFollowedSellerIds((current) =>
+      following ? Array.from(new Set([...current, sellerId])) : current.filter((id) => id !== sellerId)
+    );
   }
 
   async function addAddress(address: Omit<Address, 'id' | 'createdAt' | 'updatedAt'>) {
@@ -474,6 +667,9 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         sellers,
         currentSellerProfile,
         listings,
+        dishes,
+        condiments,
+        feedPosts,
         cart,
         orders,
         notifications,
@@ -481,13 +677,23 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         signUp,
         logout,
         createSellerProfile,
+        setSellerOpen,
         saveListing,
         getListingById,
         getSellerById,
+        getDishById,
+        getPostById,
         searchListings,
+        createPost,
+        toggleLike,
+        addPostComment,
+        deletePost,
         addToCart,
         updateCartQuantity,
         clearCart,
+        applyPromoCode,
+        followedSellerIds,
+        toggleFollow,
         addAddress,
         placeOrder,
         advanceOrderStatus,

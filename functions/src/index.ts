@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { onCall } from 'firebase-functions/v2/https';
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onRequest } from 'firebase-functions/v2/https';
 import Stripe from 'stripe';
 
@@ -118,4 +118,36 @@ export const sendOrderNotification = onDocumentUpdated('orders/{orderId}', async
     isRead: false,
     createdAt: new Date(),
   });
+});
+
+export const onPostLikeWritten = onDocumentWritten('posts/{postId}/likes/{userId}', async (event) => {
+  const postId = event.params.postId;
+  const existedBefore = event.data?.before.exists ?? false;
+  const existsAfter = event.data?.after.exists ?? false;
+
+  if (existedBefore === existsAfter) {
+    return;
+  }
+
+  const delta = existsAfter ? 1 : -1;
+  await db.collection('posts').doc(postId).set(
+    { likeCount: FieldValue.increment(delta) },
+    { merge: true }
+  );
+});
+
+export const onPostCommentWritten = onDocumentWritten('posts/{postId}/comments/{commentId}', async (event) => {
+  const postId = event.params.postId;
+  const existedBefore = event.data?.before.exists ?? false;
+  const existsAfter = event.data?.after.exists ?? false;
+
+  if (existedBefore === existsAfter) {
+    return;
+  }
+
+  const delta = existsAfter ? 1 : -1;
+  await db.collection('posts').doc(postId).set(
+    { commentCount: FieldValue.increment(delta) },
+    { merge: true }
+  );
 });

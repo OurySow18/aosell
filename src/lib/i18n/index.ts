@@ -1,4 +1,4 @@
-import type { DeliveryMode, ListingStatus, SellerType } from '@/types/domain';
+import type { Cuisine, DeliveryMode, ListingStatus, SellerType } from '@/types/domain';
 
 import { translations } from '@/lib/i18n/translations';
 
@@ -102,6 +102,10 @@ export function getSellerTypeLabel(value: 'all' | SellerType) {
 
 export function getDeliveryModeLabel(value: 'all' | DeliveryMode) {
   return value === 'all' ? translate('common.all') : translate(`domain.deliveryMode.${value}`);
+}
+
+export function getCuisineLabel(value: Cuisine) {
+  return translate(`domain.cuisine.${value}`);
 }
 
 export function getListingStatusLabel(value: ListingStatus) {

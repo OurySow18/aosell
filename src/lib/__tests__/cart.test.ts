@@ -1,5 +1,5 @@
 import type { Cart, CartItem, Listing } from '@/types/domain';
-import { addOrIncrementItem, computeCartTotals, resolveAddToCart } from '@/lib/cart';
+import { addOrIncrementItem, computeCartTotals, resolveAddToCart, resolvePromoCode } from '@/lib/cart';
 
 function makeListing(overrides: Partial<Listing> = {}): Listing {
   return {
@@ -19,6 +19,7 @@ function makeListing(overrides: Partial<Listing> = {}): Listing {
     media: [],
     attributes: [],
     inventory: { isUnlimited: true },
+    condiments: [],
     isFeatured: false,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -44,6 +45,7 @@ function makeCart(overrides: Partial<Cart> = {}): Cart {
     items: [makeCartItem()],
     subtotal: { amountCents: 500, currency: 'EUR' },
     deliveryFee: { amountCents: 450, currency: 'EUR' },
+    discount: { amountCents: 0, currency: 'EUR' },
     total: { amountCents: 950, currency: 'EUR' },
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -80,7 +82,49 @@ describe('computeCartTotals', () => {
 
     expect(cart.subtotal.amountCents).toBe(0);
     expect(cart.deliveryFee.amountCents).toBe(0);
+    expect(cart.discount.amountCents).toBe(0);
     expect(cart.total.amountCents).toBe(0);
+  });
+
+  it('applies a valid promo code as a discount on the subtotal, not the delivery fee', () => {
+    const items = [makeCartItem({ quantity: 2, unitPriceSnapshot: { amountCents: 1000, currency: 'EUR' } })];
+
+    const cart = computeCartTotals(items, 'seller-1', {
+      buyerUserId: 'buyer-1',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      promoCode: 'bremen10',
+    });
+
+    expect(cart.subtotal.amountCents).toBe(2000);
+    expect(cart.discount.amountCents).toBe(200);
+    expect(cart.promoCode).toBe('BREMEN10');
+    expect(cart.total.amountCents).toBe(2000 + 450 - 200);
+  });
+
+  it('ignores an unknown promo code without discounting anything', () => {
+    const items = [makeCartItem()];
+
+    const cart = computeCartTotals(items, 'seller-1', {
+      buyerUserId: 'buyer-1',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      promoCode: 'NOT-A-REAL-CODE',
+    });
+
+    expect(cart.discount.amountCents).toBe(0);
+    expect(cart.promoCode).toBeUndefined();
+  });
+});
+
+describe('resolvePromoCode', () => {
+  it('matches a known code case-insensitively and trims whitespace', () => {
+    expect(resolvePromoCode('bremen10')).toEqual({ code: 'BREMEN10', labelKey: 'cart.promo.bremen10', rate: 0.1 });
+    expect(resolvePromoCode('  BREMEN10  ')).toEqual({ code: 'BREMEN10', labelKey: 'cart.promo.bremen10', rate: 0.1 });
+  });
+
+  it('returns null for an unknown code', () => {
+    expect(resolvePromoCode('DOES-NOT-EXIST')).toBeNull();
   });
 });
 
