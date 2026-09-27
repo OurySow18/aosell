@@ -6,7 +6,6 @@ import { AppButton } from '@/components/ui/app-button';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
-import { Spacing } from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
 import { formatMoney } from '@/lib/utils/format';
 import { useAosell } from '@/providers/aosell-provider';
@@ -78,12 +77,6 @@ export default function AddScreen() {
 }
 
 const styles = StyleSheet.create({
-  stats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  actions: {
-    gap: Spacing.md,
-  },
+  stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  actions: { gap: 12 },
 });

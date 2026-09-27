@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { Colors, darkTheme, lightTheme } from '@/constants/theme';
-
-export function useTheme() {
-  return Colors;
-}
+import { darkTheme, lightTheme } from '@/constants/theme';
 
 /**
  * Dark-mode-aware access to the "Mangue" design system. `useColorScheme()`

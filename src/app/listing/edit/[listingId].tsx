@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { DishCatalogPanel } from '@/components/dish/dish-catalog-panel';
 import { AppButton } from '@/components/ui/app-button';
@@ -9,20 +9,13 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { CondimentTagInput } from '@/components/ui/condiment-tag-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
-import { Radius, Spacing } from '@/constants/theme';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
-import {
-  getCuisineLabel,
-  getDeliveryModeLabel,
-  getListingStatusLabel,
-  getListingTypeLabel,
-} from '@/lib/i18n';
+import { getCuisineLabel, getDeliveryModeLabel, getListingStatusLabel, getListingTypeLabel } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
 import { cuisineOptions } from '@/lib/validations/seller-profile';
 import { listingSchema } from '@/lib/validations/listing';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
-import { ThemedText } from '@/components/themed-text';
 import type { Cuisine, Dish } from '@/types/domain';
 
 const listingTypes = ['product', 'meal', 'service'] as const;
@@ -34,7 +27,7 @@ type DishMode = 'none' | 'catalog-picked' | 'creating-new';
 export default function ListingEditorScreen() {
   const params = useLocalSearchParams<{ listingId?: string | string[] }>();
   const listingId = Array.isArray(params.listingId) ? params.listingId[0] : params.listingId ?? 'new';
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const { currentSellerProfile, dishes, condiments, getListingById, saveListing } = useAosell();
   const existing = listingId === 'new' ? undefined : getListingById(listingId);
@@ -46,21 +39,15 @@ export default function ListingEditorScreen() {
   const [type, setType] = useState<(typeof listingTypes)[number]>(existing?.type ?? 'product');
   const [deliveryMode, setDeliveryMode] = useState<(typeof deliveryModes)[number]>(existing?.deliveryMode ?? 'aosell');
   const [city, setCity] = useState(existing?.city ?? currentSellerProfile?.city ?? DEFAULT_CITY);
-  const [countryCode, setCountryCode] = useState(
-    existing?.countryCode ?? currentSellerProfile?.countryCode ?? DEFAULT_COUNTRY_CODE,
-  );
+  const [countryCode, setCountryCode] = useState(existing?.countryCode ?? currentSellerProfile?.countryCode ?? DEFAULT_COUNTRY_CODE);
   const [status, setStatus] = useState<(typeof listingStatuses)[number]>(existing?.status ?? 'draft');
   const [tags, setTags] = useState(existing?.tags.join(', ') ?? '');
   const [categories, setCategories] = useState(existing?.categories.join(', ') ?? '');
   const [hasVideo, setHasVideo] = useState(Boolean(existing?.linkedVideoUrl));
   const [dishMode, setDishMode] = useState<DishMode>(existing?.dishId ? 'catalog-picked' : 'none');
   const [selectedDishId, setSelectedDishId] = useState<string | undefined>(existing?.dishId);
-  const [newDishCuisine, setNewDishCuisine] = useState<Cuisine | undefined>(
-    currentSellerProfile?.cuisineSpecialties[0],
-  );
-  const [condimentInputs, setCondimentInputs] = useState<string[]>(
-    existing?.condiments.map((entry) => entry.nameSnapshot) ?? [],
-  );
+  const [newDishCuisine, setNewDishCuisine] = useState<Cuisine | undefined>(currentSellerProfile?.cuisineSpecialties[0]);
+  const [condimentInputs, setCondimentInputs] = useState<string[]>(existing?.condiments.map((entry) => entry.nameSnapshot) ?? []);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,9 +57,7 @@ export default function ListingEditorScreen() {
     setTitle(dish.name);
     setDescription(dish.description);
     setCondimentInputs(
-      dish.defaultCondimentIds
-        .map((id) => condiments.find((condiment) => condiment.id === id)?.name)
-        .filter((name): name is string => Boolean(name)),
+      dish.defaultCondimentIds.map((id) => condiments.find((condiment) => condiment.id === id)?.name).filter((name): name is string => Boolean(name)),
     );
   }
 
@@ -84,10 +69,7 @@ export default function ListingEditorScreen() {
   if (!currentSellerProfile) {
     return (
       <AppScreen>
-        <EmptyState
-          title={t('listingEditor.missingTitle')}
-          description={t('listingEditor.missingDescription')}
-        />
+        <EmptyState title={t('listingEditor.missingTitle')} description={t('listingEditor.missingDescription')} />
       </AppScreen>
     );
   }
@@ -103,14 +85,8 @@ export default function ListingEditorScreen() {
       city,
       countryCode,
       status,
-      tags: tags
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-      categories: categories
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
+      tags: tags.split(',').map((item) => item.trim()).filter(Boolean),
+      categories: categories.split(',').map((item) => item.trim()).filter(Boolean),
       hasVideo,
     });
 
@@ -133,12 +109,7 @@ export default function ListingEditorScreen() {
 
     setIsSubmitting(true);
     try {
-      const result = await saveListing({
-        id: existing?.id,
-        ...parsed.data,
-        dishSelection,
-        condimentInputs,
-      });
+      const result = await saveListing({ id: existing?.id, ...parsed.data, dishSelection, condimentInputs });
 
       if (result) {
         router.replace('/seller-center');
@@ -156,24 +127,19 @@ export default function ListingEditorScreen() {
         description={t('listingEditor.description')}
       />
 
-      <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      <View style={[styles.panel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
         <AppInput label={t('common.title')} value={title} onChangeText={setTitle} />
         <AppInput label={t('common.slug')} value={slug} onChangeText={setSlug} />
         <AppInput label={t('common.description')} value={description} onChangeText={setDescription} multiline />
         <AppInput label={t('common.priceInCents')} value={amount} onChangeText={setAmount} />
         <View style={styles.row}>
           {listingTypes.map((option) => (
-            <AppButton
-              key={option}
-              label={getListingTypeLabel(option)}
-              variant={type === option ? 'secondary' : 'ghost'}
-              onPress={() => setType(option)}
-            />
+            <AppButton key={option} label={getListingTypeLabel(option)} variant={type === option ? 'secondary' : 'ghost'} onPress={() => setType(option)} />
           ))}
         </View>
 
         {type === 'meal' ? (
-          <View style={[styles.dishSection, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <View style={[styles.dishSection, { backgroundColor: theme.colors.background, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
             <DishCatalogPanel
               cuisines={currentSellerProfile.cuisineSpecialties}
               dishes={dishes}
@@ -209,22 +175,12 @@ export default function ListingEditorScreen() {
 
         <View style={styles.row}>
           {deliveryModes.map((option) => (
-            <AppButton
-              key={option}
-              label={getDeliveryModeLabel(option)}
-              variant={deliveryMode === option ? 'secondary' : 'ghost'}
-              onPress={() => setDeliveryMode(option)}
-            />
+            <AppButton key={option} label={getDeliveryModeLabel(option)} variant={deliveryMode === option ? 'secondary' : 'ghost'} onPress={() => setDeliveryMode(option)} />
           ))}
         </View>
         <View style={styles.row}>
           {listingStatuses.map((option) => (
-            <AppButton
-              key={option}
-              label={getListingStatusLabel(option)}
-              variant={status === option ? 'secondary' : 'ghost'}
-              onPress={() => setStatus(option)}
-            />
+            <AppButton key={option} label={getListingStatusLabel(option)} variant={status === option ? 'secondary' : 'ghost'} onPress={() => setStatus(option)} />
           ))}
         </View>
         <View style={styles.row}>
@@ -232,22 +188,13 @@ export default function ListingEditorScreen() {
           <AppInput label={t('common.countryCode')} value={countryCode} onChangeText={setCountryCode} />
         </View>
         <AppInput label={t('common.tags')} value={tags} onChangeText={setTags} placeholder={t('listingEditor.tagsPlaceholder')} />
-        <AppInput
-          label={t('common.categories')}
-          value={categories}
-          onChangeText={setCategories}
-          placeholder={t('listingEditor.categoriesPlaceholder')}
-        />
+        <AppInput label={t('common.categories')} value={categories} onChangeText={setCategories} placeholder={t('listingEditor.categoriesPlaceholder')} />
         <AppButton
           label={hasVideo ? t('listingEditor.videoIncluded') : t('listingEditor.addOptionalVideo')}
           variant={hasVideo ? 'secondary' : 'ghost'}
           onPress={() => setHasVideo((current) => !current)}
         />
-        {error ? (
-          <ThemedText type="bodySmall" themeColor="error">
-            {error}
-          </ThemedText>
-        ) : null}
+        {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
         <AppButton
           disabled={isSubmitting}
           label={existing ? t('listingEditor.saveChanges') : t('listingEditor.publishListing')}
@@ -261,21 +208,8 @@ export default function ListingEditorScreen() {
 }
 
 const styles = StyleSheet.create({
-  panel: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  dishSection: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.lg,
-  },
+  panel: { borderWidth: 1, padding: 20, gap: 16 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  dishSection: { borderWidth: 1, padding: 16, gap: 16 },
+  error: { fontSize: 13, lineHeight: 18 },
 });

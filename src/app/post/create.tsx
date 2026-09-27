@@ -2,17 +2,15 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import { AppButton } from '@/components/ui/app-button';
 import { AppInput } from '@/components/ui/app-input';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
-import { Radius, Spacing } from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { storage } from '@/lib/firebase/config';
 import { canSellerLinkTarget } from '@/lib/posts';
 import { useAosell } from '@/providers/aosell-provider';
@@ -28,7 +26,7 @@ type SelectedMedia = {
 };
 
 export default function CreatePostScreen() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const { currentSellerProfile, listings, createPost } = useAosell();
 
@@ -42,10 +40,7 @@ export default function CreatePostScreen() {
   if (!currentSellerProfile) {
     return (
       <AppScreen>
-        <EmptyState
-          title={t('createPost.noSellerProfileTitle')}
-          description={t('createPost.noSellerProfileDescription')}
-        />
+        <EmptyState title={t('createPost.noSellerProfileTitle')} description={t('createPost.noSellerProfileDescription')} />
       </AppScreen>
     );
   }
@@ -109,9 +104,7 @@ export default function CreatePostScreen() {
         const blob = await response.blob();
         const fileName = `${Date.now()}-${mediaMode === 'video' ? 'video.mp4' : 'image.jpg'}`;
         const storageRef = ref(storage, `post-media/${currentSellerProfile.id}/${fileName}`);
-        await uploadBytes(storageRef, blob, {
-          contentType: mediaMode === 'video' ? 'video/mp4' : 'image/jpeg',
-        });
+        await uploadBytes(storageRef, blob, { contentType: mediaMode === 'video' ? 'video/mp4' : 'image/jpeg' });
         mediaUrl = await getDownloadURL(storageRef);
       }
 
@@ -139,7 +132,7 @@ export default function CreatePostScreen() {
     <AppScreen>
       <SectionTitle eyebrow={t('createPost.eyebrow')} title={t('createPost.title')} description={t('createPost.description')} />
 
-      <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      <View style={[styles.panel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
         <View style={styles.row}>
           {mediaModes.map((mode) => (
             <AppButton
@@ -166,18 +159,12 @@ export default function CreatePostScreen() {
           </View>
         ) : null}
 
-        <AppInput
-          label={t('createPost.captionLabel')}
-          multiline
-          onChangeText={setCaption}
-          placeholder={t('createPost.captionPlaceholder')}
-          value={caption}
-        />
+        <AppInput label={t('createPost.captionLabel')} multiline onChangeText={setCaption} placeholder={t('createPost.captionPlaceholder')} value={caption} />
 
         <View style={styles.linkSection}>
-          <ThemedText type="label" themeColor="textSecondary">
+          <Text style={[styles.label, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>
             {t('createPost.linkTargetLabel')}
-          </ThemedText>
+          </Text>
           <View style={styles.row}>
             <AppButton
               label={t('createPost.linkToShop')}
@@ -189,24 +176,14 @@ export default function CreatePostScreen() {
                 key={listing.id}
                 label={listing.title}
                 variant={linkTarget?.type === 'listing' && linkTarget.listingId === listing.id ? 'secondary' : 'ghost'}
-                onPress={() =>
-                  setLinkTarget({ type: 'listing', listingId: listing.id, sellerId: currentSellerProfile.id })
-                }
+                onPress={() => setLinkTarget({ type: 'listing', listingId: listing.id, sellerId: currentSellerProfile.id })}
               />
             ))}
           </View>
-          {!ownedListings.length ? (
-            <ThemedText type="bodySmall" themeColor="textSecondary">
-              {t('createPost.noOwnedListings')}
-            </ThemedText>
-          ) : null}
+          {!ownedListings.length ? <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>{t('createPost.noOwnedListings')}</Text> : null}
         </View>
 
-        {error ? (
-          <ThemedText type="bodySmall" themeColor="error">
-            {error}
-          </ThemedText>
-        ) : null}
+        {error ? <Text style={[styles.bodySmall, { color: theme.colors.error }]}>{error}</Text> : null}
 
         <AppButton
           disabled={isSubmitting}
@@ -222,21 +199,10 @@ export default function CreatePostScreen() {
 }
 
 const styles = StyleSheet.create({
-  panel: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  mediaPicker: {
-    gap: Spacing.sm,
-  },
-  linkSection: {
-    gap: Spacing.sm,
-  },
+  panel: { borderWidth: 1, padding: 20, gap: 16 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  mediaPicker: { gap: 8 },
+  linkSection: { gap: 8 },
+  label: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  bodySmall: { fontSize: 13, lineHeight: 18 },
 });

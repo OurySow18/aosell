@@ -1,7 +1,6 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
-import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/hooks/use-theme';
 
 export function SectionTitle({
   eyebrow,
@@ -12,39 +11,31 @@ export function SectionTitle({
   title: string;
   description?: string;
 }) {
+  const theme = useAppTheme();
+
   return (
     <View style={styles.container}>
       {eyebrow ? (
         <View style={styles.eyebrowRow}>
-          <View style={styles.eyebrowLine} />
-          <ThemedText type="label" themeColor="burntOrange">
-            {eyebrow}
-          </ThemedText>
+          <View style={[styles.eyebrowLine, { backgroundColor: theme.colors.accent }]} />
+          <Text style={[styles.eyebrow, { color: theme.colors.accent, fontFamily: theme.typography.micro.fontFamily }]}>{eyebrow}</Text>
         </View>
       ) : null}
-      <ThemedText type="title">{title}</ThemedText>
+      <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>{title}</Text>
       {description ? (
-        <ThemedText type="body" themeColor="textSecondary">
+        <Text style={[styles.description, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
           {description}
-        </ThemedText>
+        </Text>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: Spacing.sm,
-  },
-  eyebrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  eyebrowLine: {
-    width: 24,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E54416',
-  },
+  container: { gap: 8 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  eyebrowLine: { width: 24, height: 4, borderRadius: 2 },
+  eyebrow: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  title: { fontSize: 22, lineHeight: 28 },
+  description: { fontSize: 15, lineHeight: 22 },
 });

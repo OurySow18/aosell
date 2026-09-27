@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 
 import { AppButton } from '@/components/ui/app-button';
@@ -8,33 +8,24 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { StatusPill } from '@/components/ui/status-pill';
-import { Radius, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
-import { ThemedText } from '@/components/themed-text';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const { currentUser, userProfile, addresses, currentSellerProfile, logout, notifications } = useAosell();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   function openSignIn() {
-    router.push({
-      pathname: '/auth',
-      params: {
-        mode: 'signin',
-        returnTo: '/profile',
-      },
-    });
+    router.push({ pathname: '/auth', params: { mode: 'signin', returnTo: '/profile' } });
   }
 
   function handleLogout() {
     if (isLoggingOut) {
       return;
     }
-
     setIsLoggingOut(true);
     void logout().finally(() => setIsLoggingOut(false));
   }
@@ -42,15 +33,8 @@ export default function ProfileScreen() {
   if (!currentUser) {
     return (
       <AppScreen>
-        <EmptyState
-          title={t('profileScreen.noProfileTitle')}
-          description={t('profileScreen.noProfileDescription')}
-        />
-        <AppButton
-          fullWidth
-          label={t('common.signIn')}
-          onPress={openSignIn}
-        />
+        <EmptyState title={t('profileScreen.noProfileTitle')} description={t('profileScreen.noProfileDescription')} />
+        <AppButton fullWidth label={t('common.signIn')} onPress={openSignIn} />
       </AppScreen>
     );
   }
@@ -58,23 +42,14 @@ export default function ProfileScreen() {
   if (!userProfile) {
     return (
       <AppScreen>
-        <EmptyState
-          title={t('profileScreen.loadingTitle')}
-          description={t('profileScreen.loadingDescription')}
-        />
-        <ThemedText type="bodySmall" themeColor="textSecondary" style={styles.loadingEmail}>
-          {currentUser.email}
-        </ThemedText>
-        <AppButton
-          fullWidth
-          disabled={isLoggingOut}
-          label={t('common.logout')}
-          variant="danger"
-          onPress={handleLogout}
-        />
+        <EmptyState title={t('profileScreen.loadingTitle')} description={t('profileScreen.loadingDescription')} />
+        <Text style={[styles.loadingEmail, { color: theme.colors.textMuted }]}>{currentUser.email}</Text>
+        <AppButton fullWidth disabled={isLoggingOut} label={t('common.logout')} variant="danger" onPress={handleLogout} />
       </AppScreen>
     );
   }
+
+  const unreadCount = notifications.filter((item) => !item.isRead).length;
 
   return (
     <AppScreen>
@@ -84,17 +59,20 @@ export default function ProfileScreen() {
         description={userProfile.bio ?? t('profileScreen.fallbackDescription')}
       />
 
-      <View style={[styles.heroCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <View style={[styles.heroGlow, { backgroundColor: theme.gold }]} />
+      <View style={[styles.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
         <View style={styles.heroTop}>
-          <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}>
-            <ThemedText type="title">{userProfile.displayName.slice(0, 2).toUpperCase()}</ThemedText>
+          <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
+              {userProfile.displayName.slice(0, 2).toUpperCase()}
+            </Text>
           </View>
           <View style={styles.heroCopy}>
-            <ThemedText type="title">{userProfile.displayName}</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
+            <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
+              {userProfile.displayName}
+            </Text>
+            <Text style={[styles.body, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
               {currentUser.email}
-            </ThemedText>
+            </Text>
           </View>
         </View>
         <View style={styles.row}>
@@ -104,132 +82,69 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <ThemedText type="label" themeColor="burntOrange">
-            {t('profileScreen.addresses')}
-          </ThemedText>
-          <ThemedText type="headline">{String(addresses.length)}</ThemedText>
-        </View>
-        <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <ThemedText type="label" themeColor="burntOrange">
-            {t('profileScreen.alerts')}
-          </ThemedText>
-          <ThemedText type="headline">{String(notifications.filter((item) => !item.isRead).length)}</ThemedText>
-        </View>
+        <StatBlock theme={theme} label={t('profileScreen.addresses')} value={String(addresses.length)} />
+        <StatBlock theme={theme} label={t('profileScreen.alerts')} value={String(unreadCount)} />
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <ThemedText type="headline">{t('profileScreen.savedAddresses')}</ThemedText>
+      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+        <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+          {t('profileScreen.savedAddresses')}
+        </Text>
         {addresses.length ? (
           addresses.map((address) => (
             <View
               key={address.id}
-              style={[styles.address, { backgroundColor: theme.backgroundSelected, borderColor: theme.border }]}>
-              <ThemedText type="body">{address.fullName}</ThemedText>
-              <ThemedText type="bodySmall" themeColor="textSecondary">
+              style={[styles.address, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border, borderRadius: theme.radii.md }]}>
+              <Text style={[styles.body, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}>{address.fullName}</Text>
+              <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>
                 {address.line1}, {address.postalCode} {address.city}
-              </ThemedText>
+              </Text>
             </View>
           ))
         ) : (
-          <ThemedText type="bodySmall" themeColor="textSecondary">
-            {t('profileScreen.noSavedAddresses')}
-          </ThemedText>
+          <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>{t('profileScreen.noSavedAddresses')}</Text>
         )}
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
         <LanguageSwitcher />
       </View>
 
       <View style={styles.actions}>
-        <AppButton
-          fullWidth
-          label={`${t('common.notifications')} (${notifications.filter((item) => !item.isRead).length})`}
-          onPress={() => router.push('/notifications')}
-        />
+        <AppButton fullWidth label={`${t('common.notifications')} (${unreadCount})`} onPress={() => router.push('/notifications')} />
         <AppButton fullWidth label={t('common.sellerCenter')} variant="secondary" onPress={() => router.push('/seller-center')} />
-        <AppButton
-          fullWidth
-          disabled={isLoggingOut}
-          label={t('common.logout')}
-          variant="danger"
-          onPress={handleLogout}
-        />
+        <AppButton fullWidth disabled={isLoggingOut} label={t('common.logout')} variant="danger" onPress={handleLogout} />
       </View>
     </AppScreen>
   );
 }
 
+type AppTheme = ReturnType<typeof useAppTheme>;
+
+function StatBlock({ theme, label, value }: { theme: AppTheme; label: string; value: string }) {
+  return (
+    <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+      <Text style={[styles.label, { color: theme.colors.accent, fontFamily: theme.typography.micro.fontFamily }]}>{label}</Text>
+      <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  heroCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  heroGlow: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    top: -100,
-    right: -80,
-    opacity: 0.12,
-  },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: Radius.large,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  heroCopy: {
-    gap: Spacing.xs,
-    flex: 1,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  statCard: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-    minWidth: 140,
-    flexGrow: 1,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  address: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.md,
-    gap: Spacing.xs,
-  },
-  actions: {
-    gap: Spacing.md,
-  },
-  loadingEmail: {
-    textAlign: 'center',
-  },
+  heroCard: { borderWidth: 1, padding: 20, gap: 16 },
+  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  heroCopy: { gap: 4, flex: 1 },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  statCard: { borderWidth: 1, padding: 16, gap: 4, minWidth: 140, flexGrow: 1 },
+  card: { borderWidth: 1, padding: 16, gap: 12 },
+  row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  address: { borderWidth: 1, padding: 12, gap: 4 },
+  actions: { gap: 12 },
+  loadingEmail: { textAlign: 'center', fontSize: 13, lineHeight: 18 },
+  label: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  title: { fontSize: 22, lineHeight: 28 },
+  heading: { fontSize: 17, lineHeight: 22 },
+  body: { fontSize: 15, lineHeight: 21 },
+  bodySmall: { fontSize: 13, lineHeight: 18 },
 });

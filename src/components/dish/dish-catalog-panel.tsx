@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
 import { AppButton } from '@/components/ui/app-button';
 import { StatusPill } from '@/components/ui/status-pill';
-import { Radius, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
 import { filterDishesByCuisines } from '@/lib/dishes';
 import { getCuisineLabel } from '@/lib/i18n';
 import type { Condiment, Cuisine, Dish } from '@/types/domain';
@@ -20,7 +18,7 @@ type DishCatalogPanelProps = {
 };
 
 export function DishCatalogPanel({ cuisines, dishes, condiments, onPick, onStartNewDish }: DishCatalogPanelProps) {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const [expandedDishId, setExpandedDishId] = useState<string>();
 
@@ -29,10 +27,10 @@ export function DishCatalogPanel({ cuisines, dishes, condiments, onPick, onStart
   return (
     <View style={styles.wrapper}>
       <View>
-        <ThemedText type="headline">{t('listingEditor.dishSectionTitle')}</ThemedText>
-        <ThemedText type="bodySmall" themeColor="textSecondary">
-          {t('listingEditor.dishSectionHint')}
-        </ThemedText>
+        <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+          {t('listingEditor.dishSectionTitle')}
+        </Text>
+        <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>{t('listingEditor.dishSectionHint')}</Text>
       </View>
 
       {catalogDishes.length ? (
@@ -47,14 +45,14 @@ export function DishCatalogPanel({ cuisines, dishes, condiments, onPick, onStart
               <Pressable
                 key={dish.id}
                 onPress={() => setExpandedDishId((current) => (current === dish.id ? undefined : dish.id))}
-                style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md }]}>
                 <View style={styles.cardHeader}>
-                  <ThemedText type="button">{dish.name}</ThemedText>
+                  <Text style={[styles.label, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>{dish.name}</Text>
                   <StatusPill label={getCuisineLabel(dish.cuisine)} tone="neutral" />
                 </View>
-                <ThemedText type="bodySmall" themeColor="textSecondary" numberOfLines={isExpanded ? undefined : 2}>
+                <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]} numberOfLines={isExpanded ? undefined : 2}>
                   {dish.description}
-                </ThemedText>
+                </Text>
 
                 {isExpanded ? (
                   <View style={styles.cardExpanded}>
@@ -73,9 +71,7 @@ export function DishCatalogPanel({ cuisines, dishes, condiments, onPick, onStart
           })}
         </View>
       ) : (
-        <ThemedText type="bodySmall" themeColor="textSecondary">
-          {t('listingEditor.noCatalogDishesForCuisine')}
-        </ThemedText>
+        <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>{t('listingEditor.noCatalogDishesForCuisine')}</Text>
       )}
 
       <AppButton label={t('listingEditor.createNewDish')} variant="ghost" onPress={onStartNewDish} />
@@ -84,31 +80,13 @@ export function DishCatalogPanel({ cuisines, dishes, condiments, onPick, onStart
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    gap: Spacing.md,
-  },
-  list: {
-    gap: Spacing.sm,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: Radius.medium,
-    padding: Spacing.md,
-    gap: Spacing.xs,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-  },
-  cardExpanded: {
-    marginTop: Spacing.sm,
-    gap: Spacing.md,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
+  wrapper: { gap: 12 },
+  list: { gap: 8 },
+  card: { borderWidth: 1, padding: 12, gap: 4 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  cardExpanded: { marginTop: 8, gap: 12 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  heading: { fontSize: 17, lineHeight: 22 },
+  label: { fontSize: 15, lineHeight: 20 },
+  bodySmall: { fontSize: 13, lineHeight: 18 },
 });

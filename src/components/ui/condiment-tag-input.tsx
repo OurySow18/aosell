@@ -1,11 +1,9 @@
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
 import { normalizeCondimentText } from '@/lib/condiments';
 import type { Condiment } from '@/types/domain';
 
@@ -20,7 +18,7 @@ type CondimentTagInputProps = {
 const MAX_SUGGESTIONS = 6;
 
 export function CondimentTagInput({ label, values, onChange, suggestions, placeholder }: CondimentTagInputProps) {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const [draft, setDraft] = useState('');
 
@@ -30,7 +28,7 @@ export function CondimentTagInput({ label, values, onChange, suggestions, placeh
         .filter(
           (condiment) =>
             condiment.normalizedName.includes(normalizedDraft) ||
-            condiment.aliases.some((alias) => normalizeCondimentText(alias).includes(normalizedDraft))
+            condiment.aliases.some((alias) => normalizeCondimentText(alias).includes(normalizedDraft)),
         )
         .slice(0, MAX_SUGGESTIONS)
     : [];
@@ -55,33 +53,28 @@ export function CondimentTagInput({ label, values, onChange, suggestions, placeh
 
   return (
     <View style={styles.wrapper}>
-      <ThemedText type="label" themeColor="textSecondary">
-        {label}
-      </ThemedText>
+      <Text style={[styles.label, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>{label}</Text>
 
-      <View style={[styles.inputRow, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      <View style={[styles.inputRow, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border, borderRadius: theme.radii.md }]}>
         <TextInput
           onChangeText={setDraft}
           onSubmitEditing={() => commit(draft)}
           placeholder={placeholder}
-          placeholderTextColor={theme.textSecondary}
+          placeholderTextColor={theme.colors.textMuted}
           returnKeyType="done"
-          style={[styles.input, { color: theme.text }]}
+          style={[styles.input, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}
           value={draft}
         />
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => commit(draft)}
-          style={[styles.addButton, { backgroundColor: theme.accent }]}>
-          <SymbolView tintColor={theme.earth} size={18} name={{ ios: 'plus', android: 'add', web: 'add' }} />
+        <Pressable accessibilityRole="button" onPress={() => commit(draft)} style={[styles.addButton, { backgroundColor: theme.colors.accent }]}>
+          <SymbolView tintColor={theme.colors.onAccent} size={18} name={{ ios: 'plus', android: 'add', web: 'add' }} />
         </Pressable>
       </View>
 
       {filteredSuggestions.length ? (
-        <View style={[styles.suggestions, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <View style={[styles.suggestions, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md }]}>
           {filteredSuggestions.map((condiment) => (
             <Pressable key={condiment.id} onPress={() => commit(condiment.name)} style={styles.suggestionRow}>
-              <ThemedText type="body">{condiment.name}</ThemedText>
+              <Text style={[styles.body, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}>{condiment.name}</Text>
             </Pressable>
           ))}
         </View>
@@ -90,16 +83,14 @@ export function CondimentTagInput({ label, values, onChange, suggestions, placeh
       {values.length ? (
         <View style={styles.chipRow}>
           {values.map((value, index) => (
-            <View key={`${value}-${index}`} style={[styles.chip, { backgroundColor: theme.backgroundSelected }]}>
-              <ThemedText type="label" style={{ color: theme.text }}>
-                {value}
-              </ThemedText>
+            <View key={`${value}-${index}`} style={[styles.chip, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.pill }]}>
+              <Text style={[styles.chipLabel, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>{value}</Text>
               <Pressable
                 accessibilityLabel={t('listingEditor.removeCondiment', { name: value })}
                 accessibilityRole="button"
                 onPress={() => remove(index)}
                 style={styles.chipRemove}>
-                <SymbolView tintColor={theme.textSecondary} size={12} name={{ ios: 'xmark', android: 'close', web: 'close' }} />
+                <SymbolView tintColor={theme.colors.textMuted} size={12} name={{ ios: 'xmark', android: 'close', web: 'close' }} />
               </Pressable>
             </View>
           ))}
@@ -110,57 +101,16 @@ export function CondimentTagInput({ label, values, onChange, suggestions, placeh
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    gap: Spacing.sm,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    borderWidth: 1.5,
-    borderRadius: Radius.medium,
-    paddingLeft: Spacing.lg,
-    paddingRight: Spacing.xs,
-  },
-  input: {
-    flex: 1,
-    minHeight: 54,
-    fontSize: 16,
-  },
-  addButton: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  suggestions: {
-    borderWidth: 1,
-    borderRadius: Radius.medium,
-    overflow: 'hidden',
-  },
-  suggestionRow: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingLeft: Spacing.md,
-    paddingRight: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
-  },
-  chipRemove: {
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  wrapper: { gap: 8 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, paddingLeft: 14, paddingRight: 4 },
+  input: { flex: 1, minHeight: 52, fontSize: 15 },
+  addButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  suggestions: { borderWidth: 1, overflow: 'hidden' },
+  suggestionRow: { paddingHorizontal: 14, paddingVertical: 10 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 12, paddingRight: 8, paddingVertical: 6 },
+  chipRemove: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  body: { fontSize: 15, lineHeight: 20 },
+  chipLabel: { fontSize: 13, lineHeight: 18 },
 });

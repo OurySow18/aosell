@@ -1,8 +1,6 @@
-import { StyleSheet, TextInput, TextInputProps, View } from 'react-native';
+import { StyleSheet, TextInput, TextInputProps, View, Text } from 'react-native';
 
-import { Radius, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/hooks/use-theme';
 
 type AppInputProps = {
   label: string;
@@ -10,15 +8,7 @@ type AppInputProps = {
   onChangeText: (value: string) => void;
   placeholder?: string;
   multiline?: boolean;
-} & Pick<
-  TextInputProps,
-  | 'autoCapitalize'
-  | 'autoCorrect'
-  | 'inputMode'
-  | 'keyboardType'
-  | 'secureTextEntry'
-  | 'textContentType'
->;
+} & Pick<TextInputProps, 'autoCapitalize' | 'autoCorrect' | 'inputMode' | 'keyboardType' | 'secureTextEntry' | 'textContentType'>;
 
 export function AppInput({
   label,
@@ -33,13 +23,11 @@ export function AppInput({
   secureTextEntry,
   textContentType,
 }: AppInputProps) {
-  const theme = useTheme();
+  const theme = useAppTheme();
 
   return (
     <View style={styles.wrapper}>
-      <ThemedText type="label" themeColor="textSecondary">
-        {label}
-      </ThemedText>
+      <Text style={[styles.label, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>{label}</Text>
       <TextInput
         autoCapitalize={autoCapitalize}
         autoCorrect={autoCorrect}
@@ -48,15 +36,17 @@ export function AppInput({
         multiline={multiline}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={theme.textSecondary}
+        placeholderTextColor={theme.colors.textMuted}
         secureTextEntry={secureTextEntry}
         style={[
           styles.input,
           {
-            backgroundColor: theme.backgroundElement,
-            color: theme.text,
-            borderColor: theme.border,
-            minHeight: multiline ? 124 : 54,
+            backgroundColor: theme.colors.surfaceMuted,
+            color: theme.colors.text,
+            borderColor: theme.colors.border,
+            borderRadius: theme.radii.md,
+            fontFamily: theme.typography.body.fontFamily,
+            minHeight: multiline ? 120 : 52,
             textAlignVertical: multiline ? 'top' : 'center',
           },
         ]}
@@ -68,14 +58,7 @@ export function AppInput({
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    gap: 6,
-  },
-  input: {
-    borderWidth: 1.5,
-    borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    fontSize: 16,
-  },
+  wrapper: { gap: 6 },
+  label: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
+  input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
 });

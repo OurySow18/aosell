@@ -5,15 +5,13 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
-import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { AosellProvider } from '@/providers/aosell-provider';
 import { LocaleProvider } from '@/providers/locale-provider';
 import { useAosell } from '@/providers/aosell-provider';
@@ -21,24 +19,28 @@ import { useAosell } from '@/providers/aosell-provider';
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function SessionBootScreen() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
 
   return (
-    <SafeAreaView
-      edges={['top', 'right', 'bottom', 'left']}
-      style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <View style={[styles.bootPanel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <View style={[styles.bootAccent, { backgroundColor: theme.clay }]} />
+    <SafeAreaView edges={['top', 'right', 'bottom', 'left']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[
+          styles.bootPanel,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.sheet },
+        ]}>
+        <View style={[styles.bootAccent, { backgroundColor: theme.colors.accent }]} />
         <AosellLogo />
         <View style={styles.copy}>
-          <ThemedText type="headline">{t('boot.title')}</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">
+          <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {t('boot.title')}
+          </Text>
+          <Text style={[styles.body, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
             {t('boot.description')}
-          </ThemedText>
+          </Text>
         </View>
-        <View style={[styles.bootTrack, { backgroundColor: theme.backgroundSelected }]}>
-          <View style={[styles.bootProgress, { backgroundColor: theme.accent }]} />
+        <View style={[styles.bootTrack, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.pill }]}>
+          <View style={[styles.bootProgress, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.pill }]} />
         </View>
       </View>
     </SafeAreaView>
@@ -46,7 +48,7 @@ function SessionBootScreen() {
 }
 
 function RootNavigator() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { authReady } = useAosell();
 
   if (!authReady) {
@@ -56,7 +58,7 @@ function RootNavigator() {
   return (
     <>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="auth" />
         <Stack.Screen name="(tabs)" />
@@ -110,41 +112,12 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    padding: Spacing.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bootPanel: {
-    borderWidth: 1.5,
-    borderRadius: Radius.xlarge,
-    padding: Spacing.xl,
-    gap: Spacing.xl,
-    alignSelf: 'stretch',
-    maxWidth: 520,
-    overflow: 'hidden',
-  },
-  copy: {
-    gap: Spacing.sm,
-  },
-  bootAccent: {
-    position: 'absolute',
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    right: -40,
-    top: -55,
-    opacity: 0.12,
-  },
-  bootTrack: {
-    height: 8,
-    borderRadius: Radius.pill,
-    overflow: 'hidden',
-  },
-  bootProgress: {
-    width: '58%',
-    height: '100%',
-    borderRadius: Radius.pill,
-  },
+  safeArea: { flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' },
+  bootPanel: { borderWidth: 1.5, padding: 24, gap: 24, alignSelf: 'stretch', maxWidth: 520, overflow: 'hidden' },
+  copy: { gap: 8 },
+  bootAccent: { position: 'absolute', width: 130, height: 130, borderRadius: 65, right: -40, top: -55, opacity: 0.12 },
+  bootTrack: { height: 8, overflow: 'hidden' },
+  bootProgress: { width: '58%', height: '100%' },
+  heading: { fontSize: 17, lineHeight: 22 },
+  body: { fontSize: 15, lineHeight: 22 },
 });

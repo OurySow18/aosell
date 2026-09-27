@@ -1,19 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import { OrderStatusTrack } from '@/components/orders/order-status-track';
 import { AppScreen } from '@/components/ui/app-screen';
 import { StatusPill } from '@/components/ui/status-pill';
-import { Radius, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
 import { getOrderStatusDescription, getOrderStatusLabel, getOrderStatusTone } from '@/lib/utils/order-status';
 import { useAosell } from '@/providers/aosell-provider';
-import { ThemedText } from '@/components/themed-text';
 
 export default function CheckoutSuccessScreen() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const params = useLocalSearchParams<{ orderId?: string | string[] }>();
   const orderId = Array.isArray(params.orderId) ? params.orderId[0] : params.orderId ?? '';
@@ -24,26 +22,26 @@ export default function CheckoutSuccessScreen() {
   return (
     <AppScreen>
       <View style={styles.container}>
-        <View style={[styles.hero, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <View style={[styles.hero, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
           <StatusPill label={getOrderStatusLabel(status)} tone={getOrderStatusTone(status)} />
           <View style={styles.heroCopy}>
-            <ThemedText type="display">{t('checkoutSuccess.title')}</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              {order
-                ? getOrderStatusDescription(order.status)
-                : t('checkoutSuccess.fallbackDescription', { orderId })}
-            </ThemedText>
+            <Text style={[styles.display, { color: theme.colors.text, fontFamily: theme.typography.display.fontFamily }]}>
+              {t('checkoutSuccess.title')}
+            </Text>
+            <Text style={[styles.body, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
+              {order ? getOrderStatusDescription(order.status) : t('checkoutSuccess.fallbackDescription', { orderId })}
+            </Text>
           </View>
           <View style={styles.meta}>
-            <ThemedText type="bodySmall" themeColor="textSecondary">
-              {t('common.orderId')}
-            </ThemedText>
-            <ThemedText type="headline">{orderId}</ThemedText>
+            <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>{t('common.orderId')}</Text>
+            <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>{orderId}</Text>
           </View>
         </View>
 
-        <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <ThemedText type="headline">{t('checkoutSuccess.nextTitle')}</ThemedText>
+        <View style={[styles.panel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+          <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {t('checkoutSuccess.nextTitle')}
+          </Text>
           <OrderStatusTrack
             status={status}
             timelineStatuses={order?.timeline.map((entry) => entry.status) ?? ['created', 'pending_payment']}
@@ -61,33 +59,14 @@ export default function CheckoutSuccessScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    minHeight: '100%',
-    justifyContent: 'center',
-    gap: Spacing.lg,
-    maxWidth: 720,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  hero: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  heroCopy: {
-    gap: Spacing.sm,
-  },
-  meta: {
-    gap: Spacing.xs,
-  },
-  panel: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-  },
-  actions: {
-    gap: Spacing.md,
-  },
+  container: { minHeight: '100%', justifyContent: 'center', gap: 16, maxWidth: 720, alignSelf: 'center', width: '100%' },
+  hero: { borderWidth: 1, padding: 20, gap: 12 },
+  heroCopy: { gap: 8 },
+  meta: { gap: 4 },
+  panel: { borderWidth: 1, padding: 20, gap: 16 },
+  actions: { gap: 12 },
+  display: { fontSize: 28, lineHeight: 34 },
+  heading: { fontSize: 17, lineHeight: 22 },
+  body: { fontSize: 15, lineHeight: 22 },
+  bodySmall: { fontSize: 13, lineHeight: 18 },
 });

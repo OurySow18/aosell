@@ -1,17 +1,16 @@
 import { router, useSegments } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Radius, Shadows, Spacing } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { useTheme } from '@/hooks/use-theme';
 
+type AppTheme = ReturnType<typeof useAppTheme>;
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 
 export function AppHeader() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const segments = useSegments();
   const isTabScreen = segments[0] === '(tabs)';
@@ -21,11 +20,12 @@ export function AppHeader() {
     <View style={styles.header}>
       {showBack ? (
         <HeaderAction
+          theme={theme}
           accessibilityLabel={t('common.back')}
-          backgroundColor={theme.backgroundSelected}
-          borderColor={theme.border}
+          backgroundColor={theme.colors.surfaceMuted}
+          borderColor={theme.colors.border}
           icon={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
-          iconColor={theme.earth}
+          iconColor={theme.colors.text}
           onPress={() => router.back()}
         />
       ) : null}
@@ -36,39 +36,39 @@ export function AppHeader() {
         onPress={() => router.push('/search')}
         style={({ pressed }) => [
           styles.searchBar,
-          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          Shadows.card,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg },
+          theme.shadows.sm,
           pressed && styles.pressed,
         ]}>
-        <View style={[styles.searchIcon, { backgroundColor: theme.backgroundSelected }]}>
-          <SymbolView
-            tintColor={theme.burntOrange}
-            size={20}
-            name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
-          />
+        <View style={[styles.searchIcon, { backgroundColor: theme.colors.accentTint, borderRadius: theme.radii.md }]}>
+          <SymbolView tintColor={theme.colors.accent} size={20} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} />
         </View>
-        <ThemedText type="button" numberOfLines={1} style={styles.searchLabel}>
+        <Text
+          numberOfLines={1}
+          style={[styles.searchLabel, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
           {t('common.search')}
-        </ThemedText>
+        </Text>
       </Pressable>
 
       {!showBack ? (
         <HeaderAction
+          theme={theme}
           accessibilityLabel={t('common.notifications')}
-          backgroundColor={theme.backgroundElement}
-          borderColor={theme.border}
+          backgroundColor={theme.colors.surface}
+          borderColor={theme.colors.border}
           icon={{ ios: 'bell.fill', android: 'notifications', web: 'notifications' }}
-          iconColor={theme.earth}
+          iconColor={theme.colors.text}
           onPress={() => router.push('/notifications')}
         />
       ) : null}
 
       <HeaderAction
+        theme={theme}
         accessibilityLabel={t('cart.eyebrow')}
-        backgroundColor={theme.earth}
-        borderColor={theme.earth}
+        backgroundColor={theme.colors.text}
+        borderColor={theme.colors.text}
         icon={{ ios: 'bag.fill', android: 'shopping_bag', web: 'shopping_bag' }}
-        iconColor={theme.accent}
+        iconColor={theme.colors.accent}
         onPress={() => router.push('/cart')}
       />
     </View>
@@ -82,6 +82,7 @@ function HeaderAction({
   icon,
   iconColor,
   onPress,
+  theme,
 }: {
   accessibilityLabel: string;
   backgroundColor: string;
@@ -89,6 +90,7 @@ function HeaderAction({
   icon: SymbolName;
   iconColor: string;
   onPress: () => void;
+  theme: AppTheme;
 }) {
   return (
     <Pressable
@@ -97,7 +99,7 @@ function HeaderAction({
       onPress={onPress}
       style={({ pressed }) => [
         styles.action,
-        { backgroundColor, borderColor },
+        { backgroundColor, borderColor, borderRadius: theme.radii.md },
         pressed && styles.pressed,
       ]}>
       <SymbolView tintColor={iconColor} size={19} name={icon} />
@@ -106,44 +108,10 @@ function HeaderAction({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    minHeight: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  searchBar: {
-    minWidth: 0,
-    minHeight: 60,
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  searchIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchLabel: {
-    minWidth: 0,
-    flex: 1,
-  },
-  action: {
-    width: 42,
-    height: 60,
-    borderRadius: Radius.medium,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.98 }],
-  },
+  header: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  searchBar: { minWidth: 0, minHeight: 56, flex: 1, borderWidth: 1, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  searchIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  searchLabel: { minWidth: 0, flex: 1, fontSize: 15, lineHeight: 20 },
+  action: { width: 40, height: 56, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.78, transform: [{ scale: 0.98 }] },
 });

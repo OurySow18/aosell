@@ -1,27 +1,25 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
 import { AppInput } from '@/components/ui/app-input';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
-import { Radius, Spacing } from '@/constants/theme';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 import { getCuisineLabel, getDeliveryModeLabel, getSellerTypeLabel } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
 import { cuisineOptions, sellerProfileSchema } from '@/lib/validations/seller-profile';
-import { useTheme } from '@/hooks/use-theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useAosell } from '@/providers/aosell-provider';
-import { ThemedText } from '@/components/themed-text';
 import type { Cuisine } from '@/types/domain';
 
 const sellerTypes = ['shop', 'restaurant', 'individual'] as const;
 const deliveryModes = ['aosell', 'seller'] as const;
 
 export default function SellerOnboardingScreen() {
-  const theme = useTheme();
+  const theme = useAppTheme();
   const { t } = useLocale();
   const { currentUser, createSellerProfile } = useAosell();
   const [type, setType] = useState<(typeof sellerTypes)[number]>('shop');
@@ -37,21 +35,11 @@ export default function SellerOnboardingScreen() {
   if (!currentUser) {
     return (
       <AppScreen>
-        <EmptyState
-          title={t('sellerOnboarding.noAccountTitle')}
-          description={t('sellerOnboarding.noAccountDescription')}
-        />
+        <EmptyState title={t('sellerOnboarding.noAccountTitle')} description={t('sellerOnboarding.noAccountDescription')} />
         <AppButton
           label={t('common.createSellerAccount')}
           onPress={() =>
-            router.replace({
-              pathname: '/auth',
-              params: {
-                mode: 'signup',
-                role: 'seller',
-                returnTo: '/seller-onboarding',
-              },
-            })
+            router.replace({ pathname: '/auth', params: { mode: 'signup', role: 'seller', returnTo: '/seller-onboarding' } })
           }
         />
       </AppScreen>
@@ -59,15 +47,11 @@ export default function SellerOnboardingScreen() {
   }
 
   function toggleDeliveryMode(mode: string) {
-    setSelectedDeliveryModes((current) =>
-      current.includes(mode) ? current.filter((item) => item !== mode) : [...current, mode]
-    );
+    setSelectedDeliveryModes((current) => (current.includes(mode) ? current.filter((item) => item !== mode) : [...current, mode]));
   }
 
   function toggleCuisine(cuisine: Cuisine) {
-    setCuisineSpecialties((current) =>
-      current.includes(cuisine) ? current.filter((item) => item !== cuisine) : [...current, cuisine]
-    );
+    setCuisineSpecialties((current) => (current.includes(cuisine) ? current.filter((item) => item !== cuisine) : [...current, cuisine]));
   }
 
   async function handleSubmit() {
@@ -99,30 +83,22 @@ export default function SellerOnboardingScreen() {
 
   return (
     <AppScreen>
-      <SectionTitle
-        eyebrow={t('sellerOnboarding.eyebrow')}
-        title={t('sellerOnboarding.title')}
-        description={t('sellerOnboarding.description')}
-      />
+      <SectionTitle eyebrow={t('sellerOnboarding.eyebrow')} title={t('sellerOnboarding.title')} description={t('sellerOnboarding.description')} />
 
-      <View style={[styles.panel, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <View style={[styles.panelGlow, { backgroundColor: theme.gold }]} />
-        <ThemedText type="headline">{t('sellerOnboarding.sellerType')}</ThemedText>
+      <View style={[styles.panel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+        <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+          {t('sellerOnboarding.sellerType')}
+        </Text>
         <View style={styles.row}>
           {sellerTypes.map((option) => (
-            <AppButton
-              key={option}
-              label={getSellerTypeLabel(option)}
-              variant={option === type ? 'secondary' : 'ghost'}
-              onPress={() => setType(option)}
-            />
+            <AppButton key={option} label={getSellerTypeLabel(option)} variant={option === type ? 'secondary' : 'ghost'} onPress={() => setType(option)} />
           ))}
         </View>
         <View style={styles.cuisineBlock}>
-          <ThemedText type="headline">{t('sellerOnboarding.cuisineSpecialtiesTitle')}</ThemedText>
-          <ThemedText type="bodySmall" themeColor="textSecondary">
-            {t('sellerOnboarding.cuisineSpecialtiesHint')}
-          </ThemedText>
+          <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {t('sellerOnboarding.cuisineSpecialtiesTitle')}
+          </Text>
+          <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>{t('sellerOnboarding.cuisineSpecialtiesHint')}</Text>
           <View style={styles.row}>
             {cuisineOptions.map((cuisine) => (
               <AppButton
@@ -156,11 +132,7 @@ export default function SellerOnboardingScreen() {
             />
           ))}
         </View>
-        {error ? (
-          <ThemedText type="bodySmall" themeColor="error">
-            {error}
-          </ThemedText>
-        ) : null}
+        {error ? <Text style={[styles.bodySmall, { color: theme.colors.error }]}>{error}</Text> : null}
         <AppButton
           fullWidth
           disabled={isSubmitting}
@@ -175,29 +147,9 @@ export default function SellerOnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  panel: {
-    borderWidth: 1,
-    borderRadius: Radius.large,
-    padding: Spacing.xl,
-    gap: Spacing.lg,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  panelGlow: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    top: -90,
-    right: -70,
-    opacity: 0.12,
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  cuisineBlock: {
-    gap: Spacing.sm,
-  },
+  panel: { borderWidth: 1, padding: 20, gap: 16 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  cuisineBlock: { gap: 8 },
+  heading: { fontSize: 17, lineHeight: 22 },
+  bodySmall: { fontSize: 13, lineHeight: 18 },
 });
