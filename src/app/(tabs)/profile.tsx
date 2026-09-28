@@ -7,16 +7,23 @@ import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { StatusPill } from '@/components/ui/status-pill';
-import { useAppTheme } from '@/hooks/use-theme';
+import { useAppTheme, useThemeMode, type ThemeMode } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useAosell } from '@/providers/aosell-provider';
 
 export default function ProfileScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
+  const { themeMode, setThemeMode } = useThemeMode();
   const { currentUser, userProfile, addresses, currentSellerProfile, logout, notifications } = useAosell();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const themeModeOptions: { value: ThemeMode; label: string }[] = [
+    { value: 'system', label: t('profileScreen.appearanceSystem') },
+    { value: 'light', label: t('profileScreen.appearanceLight') },
+    { value: 'dark', label: t('profileScreen.appearanceDark') },
+  ];
 
   function openSignIn() {
     router.push({ pathname: '/auth', params: { mode: 'signin', returnTo: '/profile' } });
@@ -108,6 +115,13 @@ export default function ProfileScreen() {
 
       <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
         <LanguageSwitcher />
+      </View>
+
+      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+        <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+          {t('profileScreen.appearance')}
+        </Text>
+        <SegmentedControl options={themeModeOptions} value={themeMode} onChange={(mode) => void setThemeMode(mode)} />
       </View>
 
       <View style={styles.actions}>

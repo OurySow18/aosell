@@ -14,6 +14,7 @@ import { useLocale } from '@/hooks/use-locale';
 import { useAppTheme } from '@/hooks/use-theme';
 import { AosellProvider } from '@/providers/aosell-provider';
 import { LocaleProvider } from '@/providers/locale-provider';
+import { ThemeModeProvider } from '@/providers/theme-mode-provider';
 import { useAosell } from '@/providers/aosell-provider';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -102,11 +103,13 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <LocaleProvider>
-        <AosellProvider>
-          <RootNavigator />
-        </AosellProvider>
-      </LocaleProvider>
+      <ThemeModeProvider>
+        <LocaleProvider>
+          <AosellProvider>
+            <RootNavigator />
+          </AosellProvider>
+        </LocaleProvider>
+      </ThemeModeProvider>
     </SafeAreaProvider>
   );
 }

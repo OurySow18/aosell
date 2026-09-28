@@ -305,6 +305,10 @@ export const translations = {
       alerts: 'Alerts',
       savedAddresses: 'Saved addresses',
       noSavedAddresses: 'No saved addresses yet.',
+      appearance: 'Appearance',
+      appearanceSystem: 'System',
+      appearanceLight: 'Light',
+      appearanceDark: 'Dark',
     },
     addScreen: {
       noAccountTitle: 'Seller tools need an account',
@@ -883,6 +887,10 @@ export const translations = {
       alerts: 'Alertes',
       savedAddresses: 'Adresses enregistrées',
       noSavedAddresses: 'Aucune adresse enregistrée pour le moment.',
+      appearance: 'Apparence',
+      appearanceSystem: 'Système',
+      appearanceLight: 'Clair',
+      appearanceDark: 'Sombre',
     },
     addScreen: {
       noAccountTitle: 'Les outils vendeur demandent un compte',
@@ -1461,6 +1469,10 @@ export const translations = {
       alerts: 'Hinweise',
       savedAddresses: 'Gespeicherte Adressen',
       noSavedAddresses: 'Noch keine gespeicherten Adressen.',
+      appearance: 'Erscheinungsbild',
+      appearanceSystem: 'System',
+      appearanceLight: 'Hell',
+      appearanceDark: 'Dunkel',
     },
     addScreen: {
       noAccountTitle: 'Verkäufer-Tools benötigen ein Konto',
