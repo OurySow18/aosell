@@ -82,19 +82,18 @@ export default function WelcomeScreen() {
   }
 
   const carouselBlock = (
-    <View
-      style={[styles.carouselWrap, isWideLayout ? styles.carouselWrapWide : { height: CAROUSEL_HEIGHT }]}
-      onLayout={(e) => setCarouselWidth(e.nativeEvent.layout.width)}>
+    <View style={[styles.carouselWrap, isWideLayout ? styles.carouselWrapWide : { height: CAROUSEL_HEIGHT }]}>
       <ScrollView
         ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         style={styles.carouselScroll}
+        onLayout={(e) => setCarouselWidth(e.nativeEvent.layout.width)}
         onScrollBeginDrag={() => setIsPaused(true)}
         onMomentumScrollEnd={handleMomentumEnd}>
         {WELCOME_SLIDES.map((slide) => (
-          <View key={slide.dish} style={styles.carouselSlide}>
+          <View key={slide.dish} style={{ width: carouselWidth, height: '100%' }}>
             <Image contentFit="cover" source={{ uri: slide.image }} style={StyleSheet.absoluteFillObject} transition={300} />
           </View>
         ))}
@@ -366,7 +365,6 @@ const styles = StyleSheet.create({
   carouselWrap: { position: 'relative', overflow: 'hidden' },
   carouselWrapWide: { flex: 1, height: '100%' },
   carouselScroll: { flex: 1 },
-  carouselSlide: { width: '100%', height: '100%' },
   wideRow: { flex: 1, flexDirection: 'row' },
   wideCarouselCol: { flex: 1 },
   wideFormCol: { width: 480 },
