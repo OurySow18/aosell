@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
+import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { resolvePromoCode } from '@/lib/cart';
@@ -175,17 +176,11 @@ export default function CartScreen() {
                     {formatMoney(lineTotal)}
                   </Text>
                 </View>
-                <View style={[styles.stepper, { borderColor: theme.colors.borderStrong, borderRadius: theme.radii.pill }]}>
-                  <Pressable onPress={() => void updateCartQuantity(item.listingId, item.quantity - 1)} style={styles.stepperButton}>
-                    <Text style={[styles.stepperButtonText, { color: theme.colors.text }]}>−</Text>
-                  </Pressable>
-                  <Text style={[styles.stepperValue, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
-                    {item.quantity}
-                  </Text>
-                  <Pressable onPress={() => void updateCartQuantity(item.listingId, item.quantity + 1)} style={styles.stepperButton}>
-                    <Text style={[styles.stepperButtonText, { color: theme.colors.text }]}>+</Text>
-                  </Pressable>
-                </View>
+                <QuantityStepper
+                  value={item.quantity}
+                  onDecrease={() => void updateCartQuantity(item.listingId, item.quantity - 1)}
+                  onIncrease={() => void updateCartQuantity(item.listingId, item.quantity + 1)}
+                />
               </View>
             );
           })}
@@ -444,10 +439,6 @@ const styles = StyleSheet.create({
   itemInfo: { flex: 1, gap: 2 },
   itemName: { fontSize: 15, lineHeight: 20 },
   itemPrice: { fontSize: 15, lineHeight: 20 },
-  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, height: 36, paddingHorizontal: 4, gap: 10 },
-  stepperButton: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  stepperButtonText: { fontSize: 17, lineHeight: 19 },
-  stepperValue: { fontSize: 15, lineHeight: 20, minWidth: 16, textAlign: 'center' },
 
   sectionTitle: { fontSize: 17, lineHeight: 24, marginTop: 4 },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 10 },

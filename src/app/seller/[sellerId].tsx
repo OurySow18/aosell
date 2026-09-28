@@ -7,6 +7,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CART_DELIVERY_FEE_CENTS } from '@/lib/cart';
+import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { getCuisineLabel } from '@/lib/i18n';
@@ -316,19 +317,13 @@ function MenuRow({
         </View>
 
         {cartItem ? (
-          <View style={[styles.stepper, { backgroundColor: theme.colors.text, borderRadius: theme.radii.pill }]}>
-            <Pressable
-              onPress={() => void updateCartQuantity(listing.id, cartItem.quantity - 1)}
-              style={styles.stepperButton}>
-              <Text style={[styles.stepperButtonText, { color: '#FFFFFF' }]}>−</Text>
-            </Pressable>
-            <Text style={[styles.stepperValue, { color: '#FFFFFF', fontFamily: theme.typography.label.fontFamily }]}>{cartItem.quantity}</Text>
-            <Pressable
-              onPress={() => void updateCartQuantity(listing.id, cartItem.quantity + 1)}
-              style={styles.stepperButton}>
-              <Text style={[styles.stepperButtonText, { color: '#FFFFFF' }]}>+</Text>
-            </Pressable>
-          </View>
+          <QuantityStepper
+            variant="solid"
+            style={styles.stepper}
+            value={cartItem.quantity}
+            onDecrease={() => void updateCartQuantity(listing.id, cartItem.quantity - 1)}
+            onIncrease={() => void updateCartQuantity(listing.id, cartItem.quantity + 1)}
+          />
         ) : (
           <Pressable
             onPress={onAdd}
@@ -395,10 +390,7 @@ const styles = StyleSheet.create({
   menuRowThumb: { width: 100, height: 100, overflow: 'hidden' },
   addPill: { marginTop: -17, height: 34, borderRadius: 17, borderWidth: 1.5, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   addPillText: { fontSize: 12, lineHeight: 15 },
-  stepper: { marginTop: -17, height: 34, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, gap: 8 },
-  stepperButton: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
-  stepperButtonText: { fontSize: 16, fontWeight: '700', lineHeight: 18 },
-  stepperValue: { fontSize: 14, lineHeight: 18, minWidth: 14, textAlign: 'center' },
+  stepper: { marginTop: -17 },
 
   cartBar: {
     position: 'absolute', left: 16, right: 16, height: CART_BAR_HEIGHT, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 10,
