@@ -90,10 +90,11 @@ export default function WelcomeScreen() {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        style={styles.carouselScroll}
         onScrollBeginDrag={() => setIsPaused(true)}
         onMomentumScrollEnd={handleMomentumEnd}>
         {WELCOME_SLIDES.map((slide) => (
-          <View key={slide.dish} style={{ width: carouselWidth }}>
+          <View key={slide.dish} style={{ width: carouselWidth, height: '100%' }}>
             <Image contentFit="cover" source={{ uri: slide.image }} style={StyleSheet.absoluteFillObject} transition={300} />
           </View>
         ))}
@@ -364,6 +365,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1 },
   carouselWrap: { position: 'relative', overflow: 'hidden' },
   carouselWrapWide: { flex: 1, height: '100%' },
+  carouselScroll: { flex: 1 },
   wideRow: { flex: 1, flexDirection: 'row' },
   wideCarouselCol: { flex: 1 },
   wideFormCol: { width: 480 },
