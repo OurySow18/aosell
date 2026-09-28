@@ -192,11 +192,11 @@ export function HomeEditorial() {
       <Pressable
         onPress={() => router.push('/partner' as never)}
         style={[styles.partnerBanner, { backgroundColor: theme.colors.text, marginHorizontal: contentInset, borderRadius: theme.radii.xl }]}>
-        <Text style={[styles.partnerTitle, { color: '#FFFFFF', fontFamily: theme.typography.heading.fontFamily }]}>
+        <Text style={[styles.partnerTitle, { color: theme.colors.background, fontFamily: theme.typography.heading.fontFamily }]}>
           {t('homeEditorial.partnerBannerTitle')}
         </Text>
-        <View style={[styles.partnerCta, { borderColor: '#FFFFFF', borderRadius: theme.radii.md }]}>
-          <Text style={[styles.partnerCtaText, { color: '#FFFFFF', fontFamily: theme.typography.label.fontFamily }]}>
+        <View style={[styles.partnerCta, { borderColor: theme.colors.background, borderRadius: theme.radii.md }]}>
+          <Text style={[styles.partnerCtaText, { color: theme.colors.background, fontFamily: theme.typography.label.fontFamily }]}>
             {t('homeEditorial.partnerBannerCta')}
           </Text>
         </View>

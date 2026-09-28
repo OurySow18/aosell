@@ -289,7 +289,7 @@ export default function AuthScreen() {
                         <Text
                           style={[
                             styles.modeTabText,
-                            { color: active ? '#FFFFFF' : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
+                            { color: active ? theme.colors.background : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
                           ]}>
                           {nextMode === 'signup' ? t('common.createAccount') : t('common.signIn')}
                         </Text>

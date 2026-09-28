@@ -127,7 +127,10 @@ export default function SearchScreen() {
                     ? theme.colors.success
                     : theme.colors.text;
             // Coral (secondary) text must always be ink, never white (design rule).
-            const textColor = option === 'meal' ? theme.colors.text : '#FFFFFF';
+            // "all" uses theme.colors.text as its background, which flips light/dark
+            // per theme, so its label must flip with it (background) rather than a
+            // fixed white that would be invisible in dark mode.
+            const textColor = option === 'meal' ? theme.colors.text : option === 'all' ? theme.colors.background : '#FFFFFF';
             return (
               <Pressable
                 key={option}

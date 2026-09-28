@@ -109,7 +109,7 @@ export default function PartnerScreen() {
               <Text
                 style={[
                   styles.typeChipText,
-                  { color: businessType === type ? '#FFFFFF' : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
+                  { color: businessType === type ? theme.colors.background : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
                 ]}>
                 {businessTypeLabel[type]}
               </Text>
