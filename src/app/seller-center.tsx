@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { computeDailyOrderStats } from '@/lib/orders';
@@ -17,6 +18,8 @@ export default function SellerCenterScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  const breakpoint = useBreakpoint();
+  const isWideLayout = Platform.OS === 'web' && breakpoint !== 'mobile';
   const { currentUser, currentSellerProfile, listings, orders, advanceOrderStatus, saveListing, setSellerOpen } = useAosell();
 
   if (!currentUser || !currentSellerProfile) {
@@ -93,7 +96,26 @@ export default function SellerCenterScreen() {
         </View>
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 + insets.bottom, gap: 16 }} showsVerticalScrollIndicator={false}>
+      <View style={isWideLayout ? styles.bodyRow : styles.bodyRowMobile}>
+        {isWideLayout ? (
+          <View style={[styles.sidebar, { borderRightColor: theme.colors.border }]}>
+            <SidebarItem active label={t('sellerCenterScreen.navDashboard')} theme={theme} t={t} />
+            <SidebarItem label={t('sellerCenterScreen.navOrders')} badge={toProcess.length + inProgress.length} theme={theme} t={t} />
+            <SidebarItem label={t('sellerCenterScreen.navMenu')} theme={theme} t={t} />
+            <SidebarItem label={t('sellerCenterScreen.navReviews')} comingSoon theme={theme} t={t} />
+            <SidebarItem label={t('sellerCenterScreen.navPayments')} comingSoon theme={theme} t={t} />
+            <SidebarItem label={t('sellerCenterScreen.navSettings')} comingSoon theme={theme} t={t} />
+          </View>
+        ) : null}
+
+      <ScrollView
+        style={isWideLayout ? styles.bodyMain : undefined}
+        contentContainerStyle={
+          isWideLayout
+            ? { paddingHorizontal: 32, paddingVertical: 24, gap: 16, maxWidth: 900, width: '100%', alignSelf: 'center' }
+            : { paddingHorizontal: 20, paddingBottom: 32 + insets.bottom, gap: 16 }
+        }
+        showsVerticalScrollIndicator={false}>
         {/* Stats grid */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
@@ -195,7 +217,53 @@ export default function SellerCenterScreen() {
           </Pressable>
         ))}
       </ScrollView>
+      </View>
     </View>
+  );
+}
+
+function SidebarItem({
+  label,
+  active,
+  badge,
+  comingSoon,
+  theme,
+  t,
+}: {
+  label: string;
+  active?: boolean;
+  badge?: number;
+  comingSoon?: boolean;
+  theme: AppTheme;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  return (
+    <Pressable
+      disabled={comingSoon}
+      style={[
+        styles.sidebarItem,
+        { borderRadius: theme.radii.lg },
+        active ? { backgroundColor: theme.colors.surfaceMuted } : null,
+      ]}>
+      <Text
+        style={[
+          styles.sidebarItemLabel,
+          {
+            color: comingSoon ? theme.colors.textMuted : theme.colors.text,
+            fontFamily: active ? theme.typography.label.fontFamily : theme.typography.body.fontFamily,
+          },
+        ]}>
+        {label}
+      </Text>
+      {badge ? (
+        <View style={[styles.sidebarBadge, { backgroundColor: theme.colors.accent }]}>
+          <Text style={[styles.sidebarBadgeText, { color: theme.colors.onAccent, fontFamily: theme.typography.micro.fontFamily }]}>{badge}</Text>
+        </View>
+      ) : null}
+      {comingSoon ? (
+        <Text style={[styles.sidebarComingSoon, { color: theme.colors.textMuted }]}>{t('sellerCenterScreen.comingSoon')}</Text>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -316,4 +384,14 @@ const styles = StyleSheet.create({
   infoRowSecondary: { fontSize: 12, lineHeight: 16 },
 
   listingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1 },
+
+  bodyRowMobile: { flex: 1 },
+  bodyRow: { flex: 1, flexDirection: 'row' },
+  bodyMain: { flex: 1 },
+  sidebar: { width: 240, paddingHorizontal: 12, paddingTop: 20, gap: 2, borderRightWidth: 1 },
+  sidebarItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  sidebarItemLabel: { flex: 1, fontSize: 14, lineHeight: 20 },
+  sidebarBadge: { minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  sidebarBadgeText: { fontSize: 11, lineHeight: 14 },
+  sidebarComingSoon: { fontSize: 10, lineHeight: 13 },
 });
