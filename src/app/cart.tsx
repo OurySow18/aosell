@@ -379,28 +379,26 @@ export default function CartScreen() {
     </Pressable>
   );
 
-  // Real card payment (Stripe PaymentSheet) only exists on native for now —
-  // the SDK ships no web build, so it's lazy-loaded and never touches the
-  // web bundle. Web keeps the previous "create order, pay later" flow.
-  const orderButtonEl =
-    Platform.OS === 'web' ? (
-      staticOrderButtonEl
-    ) : (
-      <ErrorBoundary fallback={staticOrderButtonEl}>
-        <Suspense fallback={staticOrderButtonEl}>
-          <PayOrderButton
-            disabled={!selectedAddressId}
-            label={orderButtonLabel}
-            buttonStyle={orderButtonStyle}
-            textStyle={orderButtonTextStyle}
-            activityColor={theme.colors.onAccent}
-            onPlaceOrder={handlePlaceOrderForPayment}
-            onPaid={(orderId) => router.replace(`/checkout/success?orderId=${orderId}`)}
-            onError={(message) => setOrderError(message)}
-          />
-        </Suspense>
-      </ErrorBoundary>
-    );
+  // Real card payment: native uses the Stripe PaymentSheet, web uses Stripe.js
+  // (different SDKs, same Cloud Function). Both live in pay-order-button.tsx /
+  // pay-order-button.web.tsx and are lazy-loaded so the native-only SDK never
+  // reaches the web bundle (see stripe-app-provider.web.tsx for why).
+  const orderButtonEl = (
+    <ErrorBoundary fallback={staticOrderButtonEl}>
+      <Suspense fallback={staticOrderButtonEl}>
+        <PayOrderButton
+          disabled={!selectedAddressId}
+          label={orderButtonLabel}
+          buttonStyle={orderButtonStyle}
+          textStyle={orderButtonTextStyle}
+          activityColor={theme.colors.onAccent}
+          onPlaceOrder={handlePlaceOrderForPayment}
+          onPaid={(orderId) => router.replace(`/checkout/success?orderId=${orderId}`)}
+          onError={(message) => setOrderError(message)}
+        />
+      </Suspense>
+    </ErrorBoundary>
+  );
 
   const headerEl = (
     <View style={styles.header}>

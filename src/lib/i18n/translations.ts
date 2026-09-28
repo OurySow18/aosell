@@ -144,6 +144,13 @@ export const translations = {
       cart: 'Cart',
       toggleTheme: 'Toggle theme',
     },
+    payment: {
+      title: 'Payment',
+      payButton: 'Pay',
+      cancel: 'Cancel',
+      processing: 'Processing…',
+      genericError: 'Payment failed. Please try again.',
+    },
     homeEditorial: {
       eyebrow: 'Bremen · Hamburg coming soon',
       title: 'The kitchens of Bremen, delivered to your door',
@@ -785,6 +792,13 @@ export const translations = {
       cart: 'Panier',
       toggleTheme: 'Changer de thème',
     },
+    payment: {
+      title: 'Paiement',
+      payButton: 'Payer',
+      cancel: 'Annuler',
+      processing: 'Traitement en cours…',
+      genericError: 'Le paiement a échoué. Réessaie.',
+    },
     homeEditorial: {
       eyebrow: 'Bremen · bientôt Hambourg',
       title: 'Les cuisines de Bremen, livrées chez vous',
@@ -1425,6 +1439,13 @@ export const translations = {
       signIn: 'Anmelden',
       cart: 'Warenkorb',
       toggleTheme: 'Design wechseln',
+    },
+    payment: {
+      title: 'Zahlung',
+      payButton: 'Bezahlen',
+      cancel: 'Abbrechen',
+      processing: 'Wird verarbeitet…',
+      genericError: 'Zahlung fehlgeschlagen. Bitte versuche es erneut.',
     },
     homeEditorial: {
       eyebrow: 'Bremen · bald auch Hamburg',
