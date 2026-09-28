@@ -127,6 +127,13 @@ export const translations = {
         generic: 'Authentication failed. Please try again.',
       },
     },
+    welcome: {
+      title: 'Welcome to AoSell',
+      subtitle: 'Independent kitchens from Bremen, delivered to your door.',
+      receiveCode: 'Get the code',
+      continueWithEmail: 'Continue with email',
+      exploreGuest: 'Explore without an account',
+    },
     home: {
       discoveringFrom: 'Discovering from',
       germanyLaunch: 'Germany launch',
@@ -709,6 +716,13 @@ export const translations = {
         generic: 'L’authentification a échoué. Veuillez réessayer.',
       },
     },
+    welcome: {
+      title: 'Bienvenue sur AoSell',
+      subtitle: 'Les cuisines indépendantes de Bremen, livrées chez vous.',
+      receiveCode: 'Recevoir le code',
+      continueWithEmail: 'Continuer avec l’e-mail',
+      exploreGuest: 'Explorer sans compte',
+    },
     home: {
       discoveringFrom: 'Découverte depuis',
       germanyLaunch: 'Lancement Allemagne',
@@ -1290,6 +1304,13 @@ export const translations = {
         tooManyRequests: 'Es gab zu viele Versuche. Bitte warte einen Moment und versuche es erneut.',
         generic: 'Authentifizierung fehlgeschlagen. Bitte versuche es erneut.',
       },
+    },
+    welcome: {
+      title: 'Willkommen bei AoSell',
+      subtitle: 'Unabhängige Küchen aus Bremen, direkt zu dir geliefert.',
+      receiveCode: 'Code anfordern',
+      continueWithEmail: 'Mit E-Mail fortfahren',
+      exploreGuest: 'Ohne Konto erkunden',
     },
     home: {
       discoveringFrom: 'Entdecken aus',

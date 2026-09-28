@@ -9,5 +9,5 @@ export default function IndexScreen() {
     return <Redirect href="/home" />;
   }
 
-  return <Redirect href={{ pathname: '/auth', params: { mode: 'signup', role: 'buyer' } }} />;
+  return <Redirect href="/welcome" />;
 }
