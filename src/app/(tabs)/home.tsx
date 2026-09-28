@@ -23,17 +23,18 @@ export default function HomeScreen() {
   const { t } = useLocale();
   const breakpoint = useBreakpoint();
   const { currentUser, addresses, sellers, listings, notifications, getSellerById, addToCart } = useAosell();
+  const [selectedCuisine, setSelectedCuisine] = useState<Cuisine | 'all'>('all');
+  const [addingListingId, setAddingListingId] = useState<string | null>(null);
 
   // Web at tablet/desktop widths gets the editorial marketing homepage
   // (banner, cuisine tiles, "Devenir partenaire" banner) instead of the
   // app's order-focused home — the mobile app (native or narrow web) is
-  // unaffected.
+  // unaffected. This check must stay after every hook call above: switching
+  // breakpoints re-renders this same component, and an early return before
+  // a hook would change the hook count between renders and crash React.
   if (Platform.OS === 'web' && breakpoint !== 'mobile') {
     return <HomeEditorial />;
   }
-
-  const [selectedCuisine, setSelectedCuisine] = useState<Cuisine | 'all'>('all');
-  const [addingListingId, setAddingListingId] = useState<string | null>(null);
 
   const availableCuisines = Array.from(new Set(sellers.flatMap((seller) => seller.cuisineSpecialties)));
   const hasUnreadNotifications = notifications.some((item) => !item.isRead);
