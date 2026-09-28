@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { WebHeader } from '@/components/web/web-header';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 
@@ -14,22 +16,28 @@ export default function TabsLayout() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  const breakpoint = useBreakpoint();
+  const isWebChrome = Platform.OS === 'web' && breakpoint !== 'mobile';
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: theme.colors.tabBar,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.border,
-          height: TAB_CONTENT_HEIGHT + insets.bottom,
-          paddingTop: 8,
-          paddingBottom: insets.bottom,
-          paddingHorizontal: 6,
-        },
-        tabBarShowLabel: false,
-      }}>
+    <View style={styles.root}>
+      {isWebChrome ? <WebHeader breakpoint={breakpoint} /> : null}
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: isWebChrome
+            ? { display: 'none' }
+            : {
+                backgroundColor: theme.colors.tabBar,
+                borderTopWidth: 1,
+                borderTopColor: theme.colors.border,
+                height: TAB_CONTENT_HEIGHT + insets.bottom,
+                paddingTop: 8,
+                paddingBottom: insets.bottom,
+                paddingHorizontal: 6,
+              },
+          tabBarShowLabel: false,
+        }}>
       <Tabs.Screen
         name="home"
         options={{
@@ -99,7 +107,8 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen name="add" options={{ href: null }} />
-    </Tabs>
+      </Tabs>
+    </View>
   );
 }
 
@@ -147,6 +156,9 @@ function TabIcon({
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   column: {
     alignItems: 'center',
     gap: 4,

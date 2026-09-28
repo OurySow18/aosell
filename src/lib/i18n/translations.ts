@@ -134,6 +134,15 @@ export const translations = {
       continueWithEmail: 'Continue with email',
       exploreGuest: 'Explore without an account',
     },
+    webHeader: {
+      restaurants: 'Restaurants',
+      feed: 'Feed',
+      orders: 'Orders',
+      becomePartner: 'Become a partner',
+      signIn: 'Sign in',
+      cart: 'Cart',
+      toggleTheme: 'Toggle theme',
+    },
     home: {
       discoveringFrom: 'Discovering from',
       germanyLaunch: 'Germany launch',
@@ -723,6 +732,15 @@ export const translations = {
       continueWithEmail: 'Continuer avec l’e-mail',
       exploreGuest: 'Explorer sans compte',
     },
+    webHeader: {
+      restaurants: 'Restaurants',
+      feed: 'Fil',
+      orders: 'Commandes',
+      becomePartner: 'Devenir partenaire',
+      signIn: 'Se connecter',
+      cart: 'Panier',
+      toggleTheme: 'Changer de thème',
+    },
     home: {
       discoveringFrom: 'Découverte depuis',
       germanyLaunch: 'Lancement Allemagne',
@@ -1311,6 +1329,15 @@ export const translations = {
       receiveCode: 'Code anfordern',
       continueWithEmail: 'Mit E-Mail fortfahren',
       exploreGuest: 'Ohne Konto erkunden',
+    },
+    webHeader: {
+      restaurants: 'Restaurants',
+      feed: 'Feed',
+      orders: 'Bestellungen',
+      becomePartner: 'Partner werden',
+      signIn: 'Anmelden',
+      cart: 'Warenkorb',
+      toggleTheme: 'Design wechseln',
     },
     home: {
       discoveringFrom: 'Entdecken aus',
