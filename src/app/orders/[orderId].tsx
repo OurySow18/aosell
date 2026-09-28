@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/hooks/use-theme';
@@ -48,13 +49,27 @@ export default function OrderDetailScreen() {
   const steps = getOrderProgressSteps(order.status, order.timeline.map((entry) => entry.status));
   const availableSellerStatuses = getNextStatuses(order.status).filter((status) => status !== order.status);
 
-  // Simple 3-node journey indicator (boutique → en route → toi) — not a live
-  // map, no courier position data exists anywhere in this app yet.
+  // Simple 3-node journey indicator (boutique → en route → toi) stays the
+  // status source of truth — no courier position data exists anywhere in
+  // this app, so the map below (when shown) only plots the two fixed points
+  // it actually has real coordinates for: the seller and the delivery address.
   const journeyStage = ['created', 'pending_payment', 'paid', 'confirmed', 'preparing'].includes(order.status)
     ? 0
     : order.status === 'out_for_delivery'
       ? 1
       : 2;
+
+  const sellerLocation = seller?.location;
+  const homeLocation = order.deliveryAddress.location;
+  const mapRegion =
+    sellerLocation && homeLocation
+      ? {
+          latitude: (sellerLocation.lat + homeLocation.lat) / 2,
+          longitude: (sellerLocation.lng + homeLocation.lng) / 2,
+          latitudeDelta: Math.max(Math.abs(sellerLocation.lat - homeLocation.lat) * 2.2, 0.02),
+          longitudeDelta: Math.max(Math.abs(sellerLocation.lng - homeLocation.lng) * 2.2, 0.02),
+        }
+      : null;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -77,7 +92,26 @@ export default function OrderDetailScreen() {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 + insets.bottom, gap: 16 }} showsVerticalScrollIndicator={false}>
-        {/* Status journey (replaces the live map — no position data exists) */}
+        {/* Static map: seller + delivery address only — no courier position data
+            exists anywhere in this app, so no moving marker is shown. */}
+        {!isTerminal && mapRegion && sellerLocation && homeLocation ? (
+          <View style={[styles.mapWrap, { borderRadius: theme.radii.xl }]}>
+            <MapView style={StyleSheet.absoluteFillObject} initialRegion={mapRegion} pointerEvents="none">
+              <Marker coordinate={{ latitude: sellerLocation.lat, longitude: sellerLocation.lng }} title={seller?.brandName}>
+                <View style={[styles.mapPinStore, { backgroundColor: theme.colors.text }]}>
+                  <Text style={styles.mapPinStoreText}>{(seller?.brandName ?? '??').slice(0, 2).toUpperCase()}</Text>
+                </View>
+              </Marker>
+              <Marker coordinate={{ latitude: homeLocation.lat, longitude: homeLocation.lng }} title={order.deliveryAddress.fullName}>
+                <View style={[styles.mapPinHome, { backgroundColor: theme.colors.surface, borderColor: theme.colors.text }]}>
+                  <SymbolView tintColor={theme.colors.text} size={16} name={{ ios: 'house.fill', android: 'home', web: 'home' }} />
+                </View>
+              </Marker>
+            </MapView>
+          </View>
+        ) : null}
+
+        {/* Status journey (drives the actual status shown — the map above, when present, is static) */}
         {!isTerminal ? (
           <View style={[styles.journeyCard, { backgroundColor: theme.colors.text, borderRadius: theme.radii.xl }]}>
             <View style={styles.journeyRow}>
@@ -295,6 +329,11 @@ const styles = StyleSheet.create({
   headerCopy: { gap: 1, flexShrink: 1 },
   headerTitle: { fontSize: 22, lineHeight: 28 },
   headerSubtitle: { fontSize: 13, lineHeight: 18 },
+
+  mapWrap: { height: 220, overflow: 'hidden' },
+  mapPinStore: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  mapPinStoreText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  mapPinHome: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 
   journeyCard: { padding: 20 },
   journeyRow: { flexDirection: 'row', alignItems: 'center' },
