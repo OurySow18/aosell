@@ -105,7 +105,7 @@ type AppTheme = ReturnType<typeof useAppTheme>;
 function StatBlock({ theme, label, value }: { theme: AppTheme; label: string; value: string }) {
   return (
     <View style={[styles.statCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-      <Text style={[styles.label, { color: theme.colors.accent, fontFamily: theme.typography.micro.fontFamily }]}>{label}</Text>
+      <Text style={[styles.label, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>{label}</Text>
       <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>{value}</Text>
     </View>
   );

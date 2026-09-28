@@ -68,7 +68,7 @@ export function ListingCard({
         </Text>
         <View style={styles.footer}>
           <View style={styles.metaItem}>
-            <SymbolView tintColor={theme.colors.accent} size={15} name={{ ios: 'star.fill', android: 'star', web: 'star' }} />
+            <SymbolView tintColor={theme.colors.text} size={15} name={{ ios: 'star.fill', android: 'star', web: 'star' }} />
             <Text style={[styles.metaText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
               {listing.averageRating ? listing.averageRating.toFixed(1) : t('common.new')}
             </Text>

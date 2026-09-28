@@ -41,7 +41,7 @@ export function AppHeader() {
           pressed && styles.pressed,
         ]}>
         <View style={[styles.searchIcon, { backgroundColor: theme.colors.accentTint, borderRadius: theme.radii.md }]}>
-          <SymbolView tintColor={theme.colors.accent} size={20} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} />
+          <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} />
         </View>
         <Text
           numberOfLines={1}

@@ -131,7 +131,7 @@ export default function ListingDetailScreen() {
 
         <View style={styles.summarySection}>
           <View style={styles.tags}>
-            <Pill label={getListingTypeLabel(listing.type)} tone="accent" theme={theme} />
+            <Pill label={getListingTypeLabel(listing.type)} tone="neutral" theme={theme} />
             {listing.categories[0] ? <Pill label={listing.categories[0]} tone="neutral" theme={theme} /> : null}
             {listing.linkedVideoUrl ? <Pill label={t('listingDetail.videoIncluded')} tone="warning" theme={theme} /> : null}
           </View>
@@ -242,7 +242,7 @@ export default function ListingDetailScreen() {
                 <View
                   key={attribute.key}
                   style={[styles.attributeRow, { backgroundColor: theme.colors.background, borderColor: theme.colors.border, borderRadius: theme.radii.md }]}>
-                  <Text style={[styles.attributeLabel, { color: theme.colors.accent, fontFamily: theme.typography.micro.fontFamily }]}>
+                  <Text style={[styles.attributeLabel, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>
                     {attribute.label}
                   </Text>
                   <Text style={[styles.attributeValue, { color: theme.colors.text }]}>{String(attribute.value)}</Text>

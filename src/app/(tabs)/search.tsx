@@ -125,7 +125,9 @@ export default function SearchScreen() {
                   ? theme.colors.warning
                   : option === 'service'
                     ? theme.colors.success
-                    : theme.colors.accent;
+                    : theme.colors.text;
+            // Coral (secondary) text must always be ink, never white (design rule).
+            const textColor = option === 'meal' ? theme.colors.text : '#FFFFFF';
             return (
               <Pressable
                 key={option}
@@ -141,7 +143,7 @@ export default function SearchScreen() {
                 <Text
                   style={[
                     styles.chipLabel,
-                    { color: active ? '#FFFFFF' : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
+                    { color: active ? textColor : theme.colors.text, fontFamily: theme.typography.label.fontFamily },
                   ]}>
                   {getListingTypeLabel(option)}
                 </Text>

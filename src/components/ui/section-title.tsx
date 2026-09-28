@@ -18,7 +18,7 @@ export function SectionTitle({
       {eyebrow ? (
         <View style={styles.eyebrowRow}>
           <View style={[styles.eyebrowLine, { backgroundColor: theme.colors.accent }]} />
-          <Text style={[styles.eyebrow, { color: theme.colors.accent, fontFamily: theme.typography.micro.fontFamily }]}>{eyebrow}</Text>
+          <Text style={[styles.eyebrow, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>{eyebrow}</Text>
         </View>
       ) : null}
       <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>{title}</Text>

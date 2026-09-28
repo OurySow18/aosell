@@ -44,8 +44,8 @@ export function ListingGallery({ listing }: { listing: Listing }) {
             <Pressable onPress={() => router.back()} style={[styles.backButton, { backgroundColor: 'rgba(255,255,255,0.94)' }]}>
               <SymbolView tintColor={theme.colors.text} size={19} name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} />
             </Pressable>
-            <View style={[styles.pill, { backgroundColor: theme.colors.accent }]}>
-              <Text style={[styles.pillText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }]}>
+            <View style={[styles.pill, { backgroundColor: 'rgba(255,255,255,0.94)' }]}>
+              <Text style={[styles.pillText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
                 {getListingTypeLabel(listing.type)}
               </Text>
             </View>
@@ -83,8 +83,8 @@ export function ListingGallery({ listing }: { listing: Listing }) {
           </View>
         ) : null}
         <View style={styles.heroFooter}>
-          <View style={[styles.footerChip, { backgroundColor: theme.colors.accent }]}>
-            <Text style={[styles.footerChipText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }]}>
+          <View style={[styles.footerChip, { backgroundColor: 'rgba(255,255,255,0.94)' }]}>
+            <Text style={[styles.footerChipText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
               {activeItem?.kind === 'video' ? t('gallery.tapToReview') : t('gallery.photosAvailable', { count: imageCount || 1 })}
             </Text>
           </View>

@@ -38,7 +38,7 @@ export function SellerCard({
           </View>
           {seller.ratingAverage ? (
             <View style={[styles.ratingBadge, { backgroundColor: theme.colors.surface }]}>
-              <SymbolView tintColor={theme.colors.accent} size={14} name={{ ios: 'star.fill', android: 'star', web: 'star' }} />
+              <SymbolView tintColor={theme.colors.text} size={14} name={{ ios: 'star.fill', android: 'star', web: 'star' }} />
               <Text style={[styles.ratingText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
                 {seller.ratingAverage.toFixed(1)}
               </Text>
