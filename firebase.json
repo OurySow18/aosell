@@ -1,0 +1,23 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "dist",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/listing/edit/**", "destination": "/listing/edit/[listingId].html" },
+      { "source": "/listing/**", "destination": "/listing/[listingId].html" },
+      { "source": "/orders/**", "destination": "/orders/[orderId].html" },
+      { "source": "/post/**", "destination": "/post/[postId].html" },
+      { "source": "/seller/**", "destination": "/seller/[sellerId].html" },
+      { "source": "**", "destination": "/+not-found.html" }
+    ]
+  }
+}
