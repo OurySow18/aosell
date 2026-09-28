@@ -2,11 +2,12 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { resolvePromoCode } from '@/lib/cart';
@@ -22,6 +23,8 @@ export default function CartScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  const breakpoint = useBreakpoint();
+  const isWideLayout = Platform.OS === 'web' && breakpoint !== 'mobile';
   const {
     currentUser,
     cart,
@@ -132,31 +135,9 @@ export default function CartScreen() {
     }
   }
 
-  return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.background }}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={[styles.roundButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.headerTitle, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
-              {t('cart.title')}
-            </Text>
-            {seller ? (
-              <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>
-                {seller.brandName}
-                {firstListingDeliveryMode ? ` · ${getDeliveryModeLabel(firstListingDeliveryMode)}` : ''}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-      </SafeAreaView>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Items */}
+  const itemsCard = (
+    <>
+      {/* Items */}
         <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
           {cart.items.map((item) => {
             const listing = getListingById(item.listingId);
@@ -185,7 +166,11 @@ export default function CartScreen() {
             );
           })}
         </View>
+    </>
+  );
 
+  const deliveryAndPromoCard = (
+    <>
         {/* Livraison et paiement */}
         <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
           {t('cart.deliveryAndPayment')}
@@ -338,7 +323,11 @@ export default function CartScreen() {
           )}
           {promoError ? <Text style={[styles.errorText, { color: theme.colors.error }]}>{promoError}</Text> : null}
         </View>
+    </>
+  );
 
+  const summaryContent = (
+    <>
         {/* Summary */}
         <View style={styles.summary}>
           <SummaryRow label={t('common.subtotal')} value={formatMoney(cart.subtotal)} theme={theme} />
@@ -356,6 +345,78 @@ export default function CartScreen() {
             </Text>
           </View>
         </View>
+    </>
+  );
+
+  const orderButtonEl = (
+    <Pressable
+      disabled={isPlacingOrder || !selectedAddressId}
+      onPress={() => void handlePlaceOrder()}
+      style={[
+        styles.orderButton,
+        { backgroundColor: theme.colors.accent, opacity: !selectedAddressId ? theme.motion.disabledOpacity : 1 },
+        theme.shadows.accent,
+      ]}>
+      {isPlacingOrder ? (
+        <ActivityIndicator color={theme.colors.onAccent} />
+      ) : (
+        <Text style={[styles.orderButtonText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }]}>
+          {t('cart.orderCta', { total: formatMoney(cart.total) })}
+        </Text>
+      )}
+    </Pressable>
+  );
+
+  const headerEl = (
+    <View style={styles.header}>
+      <Pressable
+        onPress={() => router.back()}
+        style={[styles.roundButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} />
+      </Pressable>
+      <View style={styles.headerCopy}>
+        <Text style={[styles.headerTitle, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>{t('cart.title')}</Text>
+        {seller ? (
+          <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>
+            {seller.brandName}
+            {firstListingDeliveryMode ? ` · ${getDeliveryModeLabel(firstListingDeliveryMode)}` : ''}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  if (isWideLayout) {
+    return (
+      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+        <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.background }}>
+          <View style={styles.wideHeaderWrap}>{headerEl}</View>
+        </SafeAreaView>
+        <View style={styles.wideColumns}>
+          <ScrollView contentContainerStyle={styles.wideLeftColumn} showsVerticalScrollIndicator={false}>
+            {itemsCard}
+            {deliveryAndPromoCard}
+          </ScrollView>
+          <View style={[styles.wideSummaryPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
+            {summaryContent}
+            {orderError ? <Text style={[styles.errorText, { color: theme.colors.error, marginBottom: 8 }]}>{orderError}</Text> : null}
+            {orderButtonEl}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.background }}>
+        {headerEl}
+      </SafeAreaView>
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {itemsCard}
+        {deliveryAndPromoCard}
+        {summaryContent}
       </ScrollView>
 
       <View
@@ -364,22 +425,7 @@ export default function CartScreen() {
           { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: 14 + insets.bottom },
         ]}>
         {orderError ? <Text style={[styles.errorText, { color: theme.colors.error, marginBottom: 8 }]}>{orderError}</Text> : null}
-        <Pressable
-          disabled={isPlacingOrder || !selectedAddressId}
-          onPress={() => void handlePlaceOrder()}
-          style={[
-            styles.orderButton,
-            { backgroundColor: theme.colors.accent, opacity: !selectedAddressId ? theme.motion.disabledOpacity : 1 },
-            theme.shadows.accent,
-          ]}>
-          {isPlacingOrder ? (
-            <ActivityIndicator color={theme.colors.onAccent} />
-          ) : (
-            <Text style={[styles.orderButtonText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }]}>
-              {t('cart.orderCta', { total: formatMoney(cart.total) })}
-            </Text>
-          )}
-        </Pressable>
+        {orderButtonEl}
       </View>
     </View>
   );
@@ -430,6 +476,11 @@ const styles = StyleSheet.create({
   headerCopy: { gap: 1 },
   headerTitle: { fontSize: 22, lineHeight: 28 },
   headerSubtitle: { fontSize: 13, lineHeight: 18 },
+
+  wideHeaderWrap: { maxWidth: 1280, width: '100%', alignSelf: 'center', paddingHorizontal: 12 },
+  wideColumns: { flex: 1, flexDirection: 'row', maxWidth: 1280, width: '100%', alignSelf: 'center', gap: 32, paddingHorizontal: 20 },
+  wideLeftColumn: { flex: 1, minWidth: 0, gap: 16, paddingBottom: 48 },
+  wideSummaryPanel: { width: 380, borderWidth: 1, padding: 20, gap: 16, marginTop: 12 },
 
   scrollContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 16 },
   card: { borderWidth: 1, padding: 14, gap: 4 },
