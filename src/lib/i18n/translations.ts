@@ -143,6 +143,15 @@ export const translations = {
       cart: 'Cart',
       toggleTheme: 'Toggle theme',
     },
+    homeEditorial: {
+      eyebrow: 'Bremen · Hamburg coming soon',
+      title: 'The kitchens of Bremen, delivered to your door',
+      viewRestaurants: 'View restaurants',
+      byCuisine: 'By cuisine',
+      tonightInBremen: 'Tonight in Bremen',
+      partnerBannerTitle: 'Do you run a restaurant or grocery shop in Bremen?',
+      partnerBannerCta: 'Become a partner',
+    },
     home: {
       discoveringFrom: 'Discovering from',
       germanyLaunch: 'Germany launch',
@@ -741,6 +750,15 @@ export const translations = {
       cart: 'Panier',
       toggleTheme: 'Changer de thème',
     },
+    homeEditorial: {
+      eyebrow: 'Bremen · bientôt Hambourg',
+      title: 'Les cuisines de Bremen, livrées chez vous',
+      viewRestaurants: 'Voir les restaurants',
+      byCuisine: 'Par cuisine',
+      tonightInBremen: 'Ce soir à Bremen',
+      partnerBannerTitle: 'Vous tenez un restaurant ou une épicerie à Bremen ?',
+      partnerBannerCta: 'Devenir partenaire',
+    },
     home: {
       discoveringFrom: 'Découverte depuis',
       germanyLaunch: 'Lancement Allemagne',
@@ -1338,6 +1356,15 @@ export const translations = {
       signIn: 'Anmelden',
       cart: 'Warenkorb',
       toggleTheme: 'Design wechseln',
+    },
+    homeEditorial: {
+      eyebrow: 'Bremen · bald auch Hamburg',
+      title: 'Die Küchen Bremens, direkt zu dir geliefert',
+      viewRestaurants: 'Restaurants ansehen',
+      byCuisine: 'Nach Küche',
+      tonightInBremen: 'Heute Abend in Bremen',
+      partnerBannerTitle: 'Betreibst du ein Restaurant oder einen Laden in Bremen?',
+      partnerBannerCta: 'Partner werden',
     },
     home: {
       discoveringFrom: 'Entdecken aus',

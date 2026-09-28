@@ -2,10 +2,12 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { HomeEditorial } from '@/components/web/home-editorial';
 import { DEFAULT_CITY } from '@/constants/location';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { getCuisineLabel, getDeliveryModeLabel } from '@/lib/i18n';
@@ -19,7 +21,16 @@ type AppTheme = ReturnType<typeof useAppTheme>;
 export default function HomeScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
+  const breakpoint = useBreakpoint();
   const { currentUser, addresses, sellers, listings, notifications, getSellerById, addToCart } = useAosell();
+
+  // Web at tablet/desktop widths gets the editorial marketing homepage
+  // (banner, cuisine tiles, "Devenir partenaire" banner) instead of the
+  // app's order-focused home — the mobile app (native or narrow web) is
+  // unaffected.
+  if (Platform.OS === 'web' && breakpoint !== 'mobile') {
+    return <HomeEditorial />;
+  }
 
   const [selectedCuisine, setSelectedCuisine] = useState<Cuisine | 'all'>('all');
   const [addingListingId, setAddingListingId] = useState<string | null>(null);
