@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
+  OAuthProvider,
   onAuthStateChanged,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
@@ -99,6 +101,23 @@ export const AuthRepository = {
     return ensureUserDocument(
       credential.user.uid,
       credential.user.email ?? input.email.trim().toLowerCase()
+    );
+  },
+
+  async signInWithOAuthCredential(
+    providerId: 'apple.com' | 'google.com',
+    idToken: string,
+    rawNonce?: string,
+    role: Extract<AppUser['role'], 'buyer' | 'seller'> = 'buyer'
+  ): Promise<AppUser> {
+    const provider = new OAuthProvider(providerId);
+    const credential = provider.credential({ idToken, rawNonce });
+    const userCredential = await signInWithCredential(auth, credential);
+
+    return ensureUserDocument(
+      userCredential.user.uid,
+      userCredential.user.email ?? fallbackEmail(userCredential.user.uid),
+      role
     );
   },
 

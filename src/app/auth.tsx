@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
@@ -108,7 +108,7 @@ export default function AuthScreen() {
   const initialMode = asSingleValue(params.mode) === 'signin' ? 'signin' : 'signup';
   const initialRole = asSingleValue(params.role) === 'seller' ? 'seller' : 'buyer';
   const returnTo = asSingleValue(params.returnTo);
-  const { authReady, currentUser, signIn, signUp } = useAosell();
+  const { authReady, currentUser, signIn, signUp, signInWithApple } = useAosell();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [role, setRole] = useState<AuthRole>(initialRole);
@@ -178,6 +178,24 @@ export default function AuthScreen() {
   function handleUnavailable(method: AuthMethod) {
     setShowEmailForm(true);
     setInfo(method === 'phone' ? t('auth.phoneInfo') : method === 'apple' ? t('auth.appleInfo') : t('auth.googleInfo'));
+  }
+
+  async function handleAppleSignIn() {
+    setError('');
+    setInfo('');
+    setIsSubmitting(true);
+    const { performAppleSignIn, AppleSignInCanceledError } = await import('@/lib/auth/apple-sign-in');
+    try {
+      const { idToken, rawNonce } = await performAppleSignIn();
+      await signInWithApple(idToken, rawNonce, role);
+      router.replace((returnTo || (role === 'seller' ? '/seller-onboarding' : '/home')) as never);
+    } catch (nextError) {
+      if (!(nextError instanceof AppleSignInCanceledError)) {
+        setError(getFriendlyAuthError(nextError));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -258,7 +276,12 @@ export default function AuthScreen() {
             <DividerLabel theme={theme} />
 
             <View style={styles.optionList}>
-              <AuthOptionButton theme={theme} label={t('auth.apple')} type="apple" onPress={() => handleUnavailable('apple')} />
+              <AuthOptionButton
+                theme={theme}
+                label={t('auth.apple')}
+                type="apple"
+                onPress={() => (Platform.OS === 'ios' ? void handleAppleSignIn() : handleUnavailable('apple'))}
+              />
               <AuthOptionButton theme={theme} label={t('auth.google')} type="google" onPress={() => handleUnavailable('google')} />
               <AuthOptionButton theme={theme} label={t('auth.email')} type="email" onPress={() => revealEmailForm(initialMode)} />
             </View>

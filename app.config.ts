@@ -34,6 +34,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-video',
+    'expo-apple-authentication',
     [
       'expo-splash-screen',
       {

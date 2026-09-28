@@ -108,6 +108,7 @@ type AosellContextValue = {
   notifications: Notification[];
   signIn: (input: SignInInput) => Promise<AppUser | null>;
   signUp: (input: SignUpInput) => Promise<AppUser | null>;
+  signInWithApple: (idToken: string, rawNonce: string, role: Extract<AppUser['role'], 'buyer' | 'seller'>) => Promise<AppUser | null>;
   logout: () => Promise<void>;
   createSellerProfile: (input: CreateSellerProfileInput) => Promise<SellerProfile | null>;
   setSellerOpen: (isOpen: boolean) => Promise<void>;
@@ -310,6 +311,13 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     };
 
     await UserRepository.ensureProfile(user, profileSeed);
+    setCurrentUser(user);
+    return user;
+  }
+
+  async function signInWithApple(idToken: string, rawNonce: string, role: Extract<AppUser['role'], 'buyer' | 'seller'>) {
+    const user = await AuthRepository.signInWithOAuthCredential('apple.com', idToken, rawNonce, role);
+    await UserRepository.ensureProfile(user);
     setCurrentUser(user);
     return user;
   }
@@ -675,6 +683,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         notifications,
         signIn,
         signUp,
+        signInWithApple,
         logout,
         createSellerProfile,
         setSellerOpen,
