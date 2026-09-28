@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { defineSecret } from 'firebase-functions/params';
 import { onCall } from 'firebase-functions/v2/https';
 import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onRequest } from 'firebase-functions/v2/https';
@@ -9,8 +10,15 @@ initializeApp();
 
 const db = getFirestore();
 
+// Firebase Functions v2 only injects a secret into process.env for a given
+// function when that function's options list it in `secrets: [...]` — these
+// params are how that declaration ties back to the value set via
+// `firebase functions:secrets:set`.
+const stripeSecretKey = defineSecret('STRIPE_SECRET_KEY');
+const stripeWebhookSecret = defineSecret('STRIPE_WEBHOOK_SECRET');
+
 function getStripeClient() {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const secretKey = stripeSecretKey.value();
   if (!secretKey) {
     throw new Error('Missing STRIPE_SECRET_KEY');
   }
@@ -18,21 +26,44 @@ function getStripeClient() {
   return new Stripe(secretKey);
 }
 
-export const createPaymentIntent = onCall(async (request) => {
-  const stripe = getStripeClient();
-  const amount = Number(request.data?.amountCents ?? 0);
-
-  if (!amount || amount < 0) {
-    throw new Error('Invalid amountCents');
+export const createPaymentIntent = onCall({ secrets: [stripeSecretKey] }, async (request) => {
+  if (!request.auth) {
+    throw new Error('Must be signed in.');
   }
 
+  const orderId = String(request.data?.orderId ?? '');
+  if (!orderId) {
+    throw new Error('Missing orderId');
+  }
+
+  // The amount and seller are read from the order document itself, never
+  // trusted from the client — a caller could otherwise request a PaymentIntent
+  // for any amount by passing a different amountCents.
+  const orderSnap = await db.collection('orders').doc(orderId).get();
+  const order = orderSnap.data();
+  if (!order) {
+    throw new Error('Order not found');
+  }
+  if (order.buyerUserId !== request.auth.uid) {
+    throw new Error('This order does not belong to you.');
+  }
+  if (order.status !== 'created' && order.status !== 'pending_payment') {
+    throw new Error('This order is not payable.');
+  }
+
+  const amount = Number(order.totalAmountCents ?? 0);
+  if (!amount || amount < 0) {
+    throw new Error('Invalid order total');
+  }
+
+  const stripe = getStripeClient();
   const intent = await stripe.paymentIntents.create({
     amount,
     currency: 'eur',
     automatic_payment_methods: { enabled: true },
     metadata: {
-      orderId: String(request.data?.orderId ?? ''),
-      sellerId: String(request.data?.sellerId ?? ''),
+      orderId,
+      sellerId: String(order.sellerId ?? ''),
     },
   });
 
@@ -42,8 +73,8 @@ export const createPaymentIntent = onCall(async (request) => {
   };
 });
 
-export const stripeWebhook = onRequest(async (req, res) => {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+export const stripeWebhook = onRequest({ secrets: [stripeSecretKey, stripeWebhookSecret] }, async (req, res) => {
+  const secret = stripeWebhookSecret.value();
   if (!secret) {
     res.status(500).send('Missing STRIPE_WEBHOOK_SECRET');
     return;

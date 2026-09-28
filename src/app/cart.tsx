@@ -1,11 +1,12 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -18,6 +19,8 @@ import { addressSchema } from '@/lib/validations/address';
 import { useAosell } from '@/providers/aosell-provider';
 
 type AppTheme = ReturnType<typeof useAppTheme>;
+
+const PayOrderButton = lazy(() => import('@/components/payments/pay-order-button'));
 
 export default function CartScreen() {
   const theme = useAppTheme();
@@ -133,6 +136,20 @@ export default function CartScreen() {
     } else {
       setOrderError(t('checkoutScreen.errors.invalidCheckout'));
     }
+  }
+
+  async function handlePlaceOrderForPayment() {
+    if (!selectedAddressId) {
+      setOrderError(t('checkoutScreen.errors.invalidCheckout'));
+      return null;
+    }
+
+    setOrderError('');
+    const order = await placeOrder(selectedAddressId);
+    if (!order) {
+      setOrderError(t('checkoutScreen.errors.invalidCheckout'));
+    }
+    return order;
   }
 
   const itemsCard = (
@@ -348,24 +365,42 @@ export default function CartScreen() {
     </>
   );
 
-  const orderButtonEl = (
-    <Pressable
-      disabled={isPlacingOrder || !selectedAddressId}
-      onPress={() => void handlePlaceOrder()}
-      style={[
-        styles.orderButton,
-        { backgroundColor: theme.colors.accent, opacity: !selectedAddressId ? theme.motion.disabledOpacity : 1 },
-        theme.shadows.accent,
-      ]}>
-      {isPlacingOrder ? (
-        <ActivityIndicator color={theme.colors.onAccent} />
-      ) : (
-        <Text style={[styles.orderButtonText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }]}>
-          {t('cart.orderCta', { total: formatMoney(cart.total) })}
-        </Text>
-      )}
+  const orderButtonStyle = [
+    styles.orderButton,
+    { backgroundColor: theme.colors.accent, opacity: !selectedAddressId ? theme.motion.disabledOpacity : 1 },
+    theme.shadows.accent,
+  ];
+  const orderButtonTextStyle = [styles.orderButtonText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }];
+  const orderButtonLabel = t('cart.orderCta', { total: formatMoney(cart.total) });
+
+  const staticOrderButtonEl = (
+    <Pressable disabled={isPlacingOrder || !selectedAddressId} onPress={() => void handlePlaceOrder()} style={orderButtonStyle}>
+      {isPlacingOrder ? <ActivityIndicator color={theme.colors.onAccent} /> : <Text style={orderButtonTextStyle}>{orderButtonLabel}</Text>}
     </Pressable>
   );
+
+  // Real card payment (Stripe PaymentSheet) only exists on native for now —
+  // the SDK ships no web build, so it's lazy-loaded and never touches the
+  // web bundle. Web keeps the previous "create order, pay later" flow.
+  const orderButtonEl =
+    Platform.OS === 'web' ? (
+      staticOrderButtonEl
+    ) : (
+      <ErrorBoundary fallback={staticOrderButtonEl}>
+        <Suspense fallback={staticOrderButtonEl}>
+          <PayOrderButton
+            disabled={!selectedAddressId}
+            label={orderButtonLabel}
+            buttonStyle={orderButtonStyle}
+            textStyle={orderButtonTextStyle}
+            activityColor={theme.colors.onAccent}
+            onPlaceOrder={handlePlaceOrderForPayment}
+            onPaid={(orderId) => router.replace(`/checkout/success?orderId=${orderId}`)}
+            onError={(message) => setOrderError(message)}
+          />
+        </Suspense>
+      </ErrorBoundary>
+    );
 
   const headerEl = (
     <View style={styles.header}>

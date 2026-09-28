@@ -3,6 +3,7 @@ import { FirebaseOptions, getApps, initializeApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import { getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 import { Platform } from 'react-native';
 
@@ -82,3 +83,4 @@ function createAuth() {
 export const auth: Auth = createAuth();
 export const db = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
+export const functions = getFunctions(firebaseApp);

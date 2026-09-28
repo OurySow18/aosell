@@ -4,12 +4,13 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useLocale } from '@/hooks/use-locale';
 import { useAppTheme } from '@/hooks/use-theme';
 import { AosellProvider } from '@/providers/aosell-provider';
@@ -18,6 +19,24 @@ import { ThemeModeProvider } from '@/providers/theme-mode-provider';
 import { useAosell } from '@/providers/aosell-provider';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+// @stripe/stripe-react-native ships no web build, so the provider is
+// lazy-loaded and only ever rendered on native, never touching the web bundle.
+const StripeAppProvider = lazy(() => import('@/components/payments/stripe-app-provider'));
+
+function PaymentsProvider({ children }: { children: React.ReactElement }) {
+  if (Platform.OS === 'web') {
+    return <>{children}</>;
+  }
+
+  return (
+    <ErrorBoundary fallback={<>{children}</>}>
+      <Suspense fallback={<>{children}</>}>
+        <StripeAppProvider>{children}</StripeAppProvider>
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
 
 function SessionBootScreen() {
   const theme = useAppTheme();
@@ -108,7 +127,9 @@ export default function RootLayout() {
       <ThemeModeProvider>
         <LocaleProvider>
           <AosellProvider>
-            <RootNavigator />
+            <PaymentsProvider>
+              <RootNavigator />
+            </PaymentsProvider>
           </AosellProvider>
         </LocaleProvider>
       </ThemeModeProvider>

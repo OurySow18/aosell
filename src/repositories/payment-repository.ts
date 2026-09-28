@@ -1,5 +1,16 @@
+import { httpsCallable } from 'firebase/functions';
+
+import { functions } from '@/lib/firebase/config';
+
+type CreatePaymentIntentResponse = {
+  clientSecret: string;
+  paymentIntentId: string;
+};
+
 export const PaymentRepository = {
-  async createPaymentIntent() {
-    return Promise.resolve({ clientSecret: 'pi_mock_secret' });
+  async createPaymentIntent(orderId: string) {
+    const call = httpsCallable<{ orderId: string }, CreatePaymentIntentResponse>(functions, 'createPaymentIntent');
+    const result = await call({ orderId });
+    return result.data;
   },
 };
