@@ -369,6 +369,20 @@ export interface Notification {
   createdAt: ISODateString;
 }
 
+export type PartnerLeadBusinessType = "restaurant" | "grocery" | "caterer";
+
+export interface PartnerLead {
+  id: UUID;
+  businessName: string;
+  businessType: PartnerLeadBusinessType;
+  neighborhood: string;
+  phoneNumber: string;
+  email: string;
+  city: string;
+  status: "new";
+  createdAt: ISODateString;
+}
+
 export interface SellerProductImportRow {
   externalId?: string;
   title: string;
@@ -410,4 +424,5 @@ export interface DatabaseSchema {
   dishes: Dish;
   condiments: Condiment;
   posts: Post;
+  partner_leads: PartnerLead;
 }

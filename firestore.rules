@@ -138,6 +138,24 @@ service cloud.firestore {
         && isValidTimestamp(request.resource.data.createdAt);
     }
 
+    function isValidPartnerLeadData() {
+      return request.resource.data.businessName is string
+        && request.resource.data.businessName.size() > 0
+        && request.resource.data.businessName.size() <= 120
+        && request.resource.data.businessType in ['restaurant', 'grocery', 'caterer']
+        && request.resource.data.neighborhood is string
+        && request.resource.data.neighborhood.size() <= 120
+        && request.resource.data.phoneNumber is string
+        && request.resource.data.phoneNumber.size() > 0
+        && request.resource.data.phoneNumber.size() <= 30
+        && request.resource.data.email is string
+        && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && request.resource.data.city is string
+        && request.resource.data.city.size() <= 80
+        && request.resource.data.status == 'new'
+        && isValidTimestamp(request.resource.data.createdAt);
+    }
+
     function isValidOrderStatusTransition(oldStatus, newStatus) {
       return (
         oldStatus == 'created' && newStatus in ['pending_payment', 'canceled']
@@ -403,6 +421,15 @@ service cloud.firestore {
         allow update: if false;
         allow delete: if isSignedIn() && (resource.data.authorUserId == request.auth.uid || isAdmin());
       }
+    }
+
+    match /partner_leads/{leadId} {
+      // Public submission form ("Devenir partenaire") — anyone can create a
+      // lead (no auth required, matches the web form), but only admins can
+      // read, change or remove one. No client-side listing of leads.
+      allow read: if isAdmin();
+      allow create: if isValidPartnerLeadData();
+      allow update, delete: if isAdmin();
     }
   }
 }

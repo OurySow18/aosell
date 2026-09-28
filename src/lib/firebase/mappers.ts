@@ -9,6 +9,7 @@ import type {
   Listing,
   Notification,
   Order,
+  PartnerLead,
   Post,
   PostComment,
   SellerProfile,
@@ -22,6 +23,7 @@ import type {
   FirestoreListingDoc,
   FirestoreNotificationDoc,
   FirestoreOrderDoc,
+  FirestorePartnerLeadDoc,
   FirestorePostCommentDoc,
   FirestorePostDoc,
   FirestoreSellerProfileDoc,
@@ -397,6 +399,27 @@ export function toFirestoreNotificationDoc(
   return {
     ...notification,
     createdAt: toTimestamp(notification.createdAt),
+  };
+}
+
+export function fromFirestorePartnerLeadDoc(id: string, doc: FirestorePartnerLeadDoc): PartnerLead {
+  return {
+    id,
+    businessName: doc.businessName,
+    businessType: doc.businessType,
+    neighborhood: doc.neighborhood,
+    phoneNumber: doc.phoneNumber,
+    email: doc.email,
+    city: doc.city,
+    status: doc.status,
+    createdAt: toIsoDate(doc.createdAt),
+  };
+}
+
+export function toFirestorePartnerLeadDoc(lead: PartnerLead): FirestorePartnerLeadDoc {
+  return {
+    ...lead,
+    createdAt: toTimestamp(lead.createdAt),
   };
 }
 

@@ -8,6 +8,7 @@ import type {
     Listing,
     Notification,
     Order,
+    PartnerLead,
     Payment,
     Post,
     PostComment,
@@ -52,6 +53,7 @@ export const COLLECTIONS = {
   dishes: "dishes",
   condiments: "condiments",
   posts: "posts",
+  partnerLeads: "partner_leads",
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
@@ -247,6 +249,13 @@ export interface FirestorePostCommentDoc extends Omit<
   createdAt: FirestoreDate;
 }
 
+export interface FirestorePartnerLeadDoc extends Omit<
+  PartnerLead,
+  "createdAt"
+> {
+  createdAt: FirestoreDate;
+}
+
 /**
  * Suggested document paths.
  */
@@ -266,6 +275,7 @@ export type CondimentDocPath = `condiments/${string}`;
 export type PostDocPath = `posts/${string}`;
 export type PostLikeDocPath = `posts/${string}/likes/${string}`;
 export type PostCommentDocPath = `posts/${string}/comments/${string}`;
+export type PartnerLeadDocPath = `partner_leads/${string}`;
 
 /**
  * Collection map for repository typing.
@@ -284,6 +294,7 @@ export interface FirestoreCollectionMap {
   dishes: FirestoreDishDoc;
   condiments: FirestoreCondimentDoc;
   posts: FirestorePostDoc;
+  partner_leads: FirestorePartnerLeadDoc;
 }
 
 export type FirestoreCollectionKey = keyof FirestoreCollectionMap;
