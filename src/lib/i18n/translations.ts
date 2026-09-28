@@ -133,6 +133,7 @@ export const translations = {
       receiveCode: 'Get the code',
       continueWithEmail: 'Continue with email',
       exploreGuest: 'Explore without an account',
+      sellerAccess: 'Access seller space',
     },
     webHeader: {
       restaurants: 'Restaurants',
@@ -766,6 +767,7 @@ export const translations = {
       receiveCode: 'Recevoir le code',
       continueWithEmail: 'Continuer avec l’e-mail',
       exploreGuest: 'Explorer sans compte',
+      sellerAccess: 'Accéder à l’espace vendeur',
     },
     webHeader: {
       restaurants: 'Restaurants',
@@ -1399,6 +1401,7 @@ export const translations = {
       receiveCode: 'Code anfordern',
       continueWithEmail: 'Mit E-Mail fortfahren',
       exploreGuest: 'Ohne Konto erkunden',
+      sellerAccess: 'Zum Verkäuferbereich',
     },
     webHeader: {
       restaurants: 'Restaurants',

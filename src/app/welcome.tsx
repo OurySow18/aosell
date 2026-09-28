@@ -5,6 +5,7 @@ import {
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import type { Locale } from '@/lib/i18n';
@@ -45,6 +47,8 @@ const LANGUAGE_OPTIONS: { value: Locale; label: string }[] = [
 export default function WelcomeScreen() {
   const theme = useAppTheme();
   const { t, locale, setLocale } = useLocale();
+  const breakpoint = useBreakpoint();
+  const isWideLayout = Platform.OS === 'web' && breakpoint !== 'mobile';
   const scrollRef = useRef<ScrollView>(null);
   const [slideIndex, setSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -77,60 +81,151 @@ export default function WelcomeScreen() {
     router.push({ pathname: '/auth', params: { mode, role: 'buyer' } });
   }
 
+  const carouselBlock = (
+    <View
+      style={[styles.carouselWrap, isWideLayout ? styles.carouselWrapWide : { height: CAROUSEL_HEIGHT }]}
+      onLayout={(e) => setCarouselWidth(e.nativeEvent.layout.width)}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScrollBeginDrag={() => setIsPaused(true)}
+        onMomentumScrollEnd={handleMomentumEnd}>
+        {WELCOME_SLIDES.map((slide) => (
+          <View key={slide.dish} style={{ width: carouselWidth }}>
+            <Image contentFit="cover" source={{ uri: slide.image }} style={StyleSheet.absoluteFillObject} transition={300} />
+          </View>
+        ))}
+      </ScrollView>
+
+      <View style={styles.topRow}>
+        <View style={styles.logoPill}>
+          <AosellLogo compact />
+        </View>
+        <View style={styles.languagePill}>
+          <SegmentedControl options={LANGUAGE_OPTIONS} value={locale} onChange={(next) => void setLocale(next)} />
+        </View>
+      </View>
+
+      <View style={styles.captionRow}>
+        <View style={[styles.captionCard, { borderRadius: theme.radii.md }]}>
+          <Text style={[styles.captionDish, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {WELCOME_SLIDES[slideIndex].dish}
+          </Text>
+          <Text style={[styles.captionPlace, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>
+            {WELCOME_SLIDES[slideIndex].place}
+          </Text>
+        </View>
+        <View style={styles.dotsRow}>
+          {WELCOME_SLIDES.map((slide, index) => (
+            <View
+              key={slide.dish}
+              style={[
+                styles.dot,
+                index === slideIndex && styles.dotActive,
+                { backgroundColor: index === slideIndex ? '#FFFFFF' : 'rgba(255,255,255,0.55)' },
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+
+  const sellerAccessLink = (
+    <Pressable onPress={() => router.push('/seller-center')} style={styles.sellerAccessLink}>
+      <Text style={[styles.mutedLink, { color: theme.colors.textMuted, fontFamily: theme.typography.label.fontFamily }]}>
+        {t('welcome.sellerAccess')}
+      </Text>
+    </Pressable>
+  );
+
+  if (isWideLayout) {
+    return (
+      <SafeAreaView edges={['left', 'right']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.wideRow}>
+          <View style={styles.wideCarouselCol}>{carouselBlock}</View>
+          <ScrollView style={styles.wideFormCol} contentContainerStyle={styles.wideFormContent} showsVerticalScrollIndicator={false}>
+            <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.display.fontFamily }]}>
+              {t('welcome.title')}
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
+              {t('welcome.subtitle')}
+            </Text>
+
+            <View style={styles.phoneRow}>
+              <View
+                style={[
+                  styles.countryButton,
+                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
+                ]}>
+                <GermanFlag />
+                <Text style={[styles.countryCode, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>+49</Text>
+              </View>
+              <View
+                style={[
+                  styles.phoneField,
+                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
+                ]}>
+                <TextInput
+                  inputMode="tel"
+                  keyboardType="phone-pad"
+                  onChangeText={setPhoneDraft}
+                  placeholder={t('auth.phonePlaceholder')}
+                  placeholderTextColor={theme.colors.textMuted}
+                  style={[styles.phoneInput, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}
+                  textContentType="telephoneNumber"
+                  value={phoneDraft}
+                />
+              </View>
+            </View>
+
+            <Pressable
+              disabled={!isPhoneValid}
+              onPress={() => goToAuth('signup')}
+              style={[
+                styles.continueButton,
+                { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md, opacity: isPhoneValid ? 1 : theme.motion.disabledOpacity },
+              ]}>
+              <Text style={[styles.continueText, { color: theme.colors.onAccent, fontFamily: theme.typography.heading.fontFamily }]}>
+                {t('welcome.receiveCode')}
+              </Text>
+            </Pressable>
+
+            <DividerLabel theme={theme} />
+
+            <View style={styles.optionList}>
+              <AuthOptionButton theme={theme} label={t('auth.apple')} type="apple" onPress={() => goToAuth('signup')} />
+              <AuthOptionButton theme={theme} label={t('auth.google')} type="google" onPress={() => goToAuth('signup')} />
+            </View>
+
+            <View style={styles.linksRow}>
+              <Pressable onPress={() => goToAuth('signup')}>
+                <Text style={[styles.linkText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
+                  {t('welcome.continueWithEmail')}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => router.replace('/home')}>
+                <Text style={[styles.mutedLink, { color: theme.colors.textMuted, fontFamily: theme.typography.label.fontFamily }]}>
+                  {t('welcome.exploreGuest')}
+                </Text>
+              </Pressable>
+            </View>
+
+            {sellerAccessLink}
+
+            <Text style={[styles.legalCopy, { color: theme.colors.textMuted }]}>{t('auth.legal')}</Text>
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.carouselWrap, { height: CAROUSEL_HEIGHT }]} onLayout={(e) => setCarouselWidth(e.nativeEvent.layout.width)}>
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScrollBeginDrag={() => setIsPaused(true)}
-            onMomentumScrollEnd={handleMomentumEnd}>
-            {WELCOME_SLIDES.map((slide) => (
-              <Image
-                key={slide.dish}
-                contentFit="cover"
-                source={{ uri: slide.image }}
-                style={{ width: carouselWidth, height: CAROUSEL_HEIGHT }}
-                transition={300}
-              />
-            ))}
-          </ScrollView>
-
-          <View style={styles.topRow}>
-            <View style={styles.logoPill}>
-              <AosellLogo compact />
-            </View>
-            <View style={styles.languagePill}>
-              <SegmentedControl options={LANGUAGE_OPTIONS} value={locale} onChange={(next) => void setLocale(next)} />
-            </View>
-          </View>
-
-          <View style={styles.captionRow}>
-            <View style={[styles.captionCard, { borderRadius: theme.radii.md }]}>
-              <Text style={[styles.captionDish, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-                {WELCOME_SLIDES[slideIndex].dish}
-              </Text>
-              <Text style={[styles.captionPlace, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>
-                {WELCOME_SLIDES[slideIndex].place}
-              </Text>
-            </View>
-            <View style={styles.dotsRow}>
-              {WELCOME_SLIDES.map((slide, index) => (
-                <View
-                  key={slide.dish}
-                  style={[
-                    styles.dot,
-                    index === slideIndex && styles.dotActive,
-                    { backgroundColor: index === slideIndex ? '#FFFFFF' : 'rgba(255,255,255,0.55)' },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-        </View>
+        {carouselBlock}
 
         <View style={[styles.sheet, { backgroundColor: theme.colors.background, borderRadius: theme.radii.sheet }]}>
           <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.display.fontFamily }]}>
@@ -199,6 +294,8 @@ export default function WelcomeScreen() {
             </Pressable>
           </View>
 
+          {sellerAccessLink}
+
           <Text style={[styles.legalCopy, { color: theme.colors.textMuted }]}>{t('auth.legal')}</Text>
         </View>
       </ScrollView>
@@ -266,6 +363,12 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   carouselWrap: { position: 'relative', overflow: 'hidden' },
+  carouselWrapWide: { flex: 1, height: '100%' },
+  wideRow: { flex: 1, flexDirection: 'row' },
+  wideCarouselCol: { flex: 1 },
+  wideFormCol: { width: 480 },
+  wideFormContent: { paddingHorizontal: 40, paddingVertical: 48, gap: 16, justifyContent: 'center', flexGrow: 1 },
+  sellerAccessLink: { alignSelf: 'center', marginTop: -4 },
   topRow: {
     position: 'absolute',
     left: 16,
