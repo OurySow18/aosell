@@ -2,10 +2,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { lazy, Suspense, type ComponentProps } from 'react';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MapErrorBoundary } from '@/components/ui/map-error-boundary';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { getDeliveryModeLabel } from '@/lib/i18n';
@@ -30,6 +31,8 @@ export default function OrderDetailScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  const breakpoint = useBreakpoint();
+  const isDesktop = Platform.OS === 'web' && breakpoint === 'desktop';
   const { getOrderById, getSellerById, currentSellerProfile, advanceOrderStatus } = useAosell();
   const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null);
   const order = getOrderById(orderId);
@@ -64,44 +67,28 @@ export default function OrderDetailScreen() {
   const sellerLocation = seller?.location;
   const homeLocation = order.deliveryAddress.location;
 
-  return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.background }}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={[styles.roundButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.headerTitle, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
-              {seller?.brandName ?? t('orderDetail.eyebrow')}
-            </Text>
-            <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>
-              {t('orderDetail.orderedOn', { date: formatDate(order.createdAt) })}
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
+  const body = (() => {
+    const mapBlock = (
+      /* Static map: seller + delivery address only — no courier position data
+         exists anywhere in this app, so no moving marker is shown. Loaded
+         lazily (own file, own native import) so a dev client built before
+         react-native-maps was added degrades to "no map" instead of crashing. */
+      !isTerminal && sellerLocation && homeLocation ? (
+        <MapErrorBoundary>
+          <Suspense fallback={null}>
+            <OrderTrackingMap
+              sellerLocation={sellerLocation}
+              homeLocation={homeLocation}
+              sellerName={seller?.brandName}
+              deliveryName={order.deliveryAddress.fullName}
+            />
+          </Suspense>
+        </MapErrorBoundary>
+      ) : null
+    );
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 + insets.bottom, gap: 16 }} showsVerticalScrollIndicator={false}>
-        {/* Static map: seller + delivery address only — no courier position data
-            exists anywhere in this app, so no moving marker is shown. Loaded
-            lazily (own file, own native import) so a dev client built before
-            react-native-maps was added degrades to "no map" instead of crashing. */}
-        {!isTerminal && sellerLocation && homeLocation ? (
-          <MapErrorBoundary>
-            <Suspense fallback={null}>
-              <OrderTrackingMap
-                sellerLocation={sellerLocation}
-                homeLocation={homeLocation}
-                sellerName={seller?.brandName}
-                deliveryName={order.deliveryAddress.fullName}
-              />
-            </Suspense>
-          </MapErrorBoundary>
-        ) : null}
-
+    const panelBlock = (
+      <>
         {/* Status journey (drives the actual status shown — the map above, when present, is static) */}
         {!isTerminal ? (
           <View style={[styles.journeyCard, { backgroundColor: theme.colors.text, borderRadius: theme.radii.xl }]}>
@@ -183,7 +170,11 @@ export default function OrderDetailScreen() {
             ) : null}
           </View>
         ) : null}
+      </>
+    );
 
+    const restBlock = (
+      <>
         {/* Items */}
         <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
@@ -245,7 +236,51 @@ export default function OrderDetailScreen() {
             </View>
           </View>
         ) : null}
+      </>
+    );
+
+    if (isDesktop) {
+      return (
+        <ScrollView contentContainerStyle={styles.desktopScroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.desktopRow}>
+            <View style={styles.desktopMapCol}>{mapBlock}</View>
+            <View style={styles.desktopPanelCol}>{panelBlock}</View>
+          </View>
+          <View style={styles.desktopRest}>{restBlock}</View>
+        </ScrollView>
+      );
+    }
+
+    return (
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 + insets.bottom, gap: 16 }} showsVerticalScrollIndicator={false}>
+        {mapBlock}
+        {panelBlock}
+        {restBlock}
       </ScrollView>
+    );
+  })();
+
+  return (
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.background }}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            style={[styles.roundButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} />
+          </Pressable>
+          <View style={styles.headerCopy}>
+            <Text style={[styles.headerTitle, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
+              {seller?.brandName ?? t('orderDetail.eyebrow')}
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: theme.colors.textMuted }]}>
+              {t('orderDetail.orderedOn', { date: formatDate(order.createdAt) })}
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+
+      {body}
     </View>
   );
 }
@@ -318,6 +353,12 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 6, paddingBottom: 12 },
   roundButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   headerCopy: { gap: 1, flexShrink: 1 },
+
+  desktopScroll: { maxWidth: 1280, width: '100%', alignSelf: 'center', paddingHorizontal: 20, paddingBottom: 64 },
+  desktopRow: { flexDirection: 'row', gap: 24, alignItems: 'flex-start' },
+  desktopMapCol: { flex: 2, minWidth: 0 },
+  desktopPanelCol: { flex: 1, minWidth: 320, gap: 16 },
+  desktopRest: { gap: 16, marginTop: 24 },
   headerTitle: { fontSize: 22, lineHeight: 28 },
   headerSubtitle: { fontSize: 13, lineHeight: 18 },
 

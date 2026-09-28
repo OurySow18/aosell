@@ -486,6 +486,7 @@ export const translations = {
       segmentFollowing: 'Following',
       segmentCity: 'In {city}',
       signInForFollowing: 'Sign in to see sellers you follow',
+      suggestedSellers: 'Sellers to follow',
     },
     postCard: {
       likeAction: 'Like',
@@ -1096,6 +1097,7 @@ export const translations = {
       segmentFollowing: 'Abonnements',
       segmentCity: 'À {city}',
       signInForFollowing: 'Connectez-vous pour voir les vendeurs que vous suivez',
+      suggestedSellers: 'Vendeurs à suivre',
     },
     postCard: {
       likeAction: 'J’aime',
@@ -1706,6 +1708,7 @@ export const translations = {
       segmentFollowing: 'Abos',
       segmentCity: 'In {city}',
       signInForFollowing: 'Melde dich an, um Verkäufern zu folgen',
+      suggestedSellers: 'Verkäufer zum Folgen',
     },
     postCard: {
       likeAction: 'Gefällt mir',
