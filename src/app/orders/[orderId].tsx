@@ -1,11 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import type { ComponentProps } from 'react';
+import { lazy, Suspense, type ComponentProps } from 'react';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MapErrorBoundary } from '@/components/ui/map-error-boundary';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { getDeliveryModeLabel } from '@/lib/i18n';
@@ -21,6 +21,8 @@ import { useAosell } from '@/providers/aosell-provider';
 import type { OrderStatus } from '@/types/domain';
 
 type AppTheme = ReturnType<typeof useAppTheme>;
+
+const OrderTrackingMap = lazy(() => import('@/components/orders/order-tracking-map'));
 
 export default function OrderDetailScreen() {
   const params = useLocalSearchParams<{ orderId?: string | string[] }>();
@@ -61,15 +63,6 @@ export default function OrderDetailScreen() {
 
   const sellerLocation = seller?.location;
   const homeLocation = order.deliveryAddress.location;
-  const mapRegion =
-    sellerLocation && homeLocation
-      ? {
-          latitude: (sellerLocation.lat + homeLocation.lat) / 2,
-          longitude: (sellerLocation.lng + homeLocation.lng) / 2,
-          latitudeDelta: Math.max(Math.abs(sellerLocation.lat - homeLocation.lat) * 2.2, 0.02),
-          longitudeDelta: Math.max(Math.abs(sellerLocation.lng - homeLocation.lng) * 2.2, 0.02),
-        }
-      : null;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
@@ -93,22 +86,20 @@ export default function OrderDetailScreen() {
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 + insets.bottom, gap: 16 }} showsVerticalScrollIndicator={false}>
         {/* Static map: seller + delivery address only — no courier position data
-            exists anywhere in this app, so no moving marker is shown. */}
-        {!isTerminal && mapRegion && sellerLocation && homeLocation ? (
-          <View style={[styles.mapWrap, { borderRadius: theme.radii.xl }]}>
-            <MapView style={StyleSheet.absoluteFillObject} initialRegion={mapRegion} pointerEvents="none">
-              <Marker coordinate={{ latitude: sellerLocation.lat, longitude: sellerLocation.lng }} title={seller?.brandName}>
-                <View style={[styles.mapPinStore, { backgroundColor: theme.colors.text }]}>
-                  <Text style={styles.mapPinStoreText}>{(seller?.brandName ?? '??').slice(0, 2).toUpperCase()}</Text>
-                </View>
-              </Marker>
-              <Marker coordinate={{ latitude: homeLocation.lat, longitude: homeLocation.lng }} title={order.deliveryAddress.fullName}>
-                <View style={[styles.mapPinHome, { backgroundColor: theme.colors.surface, borderColor: theme.colors.text }]}>
-                  <SymbolView tintColor={theme.colors.text} size={16} name={{ ios: 'house.fill', android: 'home', web: 'home' }} />
-                </View>
-              </Marker>
-            </MapView>
-          </View>
+            exists anywhere in this app, so no moving marker is shown. Loaded
+            lazily (own file, own native import) so a dev client built before
+            react-native-maps was added degrades to "no map" instead of crashing. */}
+        {!isTerminal && sellerLocation && homeLocation ? (
+          <MapErrorBoundary>
+            <Suspense fallback={null}>
+              <OrderTrackingMap
+                sellerLocation={sellerLocation}
+                homeLocation={homeLocation}
+                sellerName={seller?.brandName}
+                deliveryName={order.deliveryAddress.fullName}
+              />
+            </Suspense>
+          </MapErrorBoundary>
         ) : null}
 
         {/* Status journey (drives the actual status shown — the map above, when present, is static) */}
@@ -329,11 +320,6 @@ const styles = StyleSheet.create({
   headerCopy: { gap: 1, flexShrink: 1 },
   headerTitle: { fontSize: 22, lineHeight: 28 },
   headerSubtitle: { fontSize: 13, lineHeight: 18 },
-
-  mapWrap: { height: 220, overflow: 'hidden' },
-  mapPinStore: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  mapPinStoreText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
-  mapPinHome: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 
   journeyCard: { padding: 20 },
   journeyRow: { flexDirection: 'row', alignItems: 'center' },
