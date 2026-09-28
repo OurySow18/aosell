@@ -94,7 +94,7 @@ export default function WelcomeScreen() {
         onScrollBeginDrag={() => setIsPaused(true)}
         onMomentumScrollEnd={handleMomentumEnd}>
         {WELCOME_SLIDES.map((slide) => (
-          <View key={slide.dish} style={{ width: carouselWidth, height: '100%' }}>
+          <View key={slide.dish} style={styles.carouselSlide}>
             <Image contentFit="cover" source={{ uri: slide.image }} style={StyleSheet.absoluteFillObject} transition={300} />
           </View>
         ))}
@@ -366,6 +366,7 @@ const styles = StyleSheet.create({
   carouselWrap: { position: 'relative', overflow: 'hidden' },
   carouselWrapWide: { flex: 1, height: '100%' },
   carouselScroll: { flex: 1 },
+  carouselSlide: { width: '100%', height: '100%' },
   wideRow: { flex: 1, flexDirection: 'row' },
   wideCarouselCol: { flex: 1 },
   wideFormCol: { width: 480 },
