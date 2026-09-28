@@ -10,7 +10,7 @@
     "public": "dist",
     "cleanUrls": true,
     "trailingSlash": false,
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": ["firebase.json", "**/.*"],
     "rewrites": [
       { "source": "/listing/edit/**", "destination": "/listing/edit/[listingId].html" },
       { "source": "/listing/**", "destination": "/listing/[listingId].html" },
