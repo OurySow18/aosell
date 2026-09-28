@@ -464,6 +464,9 @@ export const translations = {
       fees: 'Fees',
       searchInMenu: 'Search this menu',
       viewCart: 'View cart',
+      goToCheckout: 'Go to checkout',
+      emptyCart: 'Your cart is empty. Add a dish to get started.',
+      menuColumnTitle: 'Menu',
     },
     notifications: {
       orderCreatedTitle: 'Order created',
@@ -1071,6 +1074,9 @@ export const translations = {
       fees: 'Frais',
       searchInMenu: 'Rechercher dans le menu',
       viewCart: 'Voir le panier',
+      goToCheckout: 'Aller au paiement',
+      emptyCart: 'Votre panier est vide. Ajoutez un plat pour commencer.',
+      menuColumnTitle: 'Menu',
     },
     notifications: {
       orderCreatedTitle: 'Commande créée',
@@ -1678,6 +1684,9 @@ export const translations = {
       fees: 'Gebühren',
       searchInMenu: 'In der Speisekarte suchen',
       viewCart: 'Warenkorb ansehen',
+      goToCheckout: 'Zur Kasse',
+      emptyCart: 'Dein Warenkorb ist leer. Füge ein Gericht hinzu, um zu starten.',
+      menuColumnTitle: 'Speisekarte',
     },
     notifications: {
       orderCreatedTitle: 'Bestellung erstellt',

@@ -3,11 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CART_DELIVERY_FEE_CENTS } from '@/lib/cart';
 import { QuantityStepper } from '@/components/ui/quantity-stepper';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { getCuisineLabel } from '@/lib/i18n';
@@ -27,6 +28,8 @@ export default function SellerProfileScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  const breakpoint = useBreakpoint();
+  const isDesktop = Platform.OS === 'web' && breakpoint === 'desktop';
   const { getSellerById, listings, cart, addToCart, updateCartQuantity } = useAosell();
   const seller = getSellerById(sellerId);
 
@@ -77,6 +80,136 @@ export default function SellerProfileScreen() {
         { text: t('common.replace'), style: 'destructive', onPress: () => void addToCart(listing.id, true) },
       ]);
     }
+  }
+
+  if (isDesktop) {
+    return (
+      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+        <ScrollView contentContainerStyle={styles.desktopScroll} showsVerticalScrollIndicator={false}>
+          <View style={[styles.desktopBanner, { backgroundColor: theme.colors.accentTint, borderRadius: theme.radii.xl }]}>
+            {seller.coverImageUrl ? (
+              <Image contentFit="cover" source={{ uri: seller.coverImageUrl }} style={StyleSheet.absoluteFillObject} transition={200} />
+            ) : null}
+            <View style={styles.desktopBannerButtons}>
+              <RoundButton icon={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} onPress={() => router.back()} theme={theme} />
+            </View>
+          </View>
+
+          <View style={styles.desktopHeaderRow}>
+            <View style={[styles.desktopLogo, { borderColor: theme.colors.background, backgroundColor: theme.colors.surface, borderRadius: theme.radii.xl }]}>
+              {seller.logoUrl ? (
+                <Image contentFit="cover" source={{ uri: seller.logoUrl }} style={StyleSheet.absoluteFillObject} />
+              ) : (
+                <Text style={[styles.logoInitials, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+                  {seller.brandName.slice(0, 2).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={styles.desktopHeaderCopy}>
+              <Text style={[styles.sellerName, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily, marginTop: 0 }]}>
+                {seller.brandName}
+              </Text>
+              <Text style={[styles.sellerMeta, { color: theme.colors.textMuted }]}>{[cuisineLabel, seller.city].filter(Boolean).join(' · ')}</Text>
+            </View>
+            <View style={[styles.openBadge, { marginTop: 0, backgroundColor: seller.isOpen ? theme.colors.successTint : theme.colors.surfaceMuted }]}>
+              <Text
+                style={[
+                  styles.openBadgeText,
+                  { color: seller.isOpen ? theme.colors.success : theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily },
+                ]}>
+                {seller.isOpen ? t('sellerProfileScreen.open') : t('sellerProfileScreen.closed')}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.infoBand, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, maxWidth: 420 }]}>
+            <InfoCell
+              value={seller.ratingAverage ? `★ ${seller.ratingAverage.toFixed(1)}` : '—'}
+              label={t('sellerProfileScreen.reviewsCount', { count: seller.ratingCount ?? 0 })}
+              theme={theme}
+            />
+            <View style={[styles.infoDivider, { backgroundColor: theme.colors.border }]} />
+            <InfoCell
+              value={seller.deliveryModes.includes('aosell') ? t('listingDetail.deliveryHandledByAosell') : t('listingDetail.deliveryHandledBySeller')}
+              label={t('sellerProfileScreen.delivery')}
+              theme={theme}
+            />
+            <View style={[styles.infoDivider, { backgroundColor: theme.colors.border }]} />
+            <InfoCell value={formatMoney({ amountCents: CART_DELIVERY_FEE_CENTS, currency: 'EUR' })} label={t('sellerProfileScreen.fees')} theme={theme} />
+          </View>
+
+          <View style={styles.desktopColumns}>
+            <View style={styles.desktopRail}>
+              <Text style={[styles.desktopRailTitle, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>
+                {t('sellerProfileScreen.menuColumnTitle')}
+              </Text>
+              {tabs.map((label, index) => (
+                <Pressable key={label} onPress={() => setActiveTab(index)} style={styles.railItem}>
+                  <Text
+                    style={[
+                      styles.railLabel,
+                      {
+                        color: activeTab === index ? theme.colors.text : theme.colors.textMuted,
+                        fontFamily: activeTab === index ? theme.typography.label.fontFamily : theme.typography.body.fontFamily,
+                      },
+                    ]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={styles.desktopMenu}>
+              {visibleListings.map((listing) => (
+                <MenuRow key={listing.id} listing={listing} onAdd={() => void handleAdd(listing)} theme={theme} t={t} />
+              ))}
+            </View>
+
+            <View style={[styles.desktopCartPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
+              <Text style={[styles.desktopCartTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+                {t('cart.eyebrow')}
+              </Text>
+              {cartBelongsHere ? (
+                <>
+                  <View style={styles.desktopCartItems}>
+                    {cart.items.map((item) => (
+                      <View key={item.listingId} style={styles.desktopCartItemRow}>
+                        <Text style={[styles.desktopCartItemName, { color: theme.colors.text }]} numberOfLines={1}>
+                          {item.titleSnapshot}
+                        </Text>
+                        <QuantityStepper
+                          value={item.quantity}
+                          onDecrease={() => void updateCartQuantity(item.listingId, item.quantity - 1)}
+                          onIncrease={() => void updateCartQuantity(item.listingId, item.quantity + 1)}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                  <View style={[styles.desktopCartDivider, { backgroundColor: theme.colors.border }]} />
+                  <View style={styles.desktopCartTotalRow}>
+                    <Text style={[styles.desktopCartTotalLabel, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+                      {t('common.total')}
+                    </Text>
+                    <Text style={[styles.desktopCartTotalValue, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
+                      {formatMoney(cart.total)}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => router.push('/cart')}
+                    style={[styles.desktopCartCta, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md }, theme.shadows.accent]}>
+                    <Text style={[styles.desktopCartCtaText, { color: theme.colors.onAccent, fontFamily: theme.typography.heading.fontFamily }]}>
+                      {t('sellerProfileScreen.goToCheckout')}
+                    </Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Text style={[styles.desktopCartEmpty, { color: theme.colors.textMuted }]}>{t('sellerProfileScreen.emptyCart')}</Text>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
   }
 
   return (
@@ -340,6 +473,31 @@ function MenuRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+
+  desktopScroll: { maxWidth: 1280, width: '100%', alignSelf: 'center', paddingHorizontal: 32, paddingTop: 24, paddingBottom: 64 },
+  desktopBanner: { height: 280, overflow: 'hidden', position: 'relative' },
+  desktopBannerButtons: { position: 'absolute', left: 16, top: 16 },
+  desktopHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: -34, paddingLeft: 20 },
+  desktopLogo: { width: 96, height: 96, borderWidth: 4, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  desktopHeaderCopy: { gap: 2, flex: 1 },
+  desktopColumns: { flexDirection: 'row', alignItems: 'flex-start', gap: 32, marginTop: 32 },
+  desktopRail: { width: 190, gap: 4 },
+  desktopRailTitle: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2, marginBottom: 8 },
+  railItem: { paddingVertical: 10 },
+  railLabel: { fontSize: 15, lineHeight: 20 },
+  desktopMenu: { flex: 1, minWidth: 0 },
+  desktopCartPanel: { width: 340, borderWidth: 1, padding: 20, gap: 16 },
+  desktopCartTitle: { fontSize: 17, lineHeight: 22 },
+  desktopCartItems: { gap: 14 },
+  desktopCartItemRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  desktopCartItemName: { flex: 1, fontSize: 14, lineHeight: 19 },
+  desktopCartDivider: { height: 1 },
+  desktopCartTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  desktopCartTotalLabel: { fontSize: 17, lineHeight: 22 },
+  desktopCartTotalValue: { fontSize: 22, lineHeight: 28 },
+  desktopCartCta: { minHeight: 52, alignItems: 'center', justifyContent: 'center' },
+  desktopCartCtaText: { fontSize: 16, lineHeight: 21 },
+  desktopCartEmpty: { fontSize: 14, lineHeight: 20 },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20 },
   notFoundTitle: { fontSize: 17, lineHeight: 24 },
   notFoundBody: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
