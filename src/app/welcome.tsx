@@ -158,23 +158,11 @@ export default function WelcomeScreen() {
               </Text>
             </Pressable>
 
-            <View style={styles.optionList}>
-              <AuthOptionButton theme={theme} label={t('auth.apple')} type="apple" onPress={() => goToAuth('signup')} />
-              <AuthOptionButton theme={theme} label={t('auth.google')} type="google" onPress={() => goToAuth('signup')} />
-            </View>
-
-            <View style={styles.linksRow}>
-              <Pressable onPress={() => goToAuth('signup')}>
-                <Text style={[styles.linkText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
-                  {t('welcome.continueWithEmail')}
-                </Text>
-              </Pressable>
-              <Pressable onPress={() => router.replace('/home')}>
-                <Text style={[styles.mutedLink, { color: theme.colors.textMuted, fontFamily: theme.typography.label.fontFamily }]}>
-                  {t('welcome.exploreGuest')}
-                </Text>
-              </Pressable>
-            </View>
+            <Pressable style={styles.guestLink} onPress={() => router.replace('/home')}>
+              <Text style={[styles.mutedLink, { color: theme.colors.textMuted, fontFamily: theme.typography.label.fontFamily }]}>
+                {t('welcome.exploreGuest')}
+              </Text>
+            </Pressable>
 
             {sellerAccessLink}
 
@@ -206,23 +194,11 @@ export default function WelcomeScreen() {
             </Text>
           </Pressable>
 
-          <View style={styles.optionList}>
-            <AuthOptionButton theme={theme} label={t('auth.apple')} type="apple" onPress={() => goToAuth('signup')} />
-            <AuthOptionButton theme={theme} label={t('auth.google')} type="google" onPress={() => goToAuth('signup')} />
-          </View>
-
-          <View style={styles.linksRow}>
-            <Pressable onPress={() => goToAuth('signup')}>
-              <Text style={[styles.linkText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
-                {t('welcome.continueWithEmail')}
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => router.replace('/home')}>
-              <Text style={[styles.mutedLink, { color: theme.colors.textMuted, fontFamily: theme.typography.label.fontFamily }]}>
-                {t('welcome.exploreGuest')}
-              </Text>
-            </Pressable>
-          </View>
+          <Pressable style={styles.guestLink} onPress={() => router.replace('/home')}>
+            <Text style={[styles.mutedLink, { color: theme.colors.textMuted, fontFamily: theme.typography.label.fontFamily }]}>
+              {t('welcome.exploreGuest')}
+            </Text>
+          </Pressable>
 
           {sellerAccessLink}
 
@@ -230,40 +206,6 @@ export default function WelcomeScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function AuthOptionButton({
-  label,
-  onPress,
-  type,
-  theme,
-}: {
-  label: string;
-  onPress: () => void;
-  type: 'apple' | 'google';
-  theme: AppTheme;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.optionButton,
-        { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
-        pressed && styles.pressed,
-      ]}>
-      <View style={styles.optionIcon}>
-        <Text
-          style={[
-            styles.optionLetter,
-            { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily },
-            type === 'google' && styles.googleLetter,
-          ]}>
-          {type === 'google' ? 'G' : 'A'}
-        </Text>
-      </View>
-      <Text style={[styles.optionLabel, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -323,16 +265,7 @@ const styles = StyleSheet.create({
   continueButton: { minHeight: 56, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   continueText: { fontSize: 17, lineHeight: 22 },
 
-  optionList: { gap: 10 },
-  optionButton: { minHeight: 52, borderWidth: 1, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  optionIcon: { width: 26, alignItems: 'center', justifyContent: 'center' },
-  optionLetter: { fontSize: 16, lineHeight: 20 },
-  googleLetter: { color: '#4285F4' },
-  optionLabel: { fontSize: 15, lineHeight: 20 },
-
-  linksRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, marginTop: 4 },
-  linkText: { fontSize: 13, lineHeight: 18, textDecorationLine: 'underline' },
+  guestLink: { alignSelf: 'center', marginTop: 4 },
   mutedLink: { fontSize: 13, lineHeight: 18 },
   legalCopy: { fontSize: 11, lineHeight: 16, marginTop: 4 },
-  pressed: { opacity: 0.78 },
 });
