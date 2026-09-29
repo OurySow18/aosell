@@ -13,6 +13,7 @@ import { useLocale } from '@/hooks/use-locale';
 import { translate } from '@/lib/i18n';
 import { authSignInSchema, authSignUpSchema } from '@/lib/validations/auth';
 import { useAosell } from '@/providers/aosell-provider';
+import { GoogleSignInCanceledError } from '@/repositories/auth-repository';
 
 type AppTheme = ReturnType<typeof useAppTheme>;
 type AuthMode = 'signin' | 'signup';
@@ -108,7 +109,7 @@ export default function AuthScreen() {
   const initialMode = asSingleValue(params.mode) === 'signin' ? 'signin' : 'signup';
   const initialRole = asSingleValue(params.role) === 'seller' ? 'seller' : 'buyer';
   const returnTo = asSingleValue(params.returnTo);
-  const { authReady, currentUser, signIn, signUp, signInWithApple } = useAosell();
+  const { authReady, currentUser, signIn, signUp, signInWithApple, signInWithGoogle } = useAosell();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [role, setRole] = useState<AuthRole>(initialRole);
@@ -191,6 +192,22 @@ export default function AuthScreen() {
       router.replace((returnTo || (role === 'seller' ? '/seller-onboarding' : '/home')) as never);
     } catch (nextError) {
       if (!(nextError instanceof AppleSignInCanceledError)) {
+        setError(getFriendlyAuthError(nextError));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setError('');
+    setInfo('');
+    setIsSubmitting(true);
+    try {
+      await signInWithGoogle(role);
+      router.replace((returnTo || (role === 'seller' ? '/seller-onboarding' : '/home')) as never);
+    } catch (nextError) {
+      if (!(nextError instanceof GoogleSignInCanceledError)) {
         setError(getFriendlyAuthError(nextError));
       }
     } finally {
@@ -282,7 +299,7 @@ export default function AuthScreen() {
                 type="apple"
                 onPress={() => (Platform.OS === 'ios' ? void handleAppleSignIn() : handleUnavailable('apple'))}
               />
-              <AuthOptionButton theme={theme} label={t('auth.google')} type="google" onPress={() => handleUnavailable('google')} />
+              <AuthOptionButton theme={theme} label={t('auth.google')} type="google" onPress={() => void handleGoogleSignIn()} />
               <AuthOptionButton theme={theme} label={t('auth.email')} type="email" onPress={() => revealEmailForm(initialMode)} />
             </View>
 

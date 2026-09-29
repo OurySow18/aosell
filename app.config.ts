@@ -4,6 +4,8 @@ function readEnv(name: string, fallback = '') {
   return process.env[name] ?? fallback;
 }
 
+const googleIosUrlScheme = readEnv('EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME');
+
 const config: ExpoConfig = {
   name: 'AoSell',
   slug: 'aosell',
@@ -52,6 +54,15 @@ const config: ExpoConfig = {
         enableGooglePay: false,
       },
     ],
+    // The iOS URL scheme (reversed iOS OAuth client ID from Google Cloud
+    // Console) isn't known yet, and this plugin throws at config-resolution
+    // time — which runs for every platform, including web export — if it's
+    // missing. Omit the plugin entirely until it's configured; native builds
+    // fail (with a Google-authored, admittedly gnarlier looking) build error
+    // until then, but web/JS work stays unaffected either way.
+    ...(googleIosUrlScheme
+      ? [['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }] as [string, Record<string, string>]]
+      : []),
   ],
   experiments: {
     typedRoutes: true,
@@ -70,6 +81,9 @@ const config: ExpoConfig = {
     stripe: {
       publishableKey: readEnv('EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'pk_test_replace_me'),
       merchantIdentifier: readEnv('EXPO_PUBLIC_STRIPE_MERCHANT_IDENTIFIER', 'merchant.com.amasow.aosell'),
+    },
+    google: {
+      webClientId: readEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
     },
     eas: {
       projectId: '390d9694-24d4-47b9-8a84-c817136b1d29',

@@ -1,17 +1,24 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   OAuthProvider,
   onAuthStateChanged,
   signInWithCredential,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 import { auth, db } from '@/lib/firebase/config';
 import { fromFirestoreUserDoc, toFirestoreUserDoc } from '@/lib/firebase/mappers';
 import type { AppUser } from '@/types/domain';
 import type { FirestoreUserDoc } from '@/types/firestore';
+
+export class GoogleSignInCanceledError extends Error {}
+
+const GOOGLE_POPUP_CANCEL_CODES = new Set(['auth/popup-closed-by-user', 'auth/cancelled-popup-request']);
 
 function fallbackEmail(uid: string) {
   return `${uid}@anonymous.aosell.app`;
@@ -119,6 +126,44 @@ export const AuthRepository = {
       userCredential.user.email ?? fallbackEmail(userCredential.user.uid),
       role
     );
+  },
+
+  async signInWithGoogle(role: Extract<AppUser['role'], 'buyer' | 'seller'> = 'buyer'): Promise<AppUser> {
+    if (Platform.OS === 'web') {
+      try {
+        const userCredential = await signInWithPopup(auth, new GoogleAuthProvider());
+        return ensureUserDocument(
+          userCredential.user.uid,
+          userCredential.user.email ?? fallbackEmail(userCredential.user.uid),
+          role
+        );
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+        if (GOOGLE_POPUP_CANCEL_CODES.has(code)) {
+          throw new GoogleSignInCanceledError();
+        }
+        throw error;
+      }
+    }
+
+    // Native-only: dynamically imported so @react-native-google-signin/google-signin
+    // (no web build) never reaches the web bundle.
+    const { performGoogleSignIn, GoogleSignInCanceledError: NativeCanceledError } = await import('@/lib/auth/google-sign-in');
+    try {
+      const { idToken } = await performGoogleSignIn();
+      const credential = GoogleAuthProvider.credential(idToken);
+      const userCredential = await signInWithCredential(auth, credential);
+      return ensureUserDocument(
+        userCredential.user.uid,
+        userCredential.user.email ?? fallbackEmail(userCredential.user.uid),
+        role
+      );
+    } catch (error) {
+      if (error instanceof NativeCanceledError) {
+        throw new GoogleSignInCanceledError();
+      }
+      throw error;
+    }
   },
 
   async signOut(): Promise<void> {

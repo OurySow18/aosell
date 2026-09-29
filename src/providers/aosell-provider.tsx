@@ -109,6 +109,7 @@ type AosellContextValue = {
   signIn: (input: SignInInput) => Promise<AppUser | null>;
   signUp: (input: SignUpInput) => Promise<AppUser | null>;
   signInWithApple: (idToken: string, rawNonce: string, role: Extract<AppUser['role'], 'buyer' | 'seller'>) => Promise<AppUser | null>;
+  signInWithGoogle: (role: Extract<AppUser['role'], 'buyer' | 'seller'>) => Promise<AppUser | null>;
   logout: () => Promise<void>;
   createSellerProfile: (input: CreateSellerProfileInput) => Promise<SellerProfile | null>;
   setSellerOpen: (isOpen: boolean) => Promise<void>;
@@ -317,6 +318,13 @@ export function AosellProvider({ children }: { children: ReactNode }) {
 
   async function signInWithApple(idToken: string, rawNonce: string, role: Extract<AppUser['role'], 'buyer' | 'seller'>) {
     const user = await AuthRepository.signInWithOAuthCredential('apple.com', idToken, rawNonce, role);
+    await UserRepository.ensureProfile(user);
+    setCurrentUser(user);
+    return user;
+  }
+
+  async function signInWithGoogle(role: Extract<AppUser['role'], 'buyer' | 'seller'>) {
+    const user = await AuthRepository.signInWithGoogle(role);
     await UserRepository.ensureProfile(user);
     setCurrentUser(user);
     return user;
@@ -684,6 +692,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signInWithApple,
+        signInWithGoogle,
         logout,
         createSellerProfile,
         setSellerOpen,
