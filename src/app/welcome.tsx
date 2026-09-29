@@ -10,7 +10,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,7 +52,6 @@ export default function WelcomeScreen() {
   const [slideIndex, setSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [carouselWidth, setCarouselWidth] = useState(Dimensions.get('window').width);
-  const [phoneDraft, setPhoneDraft] = useState('');
 
   useEffect(() => {
     if (isPaused) {
@@ -74,8 +72,6 @@ export default function WelcomeScreen() {
     setSlideIndex(nextIndex);
     setIsPaused(false);
   }
-
-  const isPhoneValid = phoneDraft.replace(/\D/g, '').length >= 6;
 
   function goToAuth(mode: 'signup' | 'signin' = 'signup') {
     router.push({ pathname: '/auth', params: { mode, role: 'buyer' } });
@@ -154,46 +150,13 @@ export default function WelcomeScreen() {
               {t('welcome.subtitle')}
             </Text>
 
-            <View style={styles.phoneRow}>
-              <View
-                style={[
-                  styles.countryButton,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
-                ]}>
-                <GermanFlag />
-                <Text style={[styles.countryCode, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>+49</Text>
-              </View>
-              <View
-                style={[
-                  styles.phoneField,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
-                ]}>
-                <TextInput
-                  inputMode="tel"
-                  keyboardType="phone-pad"
-                  onChangeText={setPhoneDraft}
-                  placeholder={t('auth.phonePlaceholder')}
-                  placeholderTextColor={theme.colors.textMuted}
-                  style={[styles.phoneInput, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}
-                  textContentType="telephoneNumber"
-                  value={phoneDraft}
-                />
-              </View>
-            </View>
-
             <Pressable
-              disabled={!isPhoneValid}
               onPress={() => goToAuth('signup')}
-              style={[
-                styles.continueButton,
-                { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md, opacity: isPhoneValid ? 1 : theme.motion.disabledOpacity },
-              ]}>
+              style={[styles.continueButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md }]}>
               <Text style={[styles.continueText, { color: theme.colors.onAccent, fontFamily: theme.typography.heading.fontFamily }]}>
-                {t('welcome.receiveCode')}
+                {t('welcome.getStarted')}
               </Text>
             </Pressable>
-
-            <DividerLabel theme={theme} />
 
             <View style={styles.optionList}>
               <AuthOptionButton theme={theme} label={t('auth.apple')} type="apple" onPress={() => goToAuth('signup')} />
@@ -235,46 +198,13 @@ export default function WelcomeScreen() {
             {t('welcome.subtitle')}
           </Text>
 
-          <View style={styles.phoneRow}>
-            <View
-              style={[
-                styles.countryButton,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
-              ]}>
-              <GermanFlag />
-              <Text style={[styles.countryCode, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>+49</Text>
-            </View>
-            <View
-              style={[
-                styles.phoneField,
-                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
-              ]}>
-              <TextInput
-                inputMode="tel"
-                keyboardType="phone-pad"
-                onChangeText={setPhoneDraft}
-                placeholder={t('auth.phonePlaceholder')}
-                placeholderTextColor={theme.colors.textMuted}
-                style={[styles.phoneInput, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}
-                textContentType="telephoneNumber"
-                value={phoneDraft}
-              />
-            </View>
-          </View>
-
           <Pressable
-            disabled={!isPhoneValid}
             onPress={() => goToAuth('signup')}
-            style={[
-              styles.continueButton,
-              { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md, opacity: isPhoneValid ? 1 : theme.motion.disabledOpacity },
-            ]}>
+            style={[styles.continueButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md }]}>
             <Text style={[styles.continueText, { color: theme.colors.onAccent, fontFamily: theme.typography.heading.fontFamily }]}>
-              {t('welcome.receiveCode')}
+              {t('welcome.getStarted')}
             </Text>
           </Pressable>
-
-          <DividerLabel theme={theme} />
 
           <View style={styles.optionList}>
             <AuthOptionButton theme={theme} label={t('auth.apple')} type="apple" onPress={() => goToAuth('signup')} />
@@ -300,28 +230,6 @@ export default function WelcomeScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function DividerLabel({ theme }: { theme: AppTheme }) {
-  const { t } = useLocale();
-
-  return (
-    <View style={styles.dividerRow}>
-      <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-      <Text style={[styles.dividerText, { color: theme.colors.textMuted }]}>{t('common.or')}</Text>
-      <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-    </View>
-  );
-}
-
-function GermanFlag() {
-  return (
-    <View style={styles.flag}>
-      <View style={[styles.flagStripe, styles.flagBlack]} />
-      <View style={[styles.flagStripe, styles.flagRed]} />
-      <View style={[styles.flagStripe, styles.flagGold]} />
-    </View>
   );
 }
 
@@ -412,23 +320,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, lineHeight: 34 },
   subtitle: { fontSize: 15, lineHeight: 22, marginTop: -8 },
 
-  phoneRow: { flexDirection: 'row', gap: 8 },
-  countryButton: { minWidth: 84, minHeight: 52, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  countryCode: { fontSize: 15, lineHeight: 20 },
-  flag: { width: 22, height: 15, borderRadius: 2, overflow: 'hidden' },
-  flagStripe: { flex: 1, width: '100%' },
-  flagBlack: { backgroundColor: '#111111' },
-  flagRed: { backgroundColor: '#DD1E2F' },
-  flagGold: { backgroundColor: '#F3C300' },
-  phoneField: { flex: 1, minWidth: 0, minHeight: 52, borderWidth: 1, paddingHorizontal: 14, justifyContent: 'center' },
-  phoneInput: { minWidth: 0, fontSize: 15 },
-
   continueButton: { minHeight: 56, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   continueText: { fontSize: 17, lineHeight: 22 },
-
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 14, lineHeight: 20 },
 
   optionList: { gap: 10 },
   optionButton: { minHeight: 52, borderWidth: 1, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
