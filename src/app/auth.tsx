@@ -18,7 +18,7 @@ import { GoogleSignInCanceledError } from '@/repositories/auth-repository';
 type AppTheme = ReturnType<typeof useAppTheme>;
 type AuthMode = 'signin' | 'signup';
 type AuthRole = 'buyer' | 'seller';
-type AuthMethod = 'phone' | 'apple' | 'google';
+type AuthMethod = 'apple' | 'google';
 
 // Rotating West African dishes — replaces the earlier pizza/burger/taco placeholder
 // that didn't match the app's cuisine. Cycles so the hero shows several kinds of
@@ -114,7 +114,6 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [role, setRole] = useState<AuthRole>(initialRole);
   const [showEmailForm, setShowEmailForm] = useState(Boolean(returnTo));
-  const [phoneDraft, setPhoneDraft] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -178,7 +177,7 @@ export default function AuthScreen() {
 
   function handleUnavailable(method: AuthMethod) {
     setShowEmailForm(true);
-    setInfo(method === 'phone' ? t('auth.phoneInfo') : method === 'apple' ? t('auth.appleInfo') : t('auth.googleInfo'));
+    setInfo(method === 'apple' ? t('auth.appleInfo') : t('auth.googleInfo'));
   }
 
   async function handleAppleSignIn() {
@@ -237,49 +236,6 @@ export default function AuthScreen() {
               <LanguageSwitcher compact />
             </View>
 
-            <View style={styles.phoneRow}>
-              <Pressable
-                style={[
-                  styles.countryButton,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
-                ]}>
-                <GermanFlag />
-                <SymbolView tintColor={theme.colors.text} size={17} name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' }} />
-              </Pressable>
-              <View
-                style={[
-                  styles.phoneField,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.md },
-                ]}>
-                <TextInput
-                  inputMode="tel"
-                  keyboardType="phone-pad"
-                  onChangeText={setPhoneDraft}
-                  placeholder={t('auth.phonePlaceholder')}
-                  placeholderTextColor={theme.colors.textMuted}
-                  style={[styles.phoneInput, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}
-                  textContentType="telephoneNumber"
-                  value={phoneDraft}
-                />
-                <SymbolView
-                  tintColor={theme.colors.textMuted}
-                  size={24}
-                  name={{ ios: 'person.crop.circle.badge.plus', android: 'person_add', web: 'person_add' }}
-                />
-              </View>
-            </View>
-
-            <Pressable
-              onPress={() => handleUnavailable('phone')}
-              style={({ pressed }) => [
-                styles.continueButton,
-                { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md, opacity: pressed ? theme.motion.pressedScale : 1 },
-              ]}>
-              <Text style={[styles.continueText, { color: theme.colors.onAccent, fontFamily: theme.typography.heading.fontFamily }]}>
-                {t('common.continue')}
-              </Text>
-            </Pressable>
-
             {info ? (
               <View
                 style={[
@@ -289,8 +245,6 @@ export default function AuthScreen() {
                 <Text style={[styles.infoText, { color: theme.colors.text }]}>{info}</Text>
               </View>
             ) : null}
-
-            <DividerLabel theme={theme} />
 
             <View style={styles.optionList}>
               <AuthOptionButton
@@ -492,16 +446,6 @@ function DividerLabel({ theme }: { theme: AppTheme }) {
   );
 }
 
-function GermanFlag() {
-  return (
-    <View style={styles.flag}>
-      <View style={[styles.flagStripe, styles.flagBlack]} />
-      <View style={[styles.flagStripe, styles.flagRed]} />
-      <View style={[styles.flagStripe, styles.flagGold]} />
-    </View>
-  );
-}
-
 function PromoBadge({ style, theme }: { style: StyleProp<ViewStyle>; theme: AppTheme }) {
   return (
     <View style={[styles.discountTag, { backgroundColor: theme.colors.secondary }, style]}>
@@ -606,15 +550,6 @@ const styles = StyleSheet.create({
   content: { width: '90%', alignSelf: 'center', paddingBottom: 40, paddingTop: 20, gap: 20 },
   titleRow: { alignItems: 'flex-start', gap: 12 },
   title: { width: '100%', fontSize: 28, lineHeight: 34 },
-  phoneRow: { flexDirection: 'row', gap: 8 },
-  countryButton: { width: 108, minHeight: 58, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  flag: { width: 38, height: 26, borderRadius: 2, overflow: 'hidden' },
-  flagStripe: { flex: 1, width: '100%' },
-  flagBlack: { backgroundColor: '#111111' },
-  flagRed: { backgroundColor: '#DD1E2F' },
-  flagGold: { backgroundColor: '#F3C300' },
-  phoneField: { flex: 1, minWidth: 0, minHeight: 58, borderWidth: 1, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  phoneInput: { flex: 1, minWidth: 0, minHeight: 54, fontSize: 16 },
   continueButton: { minHeight: 56, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
   continueText: { fontSize: 17, lineHeight: 22 },
   infoBox: { borderWidth: 1, padding: 12 },
