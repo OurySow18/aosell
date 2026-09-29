@@ -71,7 +71,15 @@ function RootNavigator() {
   const theme = useAppTheme();
   const { authReady } = useAosell();
 
-  if (!authReady) {
+  // Native: wait for the persisted session check so a logged-in user never
+  // flashes the wrong screen. Web: render immediately instead — currentUser
+  // starts as null, so index.tsx already shows the right thing (the public
+  // landing page, or a same-tick redirect to /home once auth resolves) with
+  // no gate. Gating the whole stack behind an async Firebase check here
+  // would otherwise mean every route's static export prerenders this boot
+  // screen instead of real content, since authReady can never resolve during
+  // Node's server-side render pass — breaking SEO and link previews.
+  if (!authReady && Platform.OS !== 'web') {
     return <SessionBootScreen />;
   }
 
