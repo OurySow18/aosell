@@ -13,7 +13,7 @@ import { useLocale } from '@/hooks/use-locale';
 import { translate } from '@/lib/i18n';
 import { authSignInSchema, authSignUpSchema } from '@/lib/validations/auth';
 import { useAosell } from '@/providers/aosell-provider';
-import { GoogleSignInCanceledError } from '@/repositories/auth-repository';
+import { AppleSignInCanceledError, GoogleSignInCanceledError } from '@/repositories/auth-repository';
 
 type AppTheme = ReturnType<typeof useAppTheme>;
 type AuthMode = 'signin' | 'signup';
@@ -184,8 +184,8 @@ export default function AuthScreen() {
     setError('');
     setInfo('');
     setIsSubmitting(true);
-    const { performAppleSignIn, AppleSignInCanceledError } = await import('@/lib/auth/apple-sign-in');
     try {
+      const { performAppleSignIn } = await import('@/lib/auth/apple-sign-in');
       const { idToken, rawNonce } = await performAppleSignIn();
       await signInWithApple(idToken, rawNonce, role);
       router.replace((returnTo || (role === 'seller' ? '/seller-onboarding' : '/home')) as never);

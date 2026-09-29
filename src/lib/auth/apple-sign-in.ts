@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
-export class AppleSignInCanceledError extends Error {}
+import { AppleSignInCanceledError } from '@/repositories/auth-repository';
 
 function randomNonce(length = 32) {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

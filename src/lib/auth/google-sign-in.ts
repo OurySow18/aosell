@@ -1,8 +1,7 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 import { googleConfig } from '@/lib/google';
-
-export class GoogleSignInCanceledError extends Error {}
+import { GoogleSignInCanceledError } from '@/repositories/auth-repository';
 
 let isConfigured = false;
 function ensureConfigured() {
