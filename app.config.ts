@@ -84,6 +84,7 @@ const config: ExpoConfig = {
     },
     google: {
       webClientId: readEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
+      iosClientId: readEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
     },
     eas: {
       projectId: '390d9694-24d4-47b9-8a84-c817136b1d29',

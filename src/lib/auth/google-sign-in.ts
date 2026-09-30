@@ -6,7 +6,7 @@ import { GoogleSignInCanceledError } from '@/repositories/auth-repository';
 let isConfigured = false;
 function ensureConfigured() {
   if (!isConfigured) {
-    GoogleSignin.configure({ webClientId: googleConfig.webClientId });
+    GoogleSignin.configure({ webClientId: googleConfig.webClientId, iosClientId: googleConfig.iosClientId });
     isConfigured = true;
   }
 }
