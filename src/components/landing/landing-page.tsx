@@ -705,7 +705,9 @@ function Footer({ theme, t, contentInset }: { theme: AppTheme; t: (key: string) 
         <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.legal')}</Text>
         <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.privacy')}</Text>
         <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.terms')}</Text>
-        <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.contact')}</Text>
+        <Pressable onPress={() => router.push('/support' as never)}>
+          <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.contact')}</Text>
+        </Pressable>
       </View>
       <Text style={[styles.footerCopyright, { color: theme.colors.textMuted }]}>{t('landing.footer.copyright')}</Text>
     </View>

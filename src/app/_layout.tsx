@@ -91,6 +91,7 @@ function RootNavigator() {
         <Stack.Screen name="welcome" />
         <Stack.Screen name="auth" />
         <Stack.Screen name="partner" />
+        <Stack.Screen name="support" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="cart" />
         <Stack.Screen name="checkout" />

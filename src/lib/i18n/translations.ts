@@ -152,6 +152,12 @@ export const translations = {
       processing: 'Processing…',
       genericError: 'Payment failed. Please try again.',
     },
+    support: {
+      eyebrow: 'Support',
+      title: 'How can we help?',
+      subtitle: 'Reach out by email, or check the questions we get asked most.',
+      emailLabel: 'Email us',
+    },
     landing: {
       nav: { howItWorks: 'How it works', dishes: 'Dishes', app: 'The app', faq: 'Questions', signIn: 'Sign in' },
       hero: {
@@ -879,6 +885,12 @@ export const translations = {
       processing: 'Traitement en cours…',
       genericError: 'Le paiement a échoué. Réessaie.',
     },
+    support: {
+      eyebrow: 'Assistance',
+      title: 'Comment pouvons-nous aider ?',
+      subtitle: 'Écris-nous par e-mail, ou consulte les questions les plus fréquentes.',
+      emailLabel: 'Nous écrire',
+    },
     landing: {
       nav: { howItWorks: 'Comment ça marche', dishes: 'Plats', app: 'L’application', faq: 'Questions', signIn: 'Se connecter' },
       hero: {
@@ -1605,6 +1617,12 @@ export const translations = {
       cancel: 'Abbrechen',
       processing: 'Wird verarbeitet…',
       genericError: 'Zahlung fehlgeschlagen. Bitte versuche es erneut.',
+    },
+    support: {
+      eyebrow: 'Support',
+      title: 'Wie können wir helfen?',
+      subtitle: 'Schreib uns per E-Mail, oder sieh dir die häufigsten Fragen an.',
+      emailLabel: 'E-Mail schreiben',
     },
     landing: {
       nav: { howItWorks: 'So funktioniert’s', dishes: 'Gerichte', app: 'Die App', faq: 'Fragen', signIn: 'Anmelden' },
