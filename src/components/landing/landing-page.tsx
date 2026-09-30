@@ -703,7 +703,9 @@ function Footer({ theme, t, contentInset }: { theme: AppTheme; t: (key: string) 
       <AosellLogo compact />
       <View style={styles.footerLinks}>
         <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.legal')}</Text>
-        <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.privacy')}</Text>
+        <Pressable onPress={() => router.push('/privacy' as never)}>
+          <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.privacy')}</Text>
+        </Pressable>
         <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.terms')}</Text>
         <Pressable onPress={() => router.push('/support' as never)}>
           <Text style={[styles.footerLink, { color: theme.colors.textMuted }]}>{t('landing.footer.contact')}</Text>
