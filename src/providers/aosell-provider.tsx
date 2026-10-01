@@ -111,6 +111,7 @@ type AosellContextValue = {
   signInWithApple: (idToken: string, rawNonce: string, role: Extract<AppUser['role'], 'buyer' | 'seller'>) => Promise<AppUser | null>;
   signInWithGoogle: (role: Extract<AppUser['role'], 'buyer' | 'seller'>) => Promise<AppUser | null>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   createSellerProfile: (input: CreateSellerProfileInput) => Promise<SellerProfile | null>;
   setSellerOpen: (isOpen: boolean) => Promise<void>;
   saveListing: (input: SaveListingInput) => Promise<Listing | null>;
@@ -332,6 +333,13 @@ export function AosellProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     await AuthRepository.signOut();
+    setCurrentUser(null);
+    setCurrentSellerProfile(null);
+    setCart(null);
+  }
+
+  async function deleteAccount() {
+    await AuthRepository.deleteAccount();
     setCurrentUser(null);
     setCurrentSellerProfile(null);
     setCart(null);
@@ -694,6 +702,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         signInWithApple,
         signInWithGoogle,
         logout,
+        deleteAccount,
         createSellerProfile,
         setSellerOpen,
         saveListing,

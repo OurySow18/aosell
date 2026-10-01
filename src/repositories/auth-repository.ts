@@ -9,9 +9,10 @@ import {
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { Platform } from 'react-native';
 
-import { auth, db } from '@/lib/firebase/config';
+import { auth, db, functions } from '@/lib/firebase/config';
 import { fromFirestoreUserDoc, toFirestoreUserDoc } from '@/lib/firebase/mappers';
 import type { AppUser } from '@/types/domain';
 import type { FirestoreUserDoc } from '@/types/firestore';
@@ -168,6 +169,12 @@ export const AuthRepository = {
   },
 
   async signOut(): Promise<void> {
+    await firebaseSignOut(auth);
+  },
+
+  async deleteAccount(): Promise<void> {
+    const call = httpsCallable(functions, 'deleteAccount');
+    await call({});
     await firebaseSignOut(auth);
   },
 };

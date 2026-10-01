@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { onCall } from 'firebase-functions/v2/https';
@@ -126,6 +127,37 @@ export const stripeWebhook = onRequest({ secrets: [stripeSecretKey, stripeWebhoo
   }
 
   res.status(200).send('ok');
+});
+
+export const deleteAccount = onCall(async (request) => {
+  if (!request.auth) {
+    throw new Error('Must be signed in.');
+  }
+  const uid = request.auth.uid;
+
+  // Delete subcollections first (Firestore doesn't cascade-delete them when
+  // their parent document is deleted).
+  const addressesSnap = await db.collection('user_profiles').doc(uid).collection('addresses').get();
+  const followsSnap = await db.collection('user_profiles').doc(uid).collection('follows').get();
+  const notificationsSnap = await db.collection('notifications').doc(uid).collection('items').get();
+
+  const batch = db.batch();
+  addressesSnap.forEach((doc) => batch.delete(doc.ref));
+  followsSnap.forEach((doc) => batch.delete(doc.ref));
+  notificationsSnap.forEach((doc) => batch.delete(doc.ref));
+  batch.delete(db.collection('user_profiles').doc(uid));
+  batch.delete(db.collection('users').doc(uid));
+  batch.delete(db.collection('carts').doc(uid));
+  await batch.commit();
+
+  // Seller profiles, listings and past orders are intentionally left
+  // untouched: deleting them would also erase other users' (buyers',
+  // sellers') own order history and break the marketplace's integrity.
+  // A seller wanting a full data wipe is handled as a manual request for now.
+
+  await getAuth().deleteUser(uid);
+
+  return { ok: true };
 });
 
 export const sendOrderNotification = onDocumentUpdated('orders/{orderId}', async (event) => {

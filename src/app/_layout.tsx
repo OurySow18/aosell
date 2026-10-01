@@ -93,6 +93,7 @@ function RootNavigator() {
         <Stack.Screen name="partner" />
         <Stack.Screen name="support" />
         <Stack.Screen name="privacy" />
+        <Stack.Screen name="delete-account" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="cart" />
         <Stack.Screen name="checkout" />
