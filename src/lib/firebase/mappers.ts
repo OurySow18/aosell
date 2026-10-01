@@ -109,17 +109,20 @@ export function fromFirestoreUserProfileDoc(
 }
 
 export function toFirestoreUserProfileDoc(profile: UserProfile): FirestoreUserProfileDoc {
+  // Firestore's setDoc() rejects any field whose value is literally undefined
+  // (unlike null) — these are all optional on UserProfile, so a new profile
+  // that hasn't set them yet must omit the key entirely, not pass undefined.
   return {
     userId: profile.userId,
     firstName: profile.firstName,
     lastName: profile.lastName,
     displayName: profile.displayName,
-    avatarUrl: profile.avatarUrl,
-    phoneNumber: profile.phoneNumber,
-    bio: profile.bio,
-    countryCode: profile.countryCode,
-    city: profile.city,
-    preferredLanguage: profile.preferredLanguage,
+    ...(profile.avatarUrl !== undefined && { avatarUrl: profile.avatarUrl }),
+    ...(profile.phoneNumber !== undefined && { phoneNumber: profile.phoneNumber }),
+    ...(profile.bio !== undefined && { bio: profile.bio }),
+    ...(profile.countryCode !== undefined && { countryCode: profile.countryCode }),
+    ...(profile.city !== undefined && { city: profile.city }),
+    ...(profile.preferredLanguage !== undefined && { preferredLanguage: profile.preferredLanguage }),
     createdAt: toTimestamp(profile.createdAt),
     updatedAt: toTimestamp(profile.updatedAt),
   };
