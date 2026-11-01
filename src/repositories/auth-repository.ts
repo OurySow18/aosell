@@ -116,13 +116,33 @@ export const AuthRepository = {
     );
   },
 
-  async signInWithOAuthCredential(
-    providerId: 'apple.com' | 'google.com',
-    idToken: string,
-    rawNonce?: string,
-    role: Extract<AppUser['role'], 'buyer' | 'seller'> = 'buyer'
-  ): Promise<AppUser> {
-    const provider = new OAuthProvider(providerId);
+  async signInWithApple(role: Extract<AppUser['role'], 'buyer' | 'seller'> = 'buyer'): Promise<AppUser> {
+    if (Platform.OS === 'web') {
+      try {
+        const provider = new OAuthProvider('apple.com');
+        provider.addScope('email');
+        provider.addScope('name');
+        const userCredential = await signInWithPopup(auth, provider);
+        return ensureUserDocument(
+          userCredential.user.uid,
+          userCredential.user.email ?? fallbackEmail(userCredential.user.uid),
+          role
+        );
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+        if (GOOGLE_POPUP_CANCEL_CODES.has(code)) {
+          throw new AppleSignInCanceledError();
+        }
+        throw error;
+      }
+    }
+
+    // Native-only (iOS — expo-apple-authentication has no Android build):
+    // dynamically imported inside this same async function, same reasoning
+    // as signInWithGoogle's native branch below.
+    const { performAppleSignIn } = await import('@/lib/auth/apple-sign-in');
+    const { idToken, rawNonce } = await performAppleSignIn();
+    const provider = new OAuthProvider('apple.com');
     const credential = provider.credential({ idToken, rawNonce });
     const userCredential = await signInWithCredential(auth, credential);
 

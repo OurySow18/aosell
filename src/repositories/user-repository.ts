@@ -19,6 +19,7 @@ import {
 import type { Address, AppUser, UserProfile } from '@/types/domain';
 import type { FirestoreAddressDoc, FirestoreUserProfileDoc } from '@/types/firestore';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
+import { translate, type Locale } from '@/lib/i18n';
 
 export type UserProfileSeed = Partial<
   Pick<
@@ -27,13 +28,33 @@ export type UserProfileSeed = Partial<
   >
 >;
 
+const SUPPORTED_LOCALES: Locale[] = ['en', 'fr', 'de'];
+
+// Placeholder names are translated, so detecting "still a placeholder" can't
+// compare against one hardcoded English string — it checks every locale's
+// buyer/seller + member combination instead.
+const PLACEHOLDER_DISPLAY_NAMES = new Set(
+  SUPPORTED_LOCALES.flatMap((locale) => {
+    const lastName = translate('profileScreen.placeholderLastName', {}, locale);
+    return [
+      `${translate('profileScreen.placeholderFirstNameBuyer', {}, locale)} ${lastName}`,
+      `${translate('profileScreen.placeholderFirstNameSeller', {}, locale)} ${lastName}`,
+    ];
+  })
+);
+
 function isPlaceholderDisplayName(value?: string) {
-  return !value || value === 'Buyer Member' || value === 'Seller Member';
+  return !value || PLACEHOLDER_DISPLAY_NAMES.has(value);
 }
 
 function buildDefaultProfile(user: AppUser, seed: UserProfileSeed = {}): UserProfile {
-  const firstName = seed.firstName?.trim() || (user.role === 'seller' ? 'Seller' : 'Buyer');
-  const lastName = seed.lastName?.trim() || 'Member';
+  // No explicit locale: translate() defaults to the app's current locale, so
+  // the placeholder name is written in whatever language the device/user has
+  // selected at sign-up time, not hardcoded to English.
+  const firstName =
+    seed.firstName?.trim() ||
+    translate(user.role === 'seller' ? 'profileScreen.placeholderFirstNameSeller' : 'profileScreen.placeholderFirstNameBuyer');
+  const lastName = seed.lastName?.trim() || translate('profileScreen.placeholderLastName');
   const displayName = seed.displayName?.trim() || `${firstName} ${lastName}`.trim();
   return {
     userId: user.id,

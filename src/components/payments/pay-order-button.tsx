@@ -2,6 +2,7 @@ import { useStripe } from '@stripe/stripe-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
+import { getFriendlyPaymentError } from '@/lib/errors/friendly-message';
 import { PaymentRepository } from '@/repositories/payment-repository';
 import type { Order } from '@/types/domain';
 
@@ -39,21 +40,21 @@ export default function PayOrderButton({ disabled, label, buttonStyle, textStyle
         merchantDisplayName: 'AoSell',
       });
       if (initResult.error) {
-        onError(initResult.error.message);
+        onError(getFriendlyPaymentError(initResult.error));
         return;
       }
 
       const presentResult = await presentPaymentSheet();
       if (presentResult.error) {
         if (presentResult.error.code !== 'Canceled') {
-          onError(presentResult.error.message);
+          onError(getFriendlyPaymentError(presentResult.error));
         }
         return;
       }
 
       onPaid(order.id);
     } catch (error) {
-      onError(error instanceof Error ? error.message : String(error));
+      onError(getFriendlyPaymentError(error));
     } finally {
       setIsProcessing(false);
     }

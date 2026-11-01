@@ -8,6 +8,7 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
+import { getFriendlyAuthError } from '@/lib/errors/friendly-message';
 import { getCuisineLabel, getDeliveryModeLabel, getSellerTypeLabel } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
 import { cuisineOptions, sellerProfileSchema } from '@/lib/validations/seller-profile';
@@ -70,12 +71,17 @@ export default function SellerOnboardingScreen() {
       return;
     }
 
+    setError('');
     setIsSubmitting(true);
     try {
       const profile = await createSellerProfile(parsed.data);
       if (profile) {
         router.replace('/seller-center');
+      } else {
+        setError(t('sellerOnboarding.invalid'));
       }
+    } catch (nextError) {
+      setError(getFriendlyAuthError(nextError));
     } finally {
       setIsSubmitting(false);
     }

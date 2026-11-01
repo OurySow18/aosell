@@ -5,6 +5,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View, type Style
 
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
+import { getFriendlyPaymentError } from '@/lib/errors/friendly-message';
 import { stripeConfig } from '@/lib/stripe';
 import { PaymentRepository } from '@/repositories/payment-repository';
 import type { Order } from '@/types/domain';
@@ -45,7 +46,7 @@ export default function PayOrderButton({ disabled, label, buttonStyle, textStyle
       const { clientSecret } = await PaymentRepository.createPaymentIntent(order.id);
       setSession({ orderId: order.id, clientSecret });
     } catch (error) {
-      onError(error instanceof Error ? error.message : String(error));
+      onError(getFriendlyPaymentError(error));
     } finally {
       setIsStarting(false);
     }
@@ -88,7 +89,7 @@ function PaymentSheetModal({ onClose, onPaid, onError }: { onClose: () => void; 
     setIsConfirming(false);
 
     if (error) {
-      onError(error.message ?? t('payment.genericError'));
+      onError(getFriendlyPaymentError(error));
       return;
     }
     if (paymentIntent?.status === 'succeeded') {

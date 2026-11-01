@@ -4,13 +4,13 @@ import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { translate } from '@/lib/i18n';
+import { getFriendlyAuthError } from '@/lib/errors/friendly-message';
 import { authSignInSchema, authSignUpSchema } from '@/lib/validations/auth';
 import { useAosell } from '@/providers/aosell-provider';
 import { AppleSignInCanceledError, GoogleSignInCanceledError } from '@/repositories/auth-repository';
@@ -70,37 +70,10 @@ function asSingleValue(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function getFriendlyAuthError(error: unknown) {
-  const code =
-    typeof error === 'object' && error !== null && 'code' in error ? String((error as { code?: unknown }).code) : '';
-  const message =
-    typeof error === 'object' && error !== null && 'message' in error ? String((error as { message?: unknown }).message) : '';
-
-  switch (code) {
-    case 'auth/email-already-in-use':
-      return translate('auth.errors.emailInUse');
-    case 'auth/invalid-email':
-      return translate('auth.errors.invalidEmail');
-    case 'auth/operation-not-allowed':
-      return translate('auth.errors.operationNotAllowed');
-    case 'auth/invalid-credential':
-    case 'auth/user-not-found':
-    case 'auth/wrong-password':
-      return translate('auth.errors.wrongCredentials');
-    case 'auth/network-request-failed':
-      return translate('auth.errors.network');
-    case 'auth/weak-password':
-      return translate('auth.errors.weakPassword');
-    case 'auth/too-many-requests':
-      return translate('auth.errors.tooManyRequests');
-    default:
-      return message || translate('auth.errors.generic');
-  }
-}
-
 export default function AuthScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     mode?: string | string[];
     role?: string | string[];
@@ -185,13 +158,20 @@ export default function AuthScreen() {
     setInfo('');
     setIsSubmitting(true);
     try {
-      const { performAppleSignIn } = await import('@/lib/auth/apple-sign-in');
-      const { idToken, rawNonce } = await performAppleSignIn();
-      await signInWithApple(idToken, rawNonce, role);
+      await signInWithApple(role);
       router.replace((returnTo || (role === 'seller' ? '/seller-onboarding' : '/home')) as never);
     } catch (nextError) {
       if (!(nextError instanceof AppleSignInCanceledError)) {
-        setError(getFriendlyAuthError(nextError));
+        // TEMPORARY: append the raw Firebase/SDK code so we can see exactly
+        // which error Apple sign-in hits on TestFlight without a debugger
+        // attached. Remove this suffix once the real cause is confirmed.
+        const rawCode =
+          typeof nextError === 'object' && nextError !== null && 'code' in nextError
+            ? String((nextError as { code?: unknown }).code)
+            : typeof nextError === 'object' && nextError !== null && 'message' in nextError
+              ? String((nextError as { message?: unknown }).message)
+              : String(nextError);
+        setError(`${getFriendlyAuthError(nextError)} [debug: ${rawCode}]`);
       }
     } finally {
       setIsSubmitting(false);
@@ -223,7 +203,7 @@ export default function AuthScreen() {
             <PromoBadge style={styles.promoTop} theme={theme} />
             <PromoBadge style={styles.promoMiddle} theme={theme} />
             <PromoBadge style={styles.promoBottom} theme={theme} />
-            <View style={styles.heroBrand}>
+            <View style={[styles.heroBrand, { top: insets.top + 12 }]}>
               <AosellLogo compact />
             </View>
           </View>
@@ -246,12 +226,22 @@ export default function AuthScreen() {
               </View>
             ) : null}
 
+            {error && !showEmailForm ? (
+              <View
+                style={[
+                  styles.infoBox,
+                  { backgroundColor: theme.colors.background, borderColor: theme.colors.error, borderRadius: theme.radii.sm },
+                ]}>
+                <Text style={[styles.infoText, { color: theme.colors.error }]}>{error}</Text>
+              </View>
+            ) : null}
+
             <View style={styles.optionList}>
               <AuthOptionButton
                 theme={theme}
                 label={t('auth.apple')}
                 type="apple"
-                onPress={() => (Platform.OS === 'ios' ? void handleAppleSignIn() : handleUnavailable('apple'))}
+                onPress={() => (Platform.OS === 'android' ? handleUnavailable('apple') : void handleAppleSignIn())}
               />
               <AuthOptionButton theme={theme} label={t('auth.google')} type="google" onPress={() => void handleGoogleSignIn()} />
               <AuthOptionButton theme={theme} label={t('auth.email')} type="email" onPress={() => revealEmailForm(initialMode)} />
@@ -531,7 +521,6 @@ const styles = StyleSheet.create({
   heroBrand: {
     position: 'absolute',
     left: 20,
-    top: 20,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.94)',
     paddingVertical: 6,
