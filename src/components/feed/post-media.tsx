@@ -5,6 +5,8 @@ import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/hooks/use-locale';
+import { useVideoSound } from '@/providers/video-sound-provider';
 import type { Post } from '@/types/domain';
 
 const DOUBLE_TAP_WINDOW_MS = 280;
@@ -58,9 +60,11 @@ export function PostMedia({ post, isActive = false, onDoubleTap }: { post: Post;
 }
 
 function VideoMedia({ uri, isActive, theme }: { uri: string; isActive: boolean; theme: ReturnType<typeof useAppTheme> }) {
+  const { t } = useLocale();
+  const { soundOn, toggleSound } = useVideoSound();
   const player = useVideoPlayer(uri, (instance) => {
     instance.loop = true;
-    instance.muted = true;
+    instance.muted = !soundOn;
   });
 
   useEffect(() => {
@@ -70,6 +74,14 @@ function VideoMedia({ uri, isActive, theme }: { uri: string; isActive: boolean; 
       player.pause();
     }
   }, [isActive, player]);
+
+  // The player is created once per uri (useVideoPlayer's factory only runs
+  // on mount), so the global sound preference — which can change afterwards,
+  // or already be "on" when a later video mounts — has to be re-applied here
+  // too, not just at creation.
+  useEffect(() => {
+    player.muted = !soundOn;
+  }, [player, soundOn]);
 
   return (
     <>
@@ -81,6 +93,17 @@ function VideoMedia({ uri, isActive, theme }: { uri: string; isActive: boolean; 
           </View>
         </View>
       ) : null}
+      <Pressable
+        accessibilityLabel={soundOn ? t('postCard.muteAction') : t('postCard.unmuteAction')}
+        hitSlop={10}
+        onPress={toggleSound}
+        style={[styles.soundButton, { backgroundColor: 'rgba(20,33,61,0.75)' }]}>
+        <SymbolView
+          tintColor="#FFFFFF"
+          size={16}
+          name={soundOn ? { ios: 'speaker.wave.2.fill', android: 'volume_up', web: 'volume_up' } : { ios: 'speaker.slash.fill', android: 'volume_off', web: 'volume_off' }}
+        />
+      </Pressable>
     </>
   );
 }
@@ -123,6 +146,16 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soundButton: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

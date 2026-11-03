@@ -16,6 +16,7 @@ import { useAppTheme } from '@/hooks/use-theme';
 import { AosellProvider } from '@/providers/aosell-provider';
 import { LocaleProvider } from '@/providers/locale-provider';
 import { ThemeModeProvider } from '@/providers/theme-mode-provider';
+import { VideoSoundProvider } from '@/providers/video-sound-provider';
 import { useAosell } from '@/providers/aosell-provider';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -138,9 +139,11 @@ export default function RootLayout() {
       <ThemeModeProvider>
         <LocaleProvider>
           <AosellProvider>
-            <PaymentsProvider>
-              <RootNavigator />
-            </PaymentsProvider>
+            <VideoSoundProvider>
+              <PaymentsProvider>
+                <RootNavigator />
+              </PaymentsProvider>
+            </VideoSoundProvider>
           </AosellProvider>
         </LocaleProvider>
       </ThemeModeProvider>

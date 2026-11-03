@@ -659,6 +659,8 @@ export const translations = {
       viewComments: 'View all {count} comments',
       processingVideo: 'Processing…',
       moreAction: 'More options',
+      muteAction: 'Mute',
+      unmuteAction: 'Unmute',
     },
     postDetail: {
       notFoundTitle: 'Post not found',
@@ -1440,6 +1442,8 @@ export const translations = {
       viewComments: 'Voir les {count} commentaires',
       processingVideo: 'Traitement en cours…',
       moreAction: 'Plus d’options',
+      muteAction: 'Couper le son',
+      unmuteAction: 'Activer le son',
     },
     postDetail: {
       notFoundTitle: 'Publication introuvable',
@@ -2221,6 +2225,8 @@ export const translations = {
       viewComments: 'Alle {count} Kommentare ansehen',
       processingVideo: 'Wird verarbeitet…',
       moreAction: 'Weitere Optionen',
+      muteAction: 'Stummschalten',
+      unmuteAction: 'Ton aktivieren',
     },
     postDetail: {
       notFoundTitle: 'Beitrag nicht gefunden',
