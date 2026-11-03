@@ -67,6 +67,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="add"
+        options={{
+          tabBarButton: (props) => <AddTabButton {...props} theme={theme} />,
+        }}
+      />
+      <Tabs.Screen
         name="reels"
         options={{
           tabBarIcon: ({ focused }) => (
@@ -81,24 +87,8 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="add"
-        options={{
-          tabBarButton: (props) => <AddTabButton {...props} theme={theme} />,
-        }}
-      />
-      <Tabs.Screen
         name="orders"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              label={t('tabs.orders')}
-              icon={{ ios: 'shippingbox', android: 'inbox', web: 'inbox' }}
-              iconActive={{ ios: 'shippingbox.fill', android: 'inbox', web: 'inbox' }}
-              theme={theme}
-            />
-          ),
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="profile"

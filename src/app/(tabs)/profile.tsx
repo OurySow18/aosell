@@ -126,6 +126,7 @@ export default function ProfileScreen() {
 
       <View style={styles.actions}>
         <AppButton fullWidth label={`${t('common.notifications')} (${unreadCount})`} onPress={() => router.push('/notifications')} />
+        <AppButton fullWidth label={t('common.viewAllOrders')} variant="secondary" onPress={() => router.push('/orders')} />
         <AppButton fullWidth label={t('common.sellerCenter')} variant="secondary" onPress={() => router.push('/seller-center')} />
         <AppButton fullWidth disabled={isLoggingOut} label={t('common.logout')} variant="danger" onPress={handleLogout} />
         <AppButton fullWidth label={t('deleteAccount.deleteButton')} variant="ghost" onPress={() => router.push('/delete-account')} />
