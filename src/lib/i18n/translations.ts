@@ -76,7 +76,7 @@ export const translations = {
       },
     },
     tabs: {
-      feed: 'Feed',
+      reels: 'Reels',
       home: 'Home',
       search: 'Search',
       add: 'Add',
@@ -145,6 +145,7 @@ export const translations = {
     webHeader: {
       restaurants: 'Restaurants',
       feed: 'Feed',
+      reels: 'Reels',
       orders: 'Orders',
       becomePartner: 'Become a partner',
       signIn: 'Sign in',
@@ -647,6 +648,10 @@ export const translations = {
       signInForFollowing: 'Sign in to see sellers you follow',
       suggestedSellers: 'Sellers to follow',
     },
+    reels: {
+      emptyTitle: 'No reels yet',
+      emptyDescription: 'Videos shared by sellers will show up here.',
+    },
     postCard: {
       likeAction: 'Like',
       commentAction: 'Comment',
@@ -859,7 +864,7 @@ export const translations = {
       },
     },
     tabs: {
-      feed: 'Fil',
+      reels: 'Reels',
       home: 'Accueil',
       search: 'Recherche',
       add: 'Ajouter',
@@ -928,6 +933,7 @@ export const translations = {
     webHeader: {
       restaurants: 'Restaurants',
       feed: 'Fil',
+      reels: 'Reels',
       orders: 'Commandes',
       becomePartner: 'Devenir partenaire',
       signIn: 'Se connecter',
@@ -1430,6 +1436,10 @@ export const translations = {
       signInForFollowing: 'Connectez-vous pour voir les vendeurs que vous suivez',
       suggestedSellers: 'Vendeurs à suivre',
     },
+    reels: {
+      emptyTitle: 'Pas encore de reels',
+      emptyDescription: 'Les vidéos publiées par les vendeurs apparaîtront ici.',
+    },
     postCard: {
       likeAction: 'J’aime',
       commentAction: 'Commenter',
@@ -1642,7 +1652,7 @@ export const translations = {
       },
     },
     tabs: {
-      feed: 'Feed',
+      reels: 'Reels',
       home: 'Start',
       search: 'Suche',
       add: 'Hinzufügen',
@@ -1711,6 +1721,7 @@ export const translations = {
     webHeader: {
       restaurants: 'Restaurants',
       feed: 'Feed',
+      reels: 'Reels',
       orders: 'Bestellungen',
       becomePartner: 'Partner werden',
       signIn: 'Anmelden',
@@ -2212,6 +2223,10 @@ export const translations = {
       segmentCity: 'In {city}',
       signInForFollowing: 'Melde dich an, um Verkäufern zu folgen',
       suggestedSellers: 'Verkäufer zum Folgen',
+    },
+    reels: {
+      emptyTitle: 'Noch keine Reels',
+      emptyDescription: 'Videos von Verkäufern erscheinen hier.',
     },
     postCard: {
       likeAction: 'Gefällt mir',

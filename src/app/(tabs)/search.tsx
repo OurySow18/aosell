@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
@@ -8,8 +9,11 @@ import { ListingCard } from '@/components/cards/listing-card';
 import { DEFAULT_CITY } from '@/constants/location';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { getDeliveryModeLabel, getListingTypeLabel, getSellerTypeLabel } from '@/lib/i18n';
+import { getCuisineLabel, getDeliveryModeLabel, getListingTypeLabel, getSellerTypeLabel } from '@/lib/i18n';
+import { formatMoney } from '@/lib/utils/format';
+import { getPrimaryListingImage } from '@/lib/utils/listing-media';
 import { useAosell } from '@/providers/aosell-provider';
+import type { Cuisine, Listing, SellerProfile } from '@/types/domain';
 
 type AppTheme = ReturnType<typeof useAppTheme>;
 
@@ -24,7 +28,7 @@ const quickCities = [DEFAULT_CITY, 'Berlin', 'Hamburg', 'Munich'];
 export default function SearchScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
-  const { searchListings, sellers } = useAosell();
+  const { searchListings, sellers, listings, getSellerById, addToCart } = useAosell();
   const params = useLocalSearchParams<{ type?: string; deliveryMode?: string }>();
   const initialType = toggleOptions.type.includes(params.type as (typeof toggleOptions.type)[number])
     ? (params.type as (typeof toggleOptions.type)[number])
@@ -42,14 +46,91 @@ export default function SearchScreen() {
   const [countryCode] = useState('DE');
   const [city, setCity] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedCuisine, setSelectedCuisine] = useState<Cuisine | 'all'>('all');
+  const [addingListingId, setAddingListingId] = useState<string | null>(null);
 
   const results = searchListings({ query, type, deliveryMode, sellerType, countryCode, city });
+
+  const availableCuisines = Array.from(new Set(sellers.flatMap((seller) => seller.cuisineSpecialties)));
+  const cuisineFilteredListings =
+    selectedCuisine === 'all'
+      ? listings
+      : listings.filter((listing) => getSellerById(listing.sellerId)?.cuisineSpecialties.includes(selectedCuisine));
+  const mealListings = cuisineFilteredListings.filter((listing) => listing.type === 'meal');
+  const spotlight = mealListings.find((listing) => listing.isFeatured) ?? mealListings[0];
+  const spotlightSeller = spotlight ? getSellerById(spotlight.sellerId) : undefined;
+  const nearbySellers =
+    selectedCuisine === 'all' ? sellers.slice(0, 6) : sellers.filter((seller) => seller.cuisineSpecialties.includes(selectedCuisine));
+
+  async function handleAddSpotlight() {
+    if (!spotlight) {
+      return;
+    }
+    setAddingListingId(spotlight.id);
+    const result = await addToCart(spotlight.id);
+    setAddingListingId(null);
+
+    if (result.requiresAuth) {
+      router.push({ pathname: '/auth', params: { mode: 'signup', role: 'buyer' } });
+      return;
+    }
+    if (result.ok) {
+      router.push('/cart');
+    }
+  }
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: theme.spacing[8] }]}
         showsVerticalScrollIndicator={false}>
+        <Text style={[styles.discoverTitle, { color: theme.colors.text, fontFamily: theme.typography.display.fontFamily }]}>
+          {t('tabs.search')}
+        </Text>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+          <DiscoverChip label={t('common.all')} active={selectedCuisine === 'all'} onPress={() => setSelectedCuisine('all')} theme={theme} />
+          {availableCuisines.map((cuisine) => (
+            <DiscoverChip
+              key={cuisine}
+              label={getCuisineLabel(cuisine)}
+              active={selectedCuisine === cuisine}
+              onPress={() => setSelectedCuisine(cuisine)}
+              theme={theme}
+            />
+          ))}
+        </ScrollView>
+
+        {spotlight ? (
+          <>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {t('home.featuredDish')}
+            </Text>
+            <SpotlightCard
+              listing={spotlight}
+              sellerName={spotlightSeller?.brandName}
+              isAdding={addingListingId === spotlight.id}
+              onAdd={() => void handleAddSpotlight()}
+              theme={theme}
+              t={t}
+            />
+          </>
+        ) : null}
+
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {t('home.nearby')}
+          </Text>
+        </View>
+
+        <View style={styles.nearbyList}>
+          {nearbySellers.map((seller) => (
+            <NearbyRow key={seller.id} seller={seller} theme={theme} />
+          ))}
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
         <View
           style={[
             styles.searchShell,
@@ -229,6 +310,154 @@ export default function SearchScreen() {
   );
 }
 
+function DiscoverChip({
+  label,
+  active,
+  onPress,
+  theme,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  theme: AppTheme;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.discoverChip,
+        {
+          backgroundColor: active ? theme.colors.accentTint : theme.colors.surface,
+          borderColor: active ? theme.colors.accent : theme.colors.border,
+          borderWidth: active ? 1.5 : 1,
+        },
+      ]}>
+      <Text style={[styles.chipLabel, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function SpotlightCard({
+  listing,
+  sellerName,
+  isAdding,
+  onAdd,
+  theme,
+  t,
+}: {
+  listing: Listing;
+  sellerName?: string;
+  isAdding: boolean;
+  onAdd: () => void;
+  theme: AppTheme;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  const image = getPrimaryListingImage(listing);
+  const discountPct = listing.compareAtPrice
+    ? Math.round((1 - listing.price.amountCents / listing.compareAtPrice.amountCents) * 100)
+    : undefined;
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  return (
+    <View
+      style={[
+        styles.spotlightCard,
+        { backgroundColor: theme.colors.surface, borderRadius: theme.radii.xl },
+        theme.dark ? { borderWidth: 1, borderColor: theme.colors.border } : theme.shadows.md,
+      ]}>
+      <View style={[styles.spotlightMedia, { backgroundColor: theme.colors.accentTint }]}>
+        {image?.url ? <Image contentFit="cover" source={{ uri: image.url }} style={StyleSheet.absoluteFillObject} transition={200} /> : null}
+
+        {discountPct && discountPct > 0 ? (
+          <View style={[styles.discountBadge, { backgroundColor: theme.colors.secondary }]}>
+            <Text style={[styles.discountBadgeText, { color: theme.colors.onSecondary, fontFamily: theme.typography.micro.fontFamily }]}>
+              −{discountPct}%
+            </Text>
+          </View>
+        ) : null}
+
+        <Pressable
+          accessibilityLabel={t('common.favorite')}
+          onPress={() => setIsFavorite((current) => !current)}
+          style={[styles.favoriteButton, { backgroundColor: 'rgba(255,255,255,0.95)' }]}>
+          <SymbolView
+            tintColor={isFavorite ? theme.colors.secondaryStrong : theme.colors.text}
+            size={18}
+            name={isFavorite ? { ios: 'heart.fill', android: 'favorite', web: 'favorite' } : { ios: 'heart', android: 'favorite_border', web: 'favorite_border' }}
+          />
+        </Pressable>
+      </View>
+
+      <View style={styles.spotlightBody}>
+        <View style={styles.spotlightInfo}>
+          <Text style={[styles.spotlightTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {listing.title}
+          </Text>
+          {sellerName ? <Text style={[styles.muted, { color: theme.colors.textMuted }]}>{sellerName}</Text> : null}
+
+          <View style={styles.priceRow}>
+            <Text style={[styles.price, { color: theme.colors.secondaryText, fontFamily: theme.typography.heading.fontFamily }]}>
+              {formatMoney(listing.price)}
+            </Text>
+            {listing.compareAtPrice ? (
+              <Text style={[styles.comparePrice, { color: theme.colors.textMuted }]}>{formatMoney(listing.compareAtPrice)}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.metaRow}>
+            <SymbolView tintColor={theme.colors.textMuted} size={14} name={{ ios: 'clock', android: 'schedule', web: 'schedule' }} />
+            <Text style={[styles.muted, { color: theme.colors.textMuted }]}>{getDeliveryModeLabel(listing.deliveryMode)}</Text>
+          </View>
+        </View>
+
+        <Pressable
+          accessibilityLabel={t('common.addToCart')}
+          disabled={isAdding}
+          onPress={onAdd}
+          style={[styles.spotlightAddButton, { backgroundColor: theme.colors.accent, opacity: isAdding ? theme.motion.disabledOpacity : 1 }, theme.shadows.accent]}>
+          <SymbolView tintColor={theme.colors.onAccent} size={22} name={{ ios: 'plus', android: 'add', web: 'add' }} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function NearbyRow({ seller, theme }: { seller: SellerProfile; theme: AppTheme }) {
+  const cuisineLabel = seller.cuisineSpecialties[0] ? getCuisineLabel(seller.cuisineSpecialties[0]) : undefined;
+
+  return (
+    <Pressable onPress={() => router.push(`/seller/${seller.id}`)} style={styles.nearbyRow}>
+      <View style={[styles.nearbyThumb, { backgroundColor: theme.colors.accentTint }]}>
+        {seller.coverImageUrl ? (
+          <Image contentFit="cover" source={{ uri: seller.coverImageUrl }} style={StyleSheet.absoluteFillObject} transition={200} />
+        ) : null}
+      </View>
+      <View style={styles.nearbyInfo}>
+        <Text style={[styles.nearbyName, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+          {seller.brandName}
+        </Text>
+        <Text style={[styles.muted, { color: theme.colors.textMuted }]} numberOfLines={1}>
+          {[cuisineLabel, seller.city].filter(Boolean).join(' · ')}
+        </Text>
+        <View style={styles.nearbyBadges}>
+          {seller.ratingAverage ? (
+            <View style={[styles.badge, { backgroundColor: theme.colors.accentTint }]}>
+              <Text style={[styles.badgeText, { color: theme.colors.text, fontFamily: theme.typography.micro.fontFamily }]}>
+                ★ {seller.ratingAverage.toFixed(1)}
+              </Text>
+            </View>
+          ) : null}
+          <View style={[styles.badge, { backgroundColor: theme.colors.surfaceMuted }]}>
+            <Text style={[styles.badgeText, { color: theme.colors.text, fontFamily: theme.typography.micro.fontFamily }]}>
+              {seller.deliveryModes.map((mode) => getDeliveryModeLabel(mode)).join(' + ')}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 function FilterRow({
   theme,
   kind,
@@ -287,6 +516,39 @@ function FilterRow({
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 12, gap: 16 },
+
+  discoverTitle: { fontSize: 28, lineHeight: 34 },
+  chipRow: { gap: 8, paddingRight: 20 },
+  discoverChip: { height: 36, borderRadius: 18, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontSize: 17, lineHeight: 24, marginTop: 8 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
+
+  spotlightCard: { marginTop: 12, overflow: 'hidden' },
+  spotlightMedia: { height: 168 },
+  discountBadge: { position: 'absolute', left: 12, top: 12, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4 },
+  discountBadgeText: { fontSize: 11, lineHeight: 14 },
+  favoriteButton: { position: 'absolute', right: 12, top: 12, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  spotlightBody: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: 14 },
+  spotlightInfo: { flex: 1, gap: 4 },
+  spotlightTitle: { fontSize: 17, lineHeight: 24 },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 4 },
+  price: { fontSize: 17, lineHeight: 24 },
+  comparePrice: { fontSize: 13, lineHeight: 18, textDecorationLine: 'line-through' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  spotlightAddButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  muted: { fontSize: 13, lineHeight: 18 },
+
+  nearbyList: { marginTop: 14, gap: 14 },
+  nearbyRow: { flexDirection: 'row', gap: 12 },
+  nearbyThumb: { width: 76, height: 76, borderRadius: 12, overflow: 'hidden' },
+  nearbyInfo: { flex: 1, justifyContent: 'center', gap: 3 },
+  nearbyName: { fontSize: 15, lineHeight: 20 },
+  nearbyBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  badge: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  badgeText: { fontSize: 11, lineHeight: 14 },
+
+  divider: { height: StyleSheet.hairlineWidth, marginTop: 8 },
+
   searchShell: { minHeight: 60, borderWidth: 1, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
   searchInput: { flex: 1, fontSize: 15, minHeight: 56 },
   filterToggle: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },

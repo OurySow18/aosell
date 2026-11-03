@@ -84,6 +84,12 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
     void Share.share({ message: buildPostShareMessage({ caption: post.caption, postId: post.id }) });
   }
 
+  function handleOpenReels() {
+    if (post.mediaType === 'video') {
+      router.push({ pathname: '/reels', params: { postId: post.id } });
+    }
+  }
+
   function handleDeletePress() {
     Alert.alert(t('postDetail.deleteTitle'), t('postDetail.deleteDescription'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -140,7 +146,7 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
       </View>
 
       <View style={styles.mediaWrap}>
-        <PostMedia isActive={isActive} onDoubleTap={handleDoubleTap} post={post} />
+        <PostMedia isActive={isActive} onDoubleTap={handleDoubleTap} onSingleTap={handleOpenReels} post={post} />
         {post.mediaProcessingStatus === 'pending' ? (
           <View pointerEvents="none" style={[styles.processingBadge, { backgroundColor: 'rgba(0,0,0,0.55)' }]}>
             <Text style={styles.processingBadgeText}>{t('postCard.processingVideo')}</Text>

@@ -1,381 +1,290 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import type { ViewToken } from 'react-native';
+import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HomeEditorial } from '@/components/web/home-editorial';
-import { DEFAULT_CITY } from '@/constants/location';
+import { PostCard } from '@/components/feed/post-card';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
-import { getCuisineLabel, getDeliveryModeLabel } from '@/lib/i18n';
-import { formatMoney } from '@/lib/utils/format';
-import { getPrimaryListingImage } from '@/lib/utils/listing-media';
+import { DEFAULT_CITY } from '@/constants/location';
+import { MaxContentWidth } from '@/constants/theme';
+import { getCuisineLabel } from '@/lib/i18n';
 import { useAosell } from '@/providers/aosell-provider';
-import type { Cuisine, Listing, SellerProfile } from '@/types/domain';
+import type { Post, SellerProfile } from '@/types/domain';
 
-type AppTheme = ReturnType<typeof useAppTheme>;
+type Segment = 'forYou' | 'following' | 'city';
+
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 65 };
 
 export default function HomeScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const breakpoint = useBreakpoint();
-  const { currentUser, addresses, sellers, listings, notifications, getSellerById, addToCart } = useAosell();
-  const [selectedCuisine, setSelectedCuisine] = useState<Cuisine | 'all'>('all');
-  const [addingListingId, setAddingListingId] = useState<string | null>(null);
+  const isDesktop = Platform.OS === 'web' && breakpoint === 'desktop';
+  const { feedPosts, sellers, currentSellerProfile, currentUser, followedSellerIds, getSellerById, toggleFollow } = useAosell();
+  const [segment, setSegment] = useState<Segment>('forYou');
+  const [activePostId, setActivePostId] = useState<string | undefined>(feedPosts[0]?.id);
 
-  // Web at tablet/desktop widths gets the editorial marketing homepage
-  // (banner, cuisine tiles, "Devenir partenaire" banner) instead of the
-  // app's order-focused home — the mobile app (native or narrow web) is
-  // unaffected. This check must stay after every hook call above: switching
-  // breakpoints re-renders this same component, and an early return before
-  // a hook would change the hook count between renders and crash React.
-  if (Platform.OS === 'web' && breakpoint !== 'mobile') {
-    return <HomeEditorial />;
-  }
-
-  const availableCuisines = Array.from(new Set(sellers.flatMap((seller) => seller.cuisineSpecialties)));
-  const hasUnreadNotifications = notifications.some((item) => !item.isRead);
-
-  const defaultAddress = addresses.find((item) => item.isDefault) ?? addresses[0];
-  const addressLabel = defaultAddress ? `${defaultAddress.line1}, ${defaultAddress.city}` : DEFAULT_CITY;
-
-  const cuisineFilteredListings =
-    selectedCuisine === 'all'
-      ? listings
-      : listings.filter((listing) => getSellerById(listing.sellerId)?.cuisineSpecialties.includes(selectedCuisine));
-  const mealListings = cuisineFilteredListings.filter((listing) => listing.type === 'meal');
-  const spotlight = mealListings.find((listing) => listing.isFeatured) ?? mealListings[0];
-  const spotlightSeller = spotlight ? getSellerById(spotlight.sellerId) : undefined;
-
-  const nearbySellers =
-    selectedCuisine === 'all' ? sellers.slice(0, 6) : sellers.filter((seller) => seller.cuisineSpecialties.includes(selectedCuisine));
-
-  async function handleAddSpotlight() {
-    if (!spotlight) {
-      return;
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const firstVisible = viewableItems.find((item) => item.isViewable);
+    if (firstVisible?.item) {
+      setActivePostId((firstVisible.item as Post).id);
     }
-    setAddingListingId(spotlight.id);
-    const result = await addToCart(spotlight.id);
-    setAddingListingId(null);
+  }).current;
 
-    if (result.requiresAuth) {
-      router.push({ pathname: '/auth', params: { mode: 'signup', role: 'buyer' } });
-      return;
-    }
-    if (result.ok) {
-      router.push('/cart');
-    }
+  const visiblePosts =
+    segment === 'following'
+      ? feedPosts.filter((post) => followedSellerIds.includes(post.sellerId))
+      : segment === 'city'
+        ? feedPosts.filter((post) => getSellerById(post.sellerId)?.city === DEFAULT_CITY)
+        : feedPosts;
+
+  const renderItem = useCallback(
+    ({ item }: { item: Post }) => <PostCard isActive={item.id === activePostId} post={item} />,
+    [activePostId]
+  );
+
+  if (isDesktop) {
+    const suggestedSellers = sellers.filter((seller) => !followedSellerIds.includes(seller.id)).slice(0, 6);
+
+    return (
+      <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.desktopRow}>
+          <View style={styles.desktopRail}>
+            <Text style={[styles.title, styles.desktopTitle, { color: theme.colors.text, fontFamily: theme.typography.display.fontFamily }]}>
+              {t('tabs.home')}
+            </Text>
+            {currentSellerProfile ? (
+              <Pressable
+                onPress={() => router.push('/post/create')}
+                style={[styles.desktopPublish, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md }, theme.shadows.accent]}>
+                <SymbolView tintColor={theme.colors.onAccent} size={16} name={{ ios: 'plus', android: 'add', web: 'add' }} />
+                <Text style={[styles.desktopPublishText, { color: theme.colors.onAccent, fontFamily: theme.typography.label.fontFamily }]}>
+                  {t('common.createPost')}
+                </Text>
+              </Pressable>
+            ) : null}
+            <View style={styles.desktopRailTabs}>
+              <RailTab active={segment === 'forYou'} label={t('feed.segmentForYou')} onPress={() => setSegment('forYou')} theme={theme} />
+              <RailTab active={segment === 'following'} label={t('feed.segmentFollowing')} onPress={() => setSegment('following')} theme={theme} />
+              <RailTab active={segment === 'city'} label={t('feed.segmentCity', { city: DEFAULT_CITY })} onPress={() => setSegment('city')} theme={theme} />
+            </View>
+          </View>
+
+          <FlatList
+            style={styles.desktopFeedCol}
+            contentContainerStyle={styles.desktopList}
+            data={visiblePosts}
+            keyExtractor={(item) => item.id}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <Text style={[styles.emptyTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+                  {segment === 'following' && !currentUser ? t('feed.signInForFollowing') : t('feed.emptyTitle')}
+                </Text>
+                <Text style={[styles.emptyBody, { color: theme.colors.textMuted }]}>{t('feed.emptyDescription')}</Text>
+              </View>
+            }
+            onViewableItemsChanged={onViewableItemsChanged}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            viewabilityConfig={VIEWABILITY_CONFIG}
+          />
+
+          <ScrollView style={styles.desktopSuggestions} contentContainerStyle={styles.desktopSuggestionsContent} showsVerticalScrollIndicator={false}>
+            <Text style={[styles.desktopSuggestionsTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {t('feed.suggestedSellers')}
+            </Text>
+            {suggestedSellers.map((seller) => (
+              <SuggestedSellerRow key={seller.id} seller={seller} onFollow={() => void toggleFollow(seller.id, true)} theme={theme} />
+            ))}
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: theme.spacing[8] }]}
-        showsVerticalScrollIndicator={false}>
-        {/* 1. En-tête */}
-        <View style={styles.headerRow}>
-          <Pressable style={styles.addressBlock}>
-            <Text style={[styles.muted, { color: theme.colors.textMuted, fontFamily: theme.typography.caption.fontFamily }]}>
-              {t('home.deliverTo')}
-            </Text>
-            <View style={styles.addressLine}>
-              <Text
-                numberOfLines={1}
-                style={[styles.addressText, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-                {addressLabel}
-              </Text>
-              <SymbolView
-                tintColor={theme.colors.text}
-                size={18}
-                name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }}
-              />
-            </View>
-          </Pressable>
-
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.display.fontFamily }]}>
+          {t('tabs.home')}
+        </Text>
+        {currentSellerProfile ? (
           <Pressable
-            accessibilityLabel={t('common.notifications')}
-            onPress={() => router.push('/notifications')}
-            style={[styles.bellButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} />
-            {hasUnreadNotifications ? (
-              <View style={[styles.bellDot, { backgroundColor: theme.colors.secondary, borderColor: theme.colors.surface }]} />
-            ) : null}
+            accessibilityLabel={t('common.createPost')}
+            onPress={() => router.push('/post/create')}
+            style={[styles.createButton, { backgroundColor: theme.colors.accent }, theme.shadows.accent]}>
+            <SymbolView tintColor={theme.colors.onAccent} size={18} name={{ ios: 'plus', android: 'add', web: 'add' }} />
           </Pressable>
-        </View>
-
-        {/* 2. Recherche */}
-        <Pressable
-          onPress={() => router.push('/search')}
-          style={[styles.searchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <SymbolView tintColor={theme.colors.textMuted} size={20} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} />
-          <Text style={[styles.searchPlaceholder, { color: theme.colors.textMuted }]}>{t('home.searchPlaceholder')}</Text>
-          <SymbolView
-            tintColor={theme.colors.text}
-            size={20}
-            name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }}
-          />
-        </Pressable>
-
-        {/* 3. Chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-          <Chip label={t('common.all')} active={selectedCuisine === 'all'} onPress={() => setSelectedCuisine('all')} theme={theme} />
-          {availableCuisines.map((cuisine) => (
-            <Chip
-              key={cuisine}
-              label={getCuisineLabel(cuisine)}
-              active={selectedCuisine === cuisine}
-              onPress={() => setSelectedCuisine(cuisine)}
-              theme={theme}
-            />
-          ))}
-        </ScrollView>
-
-        {/* 4-5. Plat du moment */}
-        {spotlight ? (
-          <>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-              {t('home.featuredDish')}
-            </Text>
-            <SpotlightCard
-              listing={spotlight}
-              sellerName={spotlightSeller?.brandName}
-              isAdding={addingListingId === spotlight.id}
-              onAdd={() => void handleAddSpotlight()}
-              theme={theme}
-              t={t}
-            />
-          </>
         ) : null}
+      </View>
 
-        {/* 6. À proximité */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-            {t('home.nearby')}
-          </Text>
-          <Pressable onPress={() => router.push('/search')}>
-            <Text
-              style={[
-                styles.textButton,
-                { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily },
-              ]}>
-              {t('home.viewAll')}
+      <View style={[styles.segmented, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.md }]}>
+        <SegmentButton active={segment === 'forYou'} label={t('feed.segmentForYou')} onPress={() => setSegment('forYou')} theme={theme} />
+        <SegmentButton active={segment === 'following'} label={t('feed.segmentFollowing')} onPress={() => setSegment('following')} theme={theme} />
+        <SegmentButton active={segment === 'city'} label={t('feed.segmentCity', { city: DEFAULT_CITY })} onPress={() => setSegment('city')} theme={theme} />
+      </View>
+
+      <FlatList
+        contentContainerStyle={styles.list}
+        data={visiblePosts}
+        keyExtractor={(item) => item.id}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={[styles.emptyTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+              {segment === 'following' && !currentUser ? t('feed.signInForFollowing') : t('feed.emptyTitle')}
             </Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.nearbyList}>
-          {nearbySellers.map((seller) => (
-            <NearbyRow key={seller.id} seller={seller} theme={theme} />
-          ))}
-        </View>
-      </ScrollView>
+            <Text style={[styles.emptyBody, { color: theme.colors.textMuted }]}>{t('feed.emptyDescription')}</Text>
+          </View>
+        }
+        onViewableItemsChanged={onViewableItemsChanged}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        viewabilityConfig={VIEWABILITY_CONFIG}
+      />
     </SafeAreaView>
   );
 }
 
-function Chip({
-  label,
+function RailTab({
   active,
+  label,
   onPress,
   theme,
 }: {
-  label: string;
   active: boolean;
+  label: string;
   onPress: () => void;
-  theme: AppTheme;
+  theme: ReturnType<typeof useAppTheme>;
+}) {
+  return (
+    <Pressable onPress={onPress} style={styles.railTab}>
+      <Text
+        style={[
+          styles.railTabLabel,
+          { color: active ? theme.colors.text : theme.colors.textMuted, fontFamily: active ? theme.typography.label.fontFamily : theme.typography.body.fontFamily },
+        ]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function SuggestedSellerRow({
+  seller,
+  onFollow,
+  theme,
+}: {
+  seller: SellerProfile;
+  onFollow: () => void;
+  theme: ReturnType<typeof useAppTheme>;
+}) {
+  const { t } = useLocale();
+  const cuisineLabel = seller.cuisineSpecialties[0] ? getCuisineLabel(seller.cuisineSpecialties[0]) : undefined;
+
+  return (
+    <Pressable onPress={() => router.push(`/seller/${seller.id}`)} style={styles.suggestedRow}>
+      <View style={[styles.suggestedAvatar, { backgroundColor: theme.colors.accentTint }]}>
+        <Text style={[styles.suggestedAvatarText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
+          {seller.brandName.slice(0, 2).toUpperCase()}
+        </Text>
+      </View>
+      <View style={styles.suggestedCopy}>
+        <Text style={[styles.suggestedName, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]} numberOfLines={1}>
+          {seller.brandName}
+        </Text>
+        <Text style={[styles.suggestedMeta, { color: theme.colors.textMuted }]} numberOfLines={1}>
+          {[cuisineLabel, seller.city].filter(Boolean).join(' · ')}
+        </Text>
+      </View>
+      <Pressable
+        onPress={onFollow}
+        style={[styles.suggestedFollow, { borderColor: theme.colors.text, borderRadius: theme.radii.pill }]}>
+        <Text style={[styles.suggestedFollowText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
+          {t('postCard.follow')}
+        </Text>
+      </Pressable>
+    </Pressable>
+  );
+}
+
+function SegmentButton({
+  active,
+  label,
+  onPress,
+  theme,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+  theme: ReturnType<typeof useAppTheme>;
 }) {
   return (
     <Pressable
       onPress={onPress}
       style={[
-        styles.chip,
-        {
-          backgroundColor: active ? theme.colors.accentTint : theme.colors.surface,
-          borderColor: active ? theme.colors.accent : theme.colors.border,
-          borderWidth: active ? 1.5 : 1,
-        },
+        styles.segmentButton,
+        active ? { backgroundColor: theme.colors.surface, borderRadius: theme.radii.sm + 1 } : null,
+        active ? theme.shadows.sm : null,
       ]}>
-      <Text style={[styles.chipLabel, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function SpotlightCard({
-  listing,
-  sellerName,
-  isAdding,
-  onAdd,
-  theme,
-  t,
-}: {
-  listing: Listing;
-  sellerName?: string;
-  isAdding: boolean;
-  onAdd: () => void;
-  theme: AppTheme;
-  t: (key: string, vars?: Record<string, string | number>) => string;
-}) {
-  const image = getPrimaryListingImage(listing);
-  const discountPct = listing.compareAtPrice
-    ? Math.round((1 - listing.price.amountCents / listing.compareAtPrice.amountCents) * 100)
-    : undefined;
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  return (
-    <View
-      style={[
-        styles.spotlightCard,
-        { backgroundColor: theme.colors.surface, borderRadius: theme.radii.xl },
-        theme.dark ? { borderWidth: 1, borderColor: theme.colors.border } : theme.shadows.md,
-      ]}>
-      <View style={[styles.spotlightMedia, { backgroundColor: theme.colors.accentTint }]}>
-        {image?.url ? <Image contentFit="cover" source={{ uri: image.url }} style={StyleSheet.absoluteFillObject} transition={200} /> : null}
-
-        {discountPct && discountPct > 0 ? (
-          <View style={[styles.discountBadge, { backgroundColor: theme.colors.secondary }]}>
-            <Text style={[styles.discountBadgeText, { color: theme.colors.onSecondary, fontFamily: theme.typography.micro.fontFamily }]}>
-              −{discountPct}%
-            </Text>
-          </View>
-        ) : null}
-
-        <Pressable
-          accessibilityLabel={t('common.favorite')}
-          onPress={() => setIsFavorite((current) => !current)}
-          style={[styles.favoriteButton, { backgroundColor: 'rgba(255,255,255,0.95)' }]}>
-          <SymbolView
-            tintColor={isFavorite ? theme.colors.secondaryStrong : theme.colors.text}
-            size={18}
-            name={isFavorite ? { ios: 'heart.fill', android: 'favorite', web: 'favorite' } : { ios: 'heart', android: 'favorite_border', web: 'favorite_border' }}
-          />
-        </Pressable>
-      </View>
-
-      <View style={styles.spotlightBody}>
-        <View style={styles.spotlightInfo}>
-          <Text style={[styles.spotlightTitle, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-            {listing.title}
-          </Text>
-          {sellerName ? <Text style={[styles.muted, { color: theme.colors.textMuted }]}>{sellerName}</Text> : null}
-
-          <View style={styles.priceRow}>
-            <Text style={[styles.price, { color: theme.colors.secondaryText, fontFamily: theme.typography.heading.fontFamily }]}>
-              {formatMoney(listing.price)}
-            </Text>
-            {listing.compareAtPrice ? (
-              <Text style={[styles.comparePrice, { color: theme.colors.textMuted }]}>{formatMoney(listing.compareAtPrice)}</Text>
-            ) : null}
-          </View>
-
-          <View style={styles.metaRow}>
-            <SymbolView tintColor={theme.colors.textMuted} size={14} name={{ ios: 'clock', android: 'schedule', web: 'schedule' }} />
-            <Text style={[styles.muted, { color: theme.colors.textMuted }]}>{getDeliveryModeLabel(listing.deliveryMode)}</Text>
-          </View>
-        </View>
-
-        <Pressable
-          accessibilityLabel={t('common.addToCart')}
-          disabled={isAdding}
-          onPress={onAdd}
-          style={[styles.addButton, { backgroundColor: theme.colors.accent, opacity: isAdding ? theme.motion.disabledOpacity : 1 }, theme.shadows.accent]}>
-          <SymbolView tintColor={theme.colors.onAccent} size={22} name={{ ios: 'plus', android: 'add', web: 'add' }} />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function NearbyRow({ seller, theme }: { seller: SellerProfile; theme: AppTheme }) {
-  const cuisineLabel = seller.cuisineSpecialties[0] ? getCuisineLabel(seller.cuisineSpecialties[0]) : undefined;
-
-  return (
-    <Pressable onPress={() => router.push(`/seller/${seller.id}`)} style={styles.nearbyRow}>
-      <View style={[styles.nearbyThumb, { backgroundColor: theme.colors.accentTint }]}>
-        {seller.coverImageUrl ? (
-          <Image contentFit="cover" source={{ uri: seller.coverImageUrl }} style={StyleSheet.absoluteFillObject} transition={200} />
-        ) : null}
-      </View>
-      <View style={styles.nearbyInfo}>
-        <Text style={[styles.nearbyName, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-          {seller.brandName}
-        </Text>
-        <Text style={[styles.muted, { color: theme.colors.textMuted }]} numberOfLines={1}>
-          {[cuisineLabel, seller.city].filter(Boolean).join(' · ')}
-        </Text>
-        <View style={styles.nearbyBadges}>
-          {seller.ratingAverage ? (
-            <View style={[styles.badge, { backgroundColor: theme.colors.accentTint }]}>
-              <Text style={[styles.badgeText, { color: theme.colors.text, fontFamily: theme.typography.micro.fontFamily }]}>
-                ★ {seller.ratingAverage.toFixed(1)}
-              </Text>
-            </View>
-          ) : null}
-          <View style={[styles.badge, { backgroundColor: theme.colors.surfaceMuted }]}>
-            <Text style={[styles.badgeText, { color: theme.colors.text, fontFamily: theme.typography.micro.fontFamily }]}>
-              {seller.deliveryModes.map((mode) => getDeliveryModeLabel(mode)).join(' + ')}
-            </Text>
-          </View>
-        </View>
-      </View>
+      <Text
+        style={[
+          styles.segmentLabel,
+          { color: active ? theme.colors.text : theme.colors.textMuted, fontFamily: active ? theme.typography.label.fontFamily : theme.typography.caption.fontFamily },
+        ]}
+        numberOfLines={1}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  scrollContent: { paddingTop: 6, paddingHorizontal: 20, gap: 4 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 6, paddingBottom: 12 },
+  title: { fontSize: 28, lineHeight: 34 },
+  createButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  addressBlock: { flex: 1, gap: 2 },
-  addressLine: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addressText: { fontSize: 17, lineHeight: 24, flexShrink: 1 },
-  muted: { fontSize: 13, lineHeight: 18 },
-  bellButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  bellDot: { position: 'absolute', top: 9, right: 10, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
+  segmented: { flexDirection: 'row', marginHorizontal: 20, padding: 4, height: 40 },
+  segmentButton: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  segmentLabel: { fontSize: 13, lineHeight: 18 },
 
-  searchBar: {
-    marginTop: 16,
-    minHeight: 52,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  desktopRow: { flex: 1, flexDirection: 'row', maxWidth: 1280, width: '100%', alignSelf: 'center', gap: 32, paddingHorizontal: 32, paddingTop: 12 },
+  desktopRail: { width: 220, gap: 20 },
+  desktopTitle: { fontSize: 24, lineHeight: 30 },
+  desktopPublish: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 44, paddingHorizontal: 16 },
+  desktopPublishText: { fontSize: 14, lineHeight: 19 },
+  desktopRailTabs: { gap: 2 },
+  railTab: { paddingVertical: 10 },
+  railTabLabel: { fontSize: 15, lineHeight: 20 },
+  desktopFeedCol: { flex: 1, maxWidth: 620 },
+  desktopList: { paddingBottom: 40, gap: 24 },
+  desktopSuggestions: { width: 260 },
+  desktopSuggestionsContent: { gap: 16, paddingBottom: 40 },
+  desktopSuggestionsTitle: { fontSize: 17, lineHeight: 22, marginBottom: 4 },
+  suggestedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  suggestedAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  suggestedAvatarText: { fontSize: 13, lineHeight: 18 },
+  suggestedCopy: { flex: 1, minWidth: 0, gap: 1 },
+  suggestedName: { fontSize: 14, lineHeight: 19 },
+  suggestedMeta: { fontSize: 12, lineHeight: 16 },
+  suggestedFollow: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
+  suggestedFollowText: { fontSize: 12, lineHeight: 16 },
+
+  list: {
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+    gap: 24,
   },
-  searchPlaceholder: { flex: 1, fontSize: 15 },
 
-  chipRow: { marginTop: 16, gap: 8, paddingRight: 20 },
-  chip: { height: 36, borderRadius: 18, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
-  chipLabel: { fontSize: 13, lineHeight: 18 },
-
-  sectionTitle: { fontSize: 17, lineHeight: 24, marginTop: 24 },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 28 },
-  textButton: { fontSize: 13, lineHeight: 18, textDecorationLine: 'underline' },
-
-  spotlightCard: { marginTop: 12, overflow: 'hidden' },
-  spotlightMedia: { height: 168 },
-  discountBadge: { position: 'absolute', left: 12, top: 12, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4 },
-  discountBadgeText: { fontSize: 11, lineHeight: 14 },
-  favoriteButton: { position: 'absolute', right: 12, top: 12, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  spotlightBody: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: 14 },
-  spotlightInfo: { flex: 1, gap: 4 },
-  spotlightTitle: { fontSize: 17, lineHeight: 24 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginTop: 4 },
-  price: { fontSize: 17, lineHeight: 24 },
-  comparePrice: { fontSize: 13, lineHeight: 18, textDecorationLine: 'line-through' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
-  addButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-
-  nearbyList: { marginTop: 14, gap: 14 },
-  nearbyRow: { flexDirection: 'row', gap: 12 },
-  nearbyThumb: { width: 76, height: 76, borderRadius: 12, overflow: 'hidden' },
-  nearbyInfo: { flex: 1, justifyContent: 'center', gap: 3 },
-  nearbyName: { fontSize: 15, lineHeight: 20 },
-  nearbyBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
-  badge: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  badgeText: { fontSize: 11, lineHeight: 14 },
+  empty: { paddingTop: 40, alignItems: 'center', gap: 6, paddingHorizontal: 20 },
+  emptyTitle: { fontSize: 17, lineHeight: 24 },
+  emptyBody: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
 });

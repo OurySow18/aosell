@@ -1,0 +1,326 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import type { ComponentProps } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ListRenderItemInfo, ViewToken } from 'react-native';
+import { Alert, Animated, FlatList, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { EmptyState } from '@/components/ui/empty-state';
+import { useLocale } from '@/hooks/use-locale';
+import { buildPostShareMessage } from '@/lib/posts';
+import { PostRepository } from '@/repositories/post-repository';
+import { useAosell } from '@/providers/aosell-provider';
+import { useVideoSound } from '@/providers/video-sound-provider';
+import type { Post, SellerProfile } from '@/types/domain';
+
+const DOUBLE_TAP_WINDOW_MS = 280;
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 70 };
+
+type SymbolName = ComponentProps<typeof SymbolView>['name'];
+
+// Full-screen, video-only, swipe-through viewer — the Reels/TikTok counterpart
+// to the card-based Home feed. Tapping a video anywhere else in the app (see
+// post-card.tsx's onSingleTap) lands here, deep-linked to that exact post via
+// the postId param.
+export default function ReelsScreen() {
+  const { t } = useLocale();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ postId?: string }>();
+  const requestedPostId = Array.isArray(params.postId) ? params.postId[0] : params.postId;
+  const { feedPosts, currentSellerProfile, getSellerById, followedSellerIds, toggleFollow, toggleLike, deletePost } = useAosell();
+
+  const reels = useMemo(() => feedPosts.filter((post) => post.mediaType === 'video' && post.mediaUrl), [feedPosts]);
+
+  const [itemHeight, setItemHeight] = useState(0);
+  const [activePostId, setActivePostId] = useState<string | undefined>(reels[0]?.id);
+  const listRef = useRef<FlatList<Post>>(null);
+  const appliedDeepLinkFor = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!requestedPostId || !itemHeight || !reels.length || appliedDeepLinkFor.current === requestedPostId) {
+      return;
+    }
+    const index = reels.findIndex((post) => post.id === requestedPostId);
+    if (index < 0) {
+      return;
+    }
+    appliedDeepLinkFor.current = requestedPostId;
+    setActivePostId(requestedPostId);
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex({ animated: false, index });
+    });
+  }, [requestedPostId, itemHeight, reels]);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const firstVisible = viewableItems.find((item) => item.isViewable);
+    if (firstVisible?.item) {
+      setActivePostId((firstVisible.item as Post).id);
+    }
+  }).current;
+
+  const getItemLayout = useCallback(
+    (_: ArrayLike<Post> | null | undefined, index: number) => ({ length: itemHeight, offset: itemHeight * index, index }),
+    [itemHeight]
+  );
+
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<Post>) => (
+      <ReelItem
+        height={itemHeight}
+        isActive={item.id === activePostId}
+        isOwner={currentSellerProfile?.id === item.sellerId}
+        isFollowing={followedSellerIds.includes(item.sellerId)}
+        onDelete={() => void deletePost(item.id)}
+        onFollow={() => void toggleFollow(item.sellerId, !followedSellerIds.includes(item.sellerId))}
+        onLike={(liked) => void toggleLike(item.id, liked)}
+        post={item}
+        seller={getSellerById(item.sellerId)}
+      />
+    ),
+    [activePostId, currentSellerProfile?.id, deletePost, followedSellerIds, getSellerById, itemHeight, toggleFollow, toggleLike]
+  );
+
+  return (
+    <View onLayout={(event) => setItemHeight(event.nativeEvent.layout.height)} style={styles.root}>
+      {itemHeight > 0 ? (
+        reels.length ? (
+          <FlatList
+            data={reels}
+            decelerationRate="fast"
+            getItemLayout={getItemLayout}
+            initialNumToRender={2}
+            keyExtractor={(item) => item.id}
+            maxToRenderPerBatch={2}
+            onScrollToIndexFailed={() => undefined}
+            onViewableItemsChanged={onViewableItemsChanged}
+            pagingEnabled
+            ref={listRef}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+            snapToInterval={itemHeight}
+            viewabilityConfig={VIEWABILITY_CONFIG}
+            windowSize={3}
+          />
+        ) : (
+          <View style={[styles.empty, { paddingTop: insets.top + 60 }]}>
+            <EmptyState description={t('reels.emptyDescription')} title={t('reels.emptyTitle')} />
+          </View>
+        )
+      ) : null}
+
+      <View pointerEvents="none" style={[styles.titleBar, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.titleText}>{t('tabs.reels')}</Text>
+      </View>
+    </View>
+  );
+}
+
+function ReelItem({
+  height,
+  isActive,
+  isFollowing,
+  isOwner,
+  onDelete,
+  onFollow,
+  onLike,
+  post,
+  seller,
+}: {
+  height: number;
+  isActive: boolean;
+  isFollowing: boolean;
+  isOwner: boolean;
+  onDelete: () => void;
+  onFollow: () => void;
+  onLike: (liked: boolean) => void;
+  post: Post;
+  seller: SellerProfile | undefined;
+}) {
+  const { t } = useLocale();
+  const insets = useSafeAreaInsets();
+  const { currentUser } = useAosell();
+  const { soundOn, toggleSound } = useVideoSound();
+  const player = useVideoPlayer(post.mediaUrl ?? '', (instance) => {
+    instance.loop = true;
+    instance.muted = !soundOn;
+  });
+
+  const [liked, setLiked] = useState(false);
+  const heartAnim = useRef(new Animated.Value(0)).current;
+  const lastTapRef = useRef(0);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLiked(false);
+      return;
+    }
+    return PostRepository.subscribeLikeStatus(post.id, currentUser.id, setLiked);
+  }, [post.id, currentUser?.id]);
+
+  useEffect(() => {
+    if (isActive) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isActive, player]);
+
+  useEffect(() => {
+    player.muted = !soundOn;
+  }, [player, soundOn]);
+
+  function playHeartBurst() {
+    heartAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(heartAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
+      Animated.timing(heartAnim, { toValue: 0, duration: 120, delay: 60, useNativeDriver: true }),
+    ]).start();
+  }
+
+  function handleLikeToggle(nextLiked: boolean) {
+    if (!currentUser) {
+      router.push({ pathname: '/auth', params: { mode: 'signup', role: 'buyer' } });
+      return;
+    }
+    setLiked(nextLiked);
+    onLike(nextLiked);
+  }
+
+  function handlePress() {
+    const now = Date.now();
+    if (now - lastTapRef.current < DOUBLE_TAP_WINDOW_MS) {
+      lastTapRef.current = 0;
+      if (currentUser) {
+        playHeartBurst();
+        if (!liked) {
+          handleLikeToggle(true);
+        }
+      }
+    } else {
+      lastTapRef.current = now;
+    }
+  }
+
+  function handleShare() {
+    void Share.share({ message: buildPostShareMessage({ caption: post.caption, postId: post.id }) });
+  }
+
+  function handleMore() {
+    Alert.alert(t('postCard.moreAction'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.modify'), onPress: () => router.push(`/post/edit/${post.id}`) },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert(t('postDetail.deleteTitle'), t('postDetail.deleteDescription'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('common.delete'), style: 'destructive', onPress: onDelete },
+          ]);
+        },
+      },
+    ]);
+  }
+
+  return (
+    <View style={[styles.item, { height }]}>
+      <Pressable onPress={handlePress} style={StyleSheet.absoluteFillObject}>
+        <VideoView contentFit="cover" nativeControls={false} player={player} pointerEvents="none" style={StyleSheet.absoluteFillObject} />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.heartBurst,
+            { opacity: heartAnim, transform: [{ scale: heartAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.2] }) }] },
+          ]}>
+          <SymbolView name={{ ios: 'heart.fill', android: 'favorite', web: 'favorite' }} size={96} tintColor="#FFFFFF" />
+        </Animated.View>
+      </Pressable>
+
+      <View style={[styles.actionColumn, { bottom: insets.bottom + 110 }]}>
+        <ReelAction
+          count={post.likeCount}
+          icon={liked ? { ios: 'heart.fill', android: 'favorite', web: 'favorite' } : { ios: 'heart', android: 'favorite_border', web: 'favorite_border' }}
+          onPress={() => handleLikeToggle(!liked)}
+          tint={liked ? '#FF3B5C' : '#FFFFFF'}
+        />
+        <ReelAction
+          count={post.commentCount}
+          icon={{ ios: 'bubble.right', android: 'chat_bubble_outline', web: 'chat_bubble_outline' }}
+          onPress={() => router.push(`/post/${post.id}`)}
+          tint="#FFFFFF"
+        />
+        <ReelAction
+          icon={{ ios: 'arrowshape.turn.up.right', android: 'share', web: 'share' }}
+          onPress={handleShare}
+          tint="#FFFFFF"
+        />
+        <ReelAction
+          icon={soundOn ? { ios: 'speaker.wave.2.fill', android: 'volume_up', web: 'volume_up' } : { ios: 'speaker.slash.fill', android: 'volume_off', web: 'volume_off' }}
+          onPress={toggleSound}
+          tint="#FFFFFF"
+        />
+        {isOwner ? <ReelAction icon={{ ios: 'ellipsis', android: 'more_vert', web: 'more_vert' }} onPress={handleMore} tint="#FFFFFF" /> : null}
+      </View>
+
+      <View style={[styles.bottomCopy, { bottom: insets.bottom + 18 }]}>
+        <View style={styles.sellerRow}>
+          <Text style={styles.sellerName}>{seller?.brandName ?? t('listingDetail.sellerFallback')}</Text>
+          {!isOwner ? (
+            <Pressable onPress={onFollow} style={[styles.followPill, isFollowing && styles.followPillActive]}>
+              <Text style={styles.followPillText}>{isFollowing ? t('postCard.following') : t('postCard.follow')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        {post.caption ? (
+          <Text numberOfLines={2} style={styles.caption}>
+            {post.caption}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function ReelAction({
+  count,
+  icon,
+  onPress,
+  tint,
+}: {
+  count?: number;
+  icon: SymbolName;
+  onPress: () => void;
+  tint: string;
+}) {
+  return (
+    <Pressable onPress={onPress} style={styles.actionButton}>
+      <SymbolView name={icon} size={28} tintColor={tint} />
+      {typeof count === 'number' && count > 0 ? <Text style={styles.actionCount}>{count}</Text> : null}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#000000' },
+  item: { width: '100%', backgroundColor: '#000000' },
+  empty: { paddingHorizontal: 20 },
+
+  titleBar: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center' },
+  titleText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+
+  heartBurst: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+
+  actionColumn: { position: 'absolute', right: 12, alignItems: 'center', gap: 20 },
+  actionButton: { alignItems: 'center', gap: 4 },
+  actionCount: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+
+  bottomCopy: { position: 'absolute', left: 16, right: 84, gap: 6 },
+  sellerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sellerName: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  followPill: { borderWidth: 1, borderColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+  followPillActive: { borderColor: 'rgba(255,255,255,0.5)' },
+  followPillText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
+  caption: { color: '#FFFFFF', fontSize: 14, lineHeight: 19 },
+});

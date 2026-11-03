@@ -19,8 +19,9 @@ const LANGUAGE_OPTIONS: { value: Locale; label: string }[] = [
 ];
 
 const NAV_ITEMS = [
-  { href: '/search', labelKey: 'webHeader.restaurants', match: ['/search', '/home'] },
-  { href: '/feed', labelKey: 'webHeader.feed', match: ['/feed'] },
+  { href: '/home', labelKey: 'webHeader.feed', match: ['/home'] },
+  { href: '/search', labelKey: 'webHeader.restaurants', match: ['/search'] },
+  { href: '/reels', labelKey: 'webHeader.reels', match: ['/reels'] },
   { href: '/orders', labelKey: 'webHeader.orders', match: ['/orders'] },
   { href: '/partner', labelKey: 'webHeader.becomePartner', match: ['/partner'] },
 ] as const;

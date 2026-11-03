@@ -231,7 +231,7 @@ export default function CreatePostScreen() {
       });
 
       if (result) {
-        router.replace('/(tabs)/feed');
+        router.replace('/(tabs)/home');
       }
     } catch (submitError) {
       // TEMPORARY: append the raw Firebase/SDK code so we can see exactly

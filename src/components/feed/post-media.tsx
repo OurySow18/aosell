@@ -18,17 +18,47 @@ function formatDuration(seconds: number) {
   return `${minutes}:${remainder.toString().padStart(2, '0')}`;
 }
 
-export function PostMedia({ post, isActive = false, onDoubleTap }: { post: Post; isActive?: boolean; onDoubleTap?: () => void }) {
+export function PostMedia({
+  post,
+  isActive = false,
+  onDoubleTap,
+  onSingleTap,
+}: {
+  post: Post;
+  isActive?: boolean;
+  onDoubleTap?: () => void;
+  onSingleTap?: () => void;
+}) {
   const theme = useAppTheme();
   const lastTapRef = useRef(0);
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (singleTapTimer.current) {
+        clearTimeout(singleTapTimer.current);
+      }
+    },
+    []
+  );
 
   function handlePress() {
     const now = Date.now();
     if (now - lastTapRef.current < DOUBLE_TAP_WINDOW_MS) {
+      if (singleTapTimer.current) {
+        clearTimeout(singleTapTimer.current);
+        singleTapTimer.current = null;
+      }
       onDoubleTap?.();
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
+      if (onSingleTap) {
+        singleTapTimer.current = setTimeout(() => {
+          singleTapTimer.current = null;
+          onSingleTap();
+        }, DOUBLE_TAP_WINDOW_MS);
+      }
     }
   }
 

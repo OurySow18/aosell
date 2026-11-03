@@ -67,13 +67,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="feed"
+        name="reels"
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
-              label={t('tabs.feed')}
+              label={t('tabs.reels')}
               icon={{ ios: 'play.rectangle.on.rectangle', android: 'dynamic_feed', web: 'dynamic_feed' }}
+              iconActive={{ ios: 'play.rectangle.fill', android: 'dynamic_feed', web: 'dynamic_feed' }}
               theme={theme}
             />
           ),
