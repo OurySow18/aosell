@@ -1,40 +1,36 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
-import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { StatusPill } from '@/components/ui/status-pill';
-import { useAppTheme, useThemeMode, type ThemeMode } from '@/hooks/use-theme';
+import { MaxContentWidth } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useAosell } from '@/providers/aosell-provider';
+import type { Post } from '@/types/domain';
+
+type AppTheme = ReturnType<typeof useAppTheme>;
+type ContentTab = 'all' | 'reels';
+
+const GRID_GAP = 2;
+const GRID_COLUMNS = 3;
 
 export default function ProfileScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
-  const { themeMode, setThemeMode } = useThemeMode();
-  const { currentUser, userProfile, addresses, currentSellerProfile, logout, notifications } = useAosell();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const themeModeOptions: { value: ThemeMode; label: string }[] = [
-    { value: 'system', label: t('profileScreen.appearanceSystem') },
-    { value: 'light', label: t('profileScreen.appearanceLight') },
-    { value: 'dark', label: t('profileScreen.appearanceDark') },
-  ];
+  const { width } = useWindowDimensions();
+  const { currentUser, userProfile, currentSellerProfile, feedPosts } = useAosell();
+  const [contentTab, setContentTab] = useState<ContentTab>('all');
 
   function openSignIn() {
     router.push({ pathname: '/auth', params: { mode: 'signin', returnTo: '/profile' } });
-  }
-
-  function handleLogout() {
-    if (isLoggingOut) {
-      return;
-    }
-    setIsLoggingOut(true);
-    void logout().finally(() => setIsLoggingOut(false));
   }
 
   if (!currentUser) {
@@ -51,20 +47,41 @@ export default function ProfileScreen() {
       <AppScreen>
         <EmptyState title={t('profileScreen.loadingTitle')} description={t('profileScreen.loadingDescription')} />
         <Text style={[styles.loadingEmail, { color: theme.colors.textMuted }]}>{currentUser.email}</Text>
-        <AppButton fullWidth disabled={isLoggingOut} label={t('common.logout')} variant="danger" onPress={handleLogout} />
       </AppScreen>
     );
   }
 
-  const unreadCount = notifications.filter((item) => !item.isRead).length;
+  const myPosts = currentSellerProfile ? feedPosts.filter((post) => post.sellerId === currentSellerProfile.id) : [];
+  const visiblePosts = contentTab === 'reels' ? myPosts.filter((post) => post.mediaType === 'video') : myPosts;
+
+  const contentWidth = Math.min(width, MaxContentWidth) - 40;
+  const tileSize = (contentWidth - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
+
+  function openPost(post: Post) {
+    if (post.mediaType === 'video') {
+      router.push({ pathname: '/reels', params: { postId: post.id } });
+    } else {
+      router.push(`/post/${post.id}`);
+    }
+  }
 
   return (
     <AppScreen>
-      <SectionTitle
-        eyebrow={t('profileScreen.eyebrow')}
-        title={userProfile.displayName}
-        description={userProfile.bio ?? t('profileScreen.fallbackDescription')}
-      />
+      <View style={styles.headerRow}>
+        <View style={styles.headerTitleWrap}>
+          <SectionTitle
+            eyebrow={t('profileScreen.eyebrow')}
+            title={userProfile.displayName}
+            description={userProfile.bio ?? t('profileScreen.fallbackDescription')}
+          />
+        </View>
+        <Pressable
+          accessibilityLabel={t('profileScreen.settingsAction')}
+          onPress={() => router.push('/settings')}
+          style={[styles.settingsButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }} />
+        </Pressable>
+      </View>
 
       <View style={[styles.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
         <View style={styles.heroTop}>
@@ -86,81 +103,106 @@ export default function ProfileScreen() {
           <StatusPill label={currentUser.role === 'seller' ? t('auth.seller') : t('auth.buyer')} tone="brand" />
           {currentSellerProfile ? <StatusPill label={t('profileScreen.sellerProfileActive')} tone="success" /> : null}
         </View>
+        <View style={styles.statsRow}>
+          <Text style={[styles.statValue, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+            {myPosts.length}
+          </Text>
+          <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('profileScreen.postsStat')}</Text>
+        </View>
       </View>
 
-      <View style={styles.statsRow}>
-        <StatBlock theme={theme} label={t('profileScreen.addresses')} value={String(addresses.length)} />
-        <StatBlock theme={theme} label={t('profileScreen.alerts')} value={String(unreadCount)} />
-      </View>
+      <SegmentedControl
+        onChange={setContentTab}
+        options={[
+          { value: 'all', label: t('profileScreen.tabAll') },
+          { value: 'reels', label: t('profileScreen.tabReels') },
+        ]}
+        value={contentTab}
+      />
 
-      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-        <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-          {t('profileScreen.savedAddresses')}
-        </Text>
-        {addresses.length ? (
-          addresses.map((address) => (
-            <View
-              key={address.id}
-              style={[styles.address, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border, borderRadius: theme.radii.md }]}>
-              <Text style={[styles.body, { color: theme.colors.text, fontFamily: theme.typography.body.fontFamily }]}>{address.fullName}</Text>
-              <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>
-                {address.line1}, {address.postalCode} {address.city}
-              </Text>
-            </View>
-          ))
-        ) : (
-          <Text style={[styles.bodySmall, { color: theme.colors.textMuted }]}>{t('profileScreen.noSavedAddresses')}</Text>
-        )}
-      </View>
-
-      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-        <LanguageSwitcher />
-      </View>
-
-      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-        <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-          {t('profileScreen.appearance')}
-        </Text>
-        <SegmentedControl options={themeModeOptions} value={themeMode} onChange={(mode) => void setThemeMode(mode)} />
-      </View>
-
-      <View style={styles.actions}>
-        <AppButton fullWidth label={`${t('common.notifications')} (${unreadCount})`} onPress={() => router.push('/notifications')} />
-        <AppButton fullWidth label={t('common.viewAllOrders')} variant="secondary" onPress={() => router.push('/orders')} />
-        <AppButton fullWidth label={t('common.sellerCenter')} variant="secondary" onPress={() => router.push('/seller-center')} />
-        <AppButton fullWidth disabled={isLoggingOut} label={t('common.logout')} variant="danger" onPress={handleLogout} />
-        <AppButton fullWidth label={t('deleteAccount.deleteButton')} variant="ghost" onPress={() => router.push('/delete-account')} />
-      </View>
+      {visiblePosts.length ? (
+        <View style={styles.grid}>
+          {visiblePosts.map((post, index) => (
+            <PostGridTile
+              key={post.id}
+              onPress={() => openPost(post)}
+              post={post}
+              size={tileSize}
+              style={{
+                marginRight: (index + 1) % GRID_COLUMNS === 0 ? 0 : GRID_GAP,
+                marginBottom: GRID_GAP,
+              }}
+              theme={theme}
+            />
+          ))}
+        </View>
+      ) : (
+        <View style={styles.emptyGrid}>
+          <EmptyState
+            description={t(contentTab === 'reels' ? 'profileScreen.noReelsDescription' : 'profileScreen.noPostsDescription')}
+            title={t(contentTab === 'reels' ? 'profileScreen.noReelsTitle' : 'profileScreen.noPostsTitle')}
+          />
+          <AppButton fullWidth label={t('common.createPost')} onPress={() => router.push('/post/create')} />
+        </View>
+      )}
     </AppScreen>
   );
 }
 
-type AppTheme = ReturnType<typeof useAppTheme>;
-
-function StatBlock({ theme, label, value }: { theme: AppTheme; label: string; value: string }) {
+function PostGridTile({
+  onPress,
+  post,
+  size,
+  style,
+  theme,
+}: {
+  onPress: () => void;
+  post: Post;
+  size: number;
+  style: { marginRight: number; marginBottom: number };
+  theme: AppTheme;
+}) {
   return (
-    <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-      <Text style={[styles.label, { color: theme.colors.textMuted, fontFamily: theme.typography.micro.fontFamily }]}>{label}</Text>
-      <Text style={[styles.heading, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>{value}</Text>
-    </View>
+    <Pressable onPress={onPress} style={[{ width: size, height: size, overflow: 'hidden' }, style]}>
+      {post.mediaType === 'image' && post.mediaUrl ? (
+        <Image contentFit="cover" source={{ uri: post.mediaUrl }} style={StyleSheet.absoluteFillObject} />
+      ) : post.mediaType === 'video' ? (
+        <View style={[StyleSheet.absoluteFillObject, styles.videoTile, { backgroundColor: theme.colors.accentTint }]}>
+          <SymbolView tintColor={theme.colors.text} size={22} name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} />
+        </View>
+      ) : (
+        <View style={[StyleSheet.absoluteFillObject, styles.textTile, { backgroundColor: theme.colors.text }]}>
+          <Text numberOfLines={5} style={styles.textTileCaption}>
+            {post.caption}
+          </Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  headerTitleWrap: { flex: 1, minWidth: 0 },
+  settingsButton: { width: 40, height: 40, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+
   heroCard: { borderWidth: 1, padding: 20, gap: 16 },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   heroCopy: { gap: 4, flex: 1 },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  statCard: { borderWidth: 1, padding: 16, gap: 4, minWidth: 140, flexGrow: 1 },
-  card: { borderWidth: 1, padding: 16, gap: 12 },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  address: { borderWidth: 1, padding: 12, gap: 4 },
-  actions: { gap: 12 },
+  statsRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  statValue: { fontSize: 20, lineHeight: 25 },
+  statLabel: { fontSize: 13, lineHeight: 18 },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  videoTile: { alignItems: 'center', justifyContent: 'center' },
+  textTile: { padding: 8, justifyContent: 'center' },
+  textTileCaption: { color: '#FFFFFF', fontSize: 11, lineHeight: 14 },
+
+  emptyGrid: { gap: 12 },
+
   loadingEmail: { textAlign: 'center', fontSize: 13, lineHeight: 18 },
-  label: { fontSize: 11, lineHeight: 14, textTransform: 'uppercase', letterSpacing: 0.2 },
   title: { fontSize: 22, lineHeight: 28 },
-  heading: { fontSize: 17, lineHeight: 22 },
   body: { fontSize: 15, lineHeight: 21 },
-  bodySmall: { fontSize: 13, lineHeight: 18 },
 });
