@@ -113,6 +113,7 @@ type AosellContextValue = {
   signInWithGoogle: (role: Extract<AppUser['role'], 'buyer' | 'seller'>) => Promise<AppUser | null>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
+  updateUserProfile: (input: { displayName: string; avatarUrl?: string }) => Promise<void>;
   createSellerProfile: (input: CreateSellerProfileInput) => Promise<SellerProfile | null>;
   ensureSellerProfile: () => Promise<SellerProfile | null>;
   setSellerOpen: (isOpen: boolean) => Promise<void>;
@@ -369,6 +370,14 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     setCurrentUser(null);
     setCurrentSellerProfile(null);
     setCart(null);
+  }
+
+  async function updateUserProfile(input: { displayName: string; avatarUrl?: string }) {
+    if (!currentUser) {
+      return;
+    }
+    await UserRepository.updateProfile(currentUser.id, input);
+    setUserProfile((current) => (current ? { ...current, displayName: input.displayName, avatarUrl: input.avatarUrl } : current));
   }
 
   async function createSellerProfile(input: CreateSellerProfileInput) {
@@ -764,6 +773,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         signInWithGoogle,
         logout,
         deleteAccount,
+        updateUserProfile,
         createSellerProfile,
         ensureSellerProfile,
         setSellerOpen,

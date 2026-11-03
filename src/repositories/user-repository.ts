@@ -1,16 +1,19 @@
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   onSnapshot,
   orderBy,
   query,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/config';
 import { logFirestoreListenerError } from '@/lib/firebase/listener-errors';
 import {
+  createTimestamp,
   fromFirestoreAddressDoc,
   fromFirestoreUserProfileDoc,
   toFirestoreAddressDoc,
@@ -145,6 +148,18 @@ export const UserRepository = {
         onChange([]);
       }
     );
+  },
+
+  // Only the identity fields a person edits themselves — not city/country/bio,
+  // which are set elsewhere (onboarding, addresses). avatarUrl uses
+  // deleteField() rather than omission when cleared: updateDoc only touches
+  // the keys given here, so an omitted key is left as-is, not removed.
+  async updateProfile(userId: string, input: { displayName: string; avatarUrl?: string }) {
+    await updateDoc(doc(db, 'user_profiles', userId), {
+      displayName: input.displayName,
+      avatarUrl: input.avatarUrl ?? deleteField(),
+      updatedAt: createTimestamp(),
+    });
   },
 
   async addAddress(

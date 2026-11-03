@@ -497,6 +497,17 @@ export const translations = {
       eyebrow: 'Settings',
       title: 'Settings',
     },
+    editProfile: {
+      eyebrow: 'Profile',
+      title: 'Edit profile',
+      changePhoto: 'Change photo',
+      nameLabel: 'Name',
+      namePlaceholder: 'Your name',
+      save: 'Save',
+      saving: 'Saving…',
+      errorTitle: 'Permission needed',
+      errorDescription: 'Allow access to your photos to change your profile picture.',
+    },
     addScreen: {
       noAccountTitle: 'Seller tools need an account',
       noAccountDescription: 'Create an account first, then set up your seller profile and start your store.',
@@ -1297,6 +1308,17 @@ export const translations = {
       eyebrow: 'Configuration',
       title: 'Configuration',
     },
+    editProfile: {
+      eyebrow: 'Profil',
+      title: 'Modifier le profil',
+      changePhoto: 'Changer la photo',
+      nameLabel: 'Nom',
+      namePlaceholder: 'Votre nom',
+      save: 'Enregistrer',
+      saving: 'Enregistrement…',
+      errorTitle: 'Autorisation requise',
+      errorDescription: 'Autorisez l’accès à vos photos pour changer votre photo de profil.',
+    },
     addScreen: {
       noAccountTitle: 'Les outils vendeur demandent un compte',
       noAccountDescription: 'Créez d’abord un compte, puis configurez votre profil vendeur et lancez votre boutique.',
@@ -2096,6 +2118,17 @@ export const translations = {
     settingsScreen: {
       eyebrow: 'Einstellungen',
       title: 'Einstellungen',
+    },
+    editProfile: {
+      eyebrow: 'Profil',
+      title: 'Profil bearbeiten',
+      changePhoto: 'Foto ändern',
+      nameLabel: 'Name',
+      namePlaceholder: 'Dein Name',
+      save: 'Speichern',
+      saving: 'Wird gespeichert…',
+      errorTitle: 'Zugriff erforderlich',
+      errorDescription: 'Erlaube den Zugriff auf deine Fotos, um dein Profilbild zu ändern.',
     },
     addScreen: {
       noAccountTitle: 'Verkäufer-Tools benötigen ein Konto',

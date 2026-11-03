@@ -86,9 +86,13 @@ export default function ProfileScreen() {
       <View style={[styles.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
         <View style={styles.heroTop}>
           <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-            <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
-              {userProfile.displayName.slice(0, 2).toUpperCase()}
-            </Text>
+            {userProfile.avatarUrl ? (
+              <Image contentFit="cover" source={{ uri: userProfile.avatarUrl }} style={StyleSheet.absoluteFillObject} />
+            ) : (
+              <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
+                {userProfile.displayName.slice(0, 2).toUpperCase()}
+              </Text>
+            )}
           </View>
           <View style={styles.heroCopy}>
             <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
@@ -109,6 +113,7 @@ export default function ProfileScreen() {
           </Text>
           <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('profileScreen.postsStat')}</Text>
         </View>
+        <AppButton fullWidth label={t('editProfile.title')} variant="secondary" onPress={() => router.push('/edit-profile')} />
       </View>
 
       <SegmentedControl
@@ -188,7 +193,7 @@ const styles = StyleSheet.create({
 
   heroCard: { borderWidth: 1, padding: 20, gap: 16 },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  avatar: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderWidth: 1, overflow: 'hidden' },
   heroCopy: { gap: 4, flex: 1 },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   statsRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },

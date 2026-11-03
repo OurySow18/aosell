@@ -314,8 +314,12 @@ export default function CreatePostScreen() {
         ) : null}
 
         <View style={styles.captionRow}>
-          <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint }]}>
-            <Text style={[styles.avatarText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>{avatarInitials}</Text>
+          <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint, overflow: 'hidden' }]}>
+            {userProfile?.avatarUrl ? (
+              <Image contentFit="cover" source={{ uri: userProfile.avatarUrl }} style={StyleSheet.absoluteFillObject} />
+            ) : (
+              <Text style={[styles.avatarText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>{avatarInitials}</Text>
+            )}
           </View>
           <TextInput
             multiline
