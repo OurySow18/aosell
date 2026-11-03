@@ -111,7 +111,7 @@ function VideoMedia({ uri, isActive, theme }: { uri: string; isActive: boolean; 
 const styles = StyleSheet.create({
   mediaFrame: {
     width: '100%',
-    aspectRatio: 390 / 360,
+    aspectRatio: 1,
     overflow: 'hidden',
   },
   textCard: {
