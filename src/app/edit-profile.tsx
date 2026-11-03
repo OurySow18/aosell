@@ -79,7 +79,10 @@ export default function EditProfileScreen() {
         const response = await fetch(pickedAvatarUri);
         const blob = await response.blob();
         const storageRef = ref(storage, `avatars/${currentUser.id}/avatar.jpg`);
-        await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+        // Unlike post media, this path gets overwritten every time the photo
+        // changes — a long cache would risk showing a stale photo after an
+        // update, so this stays short rather than immutable.
+        await uploadBytes(storageRef, blob, { contentType: 'image/jpeg', cacheControl: 'public, max-age=86400' });
         nextAvatarUrl = await getDownloadURL(storageRef);
       }
 

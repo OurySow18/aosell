@@ -203,7 +203,11 @@ export default function CreatePostScreen() {
         const extension = mediaMode === 'video' ? (selectedMedia.extension ?? 'mov') : 'jpg';
         const contentType = mediaMode === 'video' ? (selectedMedia.mimeType ?? 'video/quicktime') : 'image/jpeg';
         const storageRef = ref(storage, `post-media/${currentUser.id}/${postId}.${extension}`);
-        await uploadBytes(storageRef, blob, { contentType });
+        // postId is unique per post and this path is never overwritten, so the
+        // file at this URL never changes — safe to cache for a year and skip
+        // revalidation entirely (immutable), instead of re-fetching it on every
+        // view the way an uncached asset would.
+        await uploadBytes(storageRef, blob, { contentType, cacheControl: 'public, max-age=31536000, immutable' });
         mediaUrl = await getDownloadURL(storageRef);
         // Videos start out as the raw upload and get swapped for a
         // standardized, re-encoded version once the transcoding function
