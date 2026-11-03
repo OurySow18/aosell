@@ -54,13 +54,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="search"
+        name="reels"
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
-              label={t('tabs.search')}
-              icon={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
+              label={t('tabs.reels')}
+              icon={{ ios: 'play.rectangle.on.rectangle', android: 'dynamic_feed', web: 'dynamic_feed' }}
+              iconActive={{ ios: 'play.rectangle.fill', android: 'dynamic_feed', web: 'dynamic_feed' }}
               theme={theme}
             />
           ),
@@ -73,14 +74,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="reels"
+        name="search"
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon
               focused={focused}
-              label={t('tabs.reels')}
-              icon={{ ios: 'play.rectangle.on.rectangle', android: 'dynamic_feed', web: 'dynamic_feed' }}
-              iconActive={{ ios: 'play.rectangle.fill', android: 'dynamic_feed', web: 'dynamic_feed' }}
+              label={t('tabs.search')}
+              icon={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
               theme={theme}
             />
           ),
