@@ -22,6 +22,7 @@ import type {
   SellerType,
   UserProfile,
 } from '@/types/domain';
+import { useLocale } from '@/hooks/use-locale';
 import { AuthRepository } from '@/repositories/auth-repository';
 import { CartRepository } from '@/repositories/cart-repository';
 import { CondimentRepository } from '@/repositories/condiment-repository';
@@ -32,7 +33,7 @@ import { NotificationRepository } from '@/repositories/notification-repository';
 import { OrderRepository } from '@/repositories/order-repository';
 import { PostRepository } from '@/repositories/post-repository';
 import { SellerRepository } from '@/repositories/seller-repository';
-import { UserProfileSeed, UserRepository } from '@/repositories/user-repository';
+import { isPlaceholderDisplayName, UserProfileSeed, UserRepository } from '@/repositories/user-repository';
 import { demoCondiments, demoDishes, demoListings, demoPosts, demoSellers } from '@/services/mock-data';
 import { translate } from '@/lib/i18n';
 import { getNextStatuses } from '@/lib/utils/order';
@@ -113,6 +114,7 @@ type AosellContextValue = {
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   createSellerProfile: (input: CreateSellerProfileInput) => Promise<SellerProfile | null>;
+  ensureSellerProfile: () => Promise<SellerProfile | null>;
   setSellerOpen: (isOpen: boolean) => Promise<void>;
   saveListing: (input: SaveListingInput) => Promise<Listing | null>;
   getListingById: (id: string) => Listing | undefined;
@@ -120,15 +122,18 @@ type AosellContextValue = {
   getDishById: (id: string) => Dish | undefined;
   getPostById: (id: string) => Post | undefined;
   searchListings: (filters: ListingSearchFilters) => Listing[];
-  createPost: (input: {
-    mediaType: PostMediaType;
-    mediaUrl?: string;
-    mediaWidth?: number;
-    mediaHeight?: number;
-    mediaDurationSeconds?: number;
-    caption: string;
-    linkTarget: PostLinkTarget;
-  }) => Promise<Post | null>;
+  createPost: (
+    sellerProfile: SellerProfile,
+    input: {
+      mediaType: PostMediaType;
+      mediaUrl?: string;
+      mediaWidth?: number;
+      mediaHeight?: number;
+      mediaDurationSeconds?: number;
+      caption: string;
+      linkTarget?: PostLinkTarget;
+    }
+  ) => Promise<Post | null>;
   toggleLike: (postId: string, liked: boolean) => Promise<void>;
   addPostComment: (postId: string, body: string) => Promise<PostComment | null>;
   deletePost: (postId: string) => Promise<void>;
@@ -164,6 +169,7 @@ function mergeById<T extends { id: string }>(...groups: T[][]) {
 }
 
 export function AosellProvider({ children }: { children: ReactNode }) {
+  const { locale } = useLocale();
   const [authReady, setAuthReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -265,6 +271,22 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     };
   }, [currentUser?.id]);
 
+  // Re-translates a still-default display name ("Buyer Member" / "Membre
+  // Acheteur" / ...) when the user switches app language, since that text is
+  // a stored value, not a live translation key, and won't update on its own.
+  // Deliberately keyed on `locale` alone (not currentUser/userProfile) so it
+  // only fires on an actual language switch, not on every profile update.
+  useEffect(() => {
+    if (!currentUser || !userProfile || !isPlaceholderDisplayName(userProfile.displayName)) {
+      return;
+    }
+
+    UserRepository.ensureProfile(currentUser, { preferredLanguage: locale })
+      .then((profile) => setUserProfile(profile))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
+
   useEffect(() => {
     if (!currentSellerProfile) {
       setOwnedListings([]);
@@ -356,6 +378,29 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     return profile;
   }
 
+  // Lazily creates a lightweight "individual" seller profile the first time
+  // someone publishes anything — nobody has to go through the full
+  // restaurant/shop onboarding form just to share a home-cooked dish.
+  async function ensureSellerProfile(): Promise<SellerProfile | null> {
+    if (currentSellerProfile) {
+      return currentSellerProfile;
+    }
+
+    if (!currentUser) {
+      return null;
+    }
+
+    return createSellerProfile({
+      type: 'individual',
+      brandName: userProfile?.displayName?.trim() || translate('sellerOnboarding.defaultBrandName'),
+      description: translate('sellerOnboarding.defaultIndividualDescription'),
+      city: userProfile?.city || DEFAULT_CITY,
+      countryCode: userProfile?.countryCode || DEFAULT_COUNTRY_CODE,
+      deliveryModes: ['aosell'],
+      cuisineSpecialties: [],
+    });
+  }
+
   async function setSellerOpen(isOpen: boolean) {
     if (!currentSellerProfile) {
       return;
@@ -435,20 +480,19 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     return feedPosts.find((post) => post.id === id);
   }
 
-  async function createPost(input: {
-    mediaType: PostMediaType;
-    mediaUrl?: string;
-    mediaWidth?: number;
-    mediaHeight?: number;
-    mediaDurationSeconds?: number;
-    caption: string;
-    linkTarget: PostLinkTarget;
-  }) {
-    if (!currentSellerProfile) {
-      return null;
+  async function createPost(
+    sellerProfile: SellerProfile,
+    input: {
+      mediaType: PostMediaType;
+      mediaUrl?: string;
+      mediaWidth?: number;
+      mediaHeight?: number;
+      mediaDurationSeconds?: number;
+      caption: string;
+      linkTarget?: PostLinkTarget;
     }
-
-    const post = await PostRepository.create(currentSellerProfile, input);
+  ) {
+    const post = await PostRepository.create(sellerProfile, input);
     setFeedPosts((current) => mergeById(current, [post]));
     return post;
   }
@@ -704,6 +748,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         logout,
         deleteAccount,
         createSellerProfile,
+        ensureSellerProfile,
         setSellerOpen,
         saveListing,
         getListingById,

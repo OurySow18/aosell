@@ -46,7 +46,7 @@ export default function AddScreen() {
           title={t('addScreen.startSetupTitle')}
           description={t('addScreen.startSetupDescription')}
         />
-        <AppButton fullWidth label={t('common.createSellerProfile')} onPress={() => router.push('/seller-onboarding')} />
+        <AppButton fullWidth label={t('sellerCenterScreen.publishFirstDish')} onPress={() => router.push('/post/create')} />
       </AppScreen>
     );
   }

@@ -23,7 +23,8 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
   const { t } = useLocale();
   const { currentUser, getSellerById, getListingById, toggleLike, toggleFollow, followedSellerIds } = useAosell();
   const seller = getSellerById(post.sellerId);
-  const linkedListing = post.linkTarget.type === 'listing' && post.linkTarget.listingId ? getListingById(post.linkTarget.listingId) : undefined;
+  const linkedListing =
+    post.linkTarget?.type === 'listing' && post.linkTarget.listingId ? getListingById(post.linkTarget.listingId) : undefined;
   const isFollowing = followedSellerIds.includes(post.sellerId);
 
   const [liked, setLiked] = useState(false);
@@ -82,9 +83,9 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
   }
 
   function handleOrderPress() {
-    if (post.linkTarget.type === 'listing' && post.linkTarget.listingId) {
+    if (post.linkTarget?.type === 'listing' && post.linkTarget.listingId) {
       router.push(`/listing/${post.linkTarget.listingId}`);
-    } else if (post.linkTarget.sellerId) {
+    } else if (post.linkTarget?.sellerId) {
       router.push(`/seller/${post.linkTarget.sellerId}`);
     }
   }

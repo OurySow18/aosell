@@ -1,7 +1,8 @@
-import { Tabs } from 'expo-router';
+import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
+import { router, Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WebHeader } from '@/components/web/web-header';
@@ -79,6 +80,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="add"
+        options={{
+          tabBarButton: (props) => <AddTabButton {...props} theme={theme} />,
+        }}
+      />
+      <Tabs.Screen
         name="orders"
         options={{
           tabBarIcon: ({ focused }) => (
@@ -106,7 +113,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="add" options={{ href: null }} />
       </Tabs>
     </View>
   );
@@ -155,6 +161,26 @@ function TabIcon({
   );
 }
 
+// Opens post creation directly instead of navigating to the hidden "add" tab
+// screen — Instagram/TikTok-style center "+" button, not a real destination.
+function AddTabButton({ theme }: BottomTabBarButtonProps & { theme: ReturnType<typeof useAppTheme> }) {
+  return (
+    <View style={styles.addButtonColumn}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/post/create')}
+        style={({ pressed }) => [
+          styles.addButton,
+          { backgroundColor: theme.colors.accent, opacity: pressed ? 0.85 : 1 },
+        ]}>
+        <SymbolView tintColor={theme.colors.onAccent} size={24} name={{ ios: 'plus', android: 'add', web: 'add' }} />
+      </Pressable>
+    </View>
+  );
+}
+
+const ADD_BUTTON_SIZE = 46;
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -173,5 +199,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     letterSpacing: 0.2,
+  },
+  addButtonColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButton: {
+    width: ADD_BUTTON_SIZE,
+    height: ADD_BUTTON_SIZE,
+    borderRadius: ADD_BUTTON_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
 });

@@ -189,7 +189,7 @@ export interface Post {
   mediaHeight?: number;
   mediaDurationSeconds?: number;
   caption: string;
-  linkTarget: PostLinkTarget;
+  linkTarget?: PostLinkTarget;
   likeCount: number;
   commentCount: number;
   createdAt: ISODateString;

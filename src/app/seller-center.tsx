@@ -29,6 +29,13 @@ export default function SellerCenterScreen() {
           {t('sellerCenterScreen.createProfileTitle')}
         </Text>
         <Text style={[styles.notFoundBody, { color: theme.colors.textMuted }]}>{t('sellerCenterScreen.createProfileDescription')}</Text>
+        <Pressable
+          onPress={() => router.push(currentUser ? '/post/create' : { pathname: '/auth', params: { mode: 'signin', returnTo: '/post/create' } })}
+          style={[styles.notFoundButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md }]}>
+          <Text style={[styles.notFoundButtonText, { color: theme.colors.onAccent, fontFamily: theme.typography.heading.fontFamily }]}>
+            {t(currentUser ? 'sellerCenterScreen.publishFirstDish' : 'sellerCenterScreen.openAuth')}
+          </Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -339,6 +346,8 @@ const styles = StyleSheet.create({
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 20 },
   notFoundTitle: { fontSize: 17, lineHeight: 24 },
   notFoundBody: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  notFoundButton: { marginTop: 12, minHeight: 50, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center' },
+  notFoundButtonText: { fontSize: 15, lineHeight: 20 },
 
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 20, paddingTop: 6, paddingBottom: 12 },
   roundButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

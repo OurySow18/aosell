@@ -43,7 +43,7 @@ const PLACEHOLDER_DISPLAY_NAMES = new Set(
   })
 );
 
-function isPlaceholderDisplayName(value?: string) {
+export function isPlaceholderDisplayName(value?: string) {
   return !value || PLACEHOLDER_DISPLAY_NAMES.has(value);
 }
 

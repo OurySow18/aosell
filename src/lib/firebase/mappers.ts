@@ -187,9 +187,14 @@ export function fromFirestoreSellerProfileDoc(
 }
 
 export function toFirestoreSellerProfileDoc(profile: SellerProfile): FirestoreSellerProfileDoc {
+  // Firestore's setDoc() rejects a literal `undefined` field value (unlike
+  // null) — address is optional and absent on most profiles (e.g. every
+  // lazily-created "individual" seller profile), so addressId must be
+  // omitted entirely rather than written as undefined.
+  const { address, ...rest } = profile;
   return {
-    ...profile,
-    addressId: profile.address?.id,
+    ...rest,
+    ...(address?.id !== undefined && { addressId: address.id }),
     createdAt: toTimestamp(profile.createdAt),
     updatedAt: toTimestamp(profile.updatedAt),
   };
@@ -231,13 +236,23 @@ export function toFirestoreListingDoc(
   listing: Listing,
   searchTokens: string[]
 ): FirestoreListingDoc {
+  // Several of these are routinely undefined in practice (no video, not yet
+  // published, no dish linked, no photos) — setDoc() rejects a literal
+  // undefined field value, so each one is only included when actually set.
+  const { dishId, linkedVideoUrl, publishedAt, compareAtPrice, averageRating, reviewCount, ...rest } = listing;
+  const primaryImageUrl = listing.media[0]?.url;
   return {
-    ...listing,
+    ...rest,
+    ...(dishId !== undefined && { dishId }),
+    ...(linkedVideoUrl !== undefined && { linkedVideoUrl }),
+    ...(compareAtPrice !== undefined && { compareAtPrice }),
+    ...(averageRating !== undefined && { averageRating }),
+    ...(reviewCount !== undefined && { reviewCount }),
+    ...(primaryImageUrl !== undefined && { primaryImageUrl }),
     createdAt: toTimestamp(listing.createdAt),
     updatedAt: toTimestamp(listing.updatedAt),
-    publishedAt: listing.publishedAt ? toTimestamp(listing.publishedAt) : undefined,
+    ...(publishedAt !== undefined && { publishedAt: toTimestamp(publishedAt) }),
     searchTokens,
-    primaryImageUrl: listing.media[0]?.url,
     hasVideo: Boolean(listing.linkedVideoUrl),
   };
 }
@@ -339,6 +354,10 @@ export function fromFirestoreOrderDoc(id: string, doc: FirestoreOrderDoc): Order
 }
 
 export function toFirestoreOrderDoc(order: Order): FirestoreOrderDoc {
+  // Several of these are routinely absent (no second address line, no
+  // listing image, a fresh order's timeline entries have no note/actor yet)
+  // — setDoc()/updateDoc() reject a literal undefined field value, so each
+  // one is only included when actually set.
   return {
     buyerUserId: order.buyerUserId,
     sellerId: order.sellerId,
@@ -350,7 +369,7 @@ export function toFirestoreOrderDoc(order: Order): FirestoreOrderDoc {
       quantity: item.quantity,
       unitAmountCents: item.unitPriceSnapshot.amountCents,
       currency: item.unitPriceSnapshot.currency,
-      imageUrl: item.imageUrl,
+      ...(item.imageUrl !== undefined && { imageUrl: item.imageUrl }),
     })),
     subtotalAmountCents: order.subtotal.amountCents,
     deliveryFeeAmountCents: order.deliveryFee.amountCents,
@@ -361,20 +380,20 @@ export function toFirestoreOrderDoc(order: Order): FirestoreOrderDoc {
       fullName: order.deliveryAddress.fullName,
       phoneNumber: order.deliveryAddress.phoneNumber,
       line1: order.deliveryAddress.line1,
-      line2: order.deliveryAddress.line2,
+      ...(order.deliveryAddress.line2 !== undefined && { line2: order.deliveryAddress.line2 }),
       postalCode: order.deliveryAddress.postalCode,
       city: order.deliveryAddress.city,
-      state: order.deliveryAddress.state,
+      ...(order.deliveryAddress.state !== undefined && { state: order.deliveryAddress.state }),
       countryCode: order.deliveryAddress.countryCode,
-      instructions: order.deliveryAddress.instructions,
+      ...(order.deliveryAddress.instructions !== undefined && { instructions: order.deliveryAddress.instructions }),
     },
     timeline: order.timeline.map((entry) => ({
       status: entry.status,
       at: toTimestamp(entry.at),
-      note: entry.note,
-      actorUserId: entry.actorUserId,
+      ...(entry.note !== undefined && { note: entry.note }),
+      ...(entry.actorUserId !== undefined && { actorUserId: entry.actorUserId }),
     })),
-    notes: order.notes,
+    ...(order.notes !== undefined && { notes: order.notes }),
     createdAt: toTimestamp(order.createdAt),
     updatedAt: toTimestamp(order.updatedAt),
   };
@@ -442,8 +461,13 @@ export function fromFirestoreDishDoc(id: string, doc: FirestoreDishDoc): Dish {
 }
 
 export function toFirestoreDishDoc(dish: Dish, searchTokens: string[]): FirestoreDishDoc {
+  // imageUrl is routinely absent (a brand-new dish created inline while
+  // publishing a listing has no photo yet) — setDoc() rejects a literal
+  // undefined field value.
+  const { imageUrl, ...rest } = dish;
   return {
-    ...dish,
+    ...rest,
+    ...(imageUrl !== undefined && { imageUrl }),
     createdAt: toTimestamp(dish.createdAt),
     updatedAt: toTimestamp(dish.updatedAt),
     searchTokens,
@@ -494,8 +518,18 @@ export function fromFirestorePostDoc(id: string, doc: FirestorePostDoc): Post {
 }
 
 export function toFirestorePostDoc(post: Post): FirestorePostDoc {
+  // All of these are optional on Post and explicitly set to undefined when
+  // not applicable (e.g. mediaDurationSeconds on an image post) — object
+  // literal syntax still creates an own `undefined`-valued property for
+  // them, which setDoc() rejects just like a missing linkTarget does.
+  const { mediaUrl, mediaWidth, mediaHeight, mediaDurationSeconds, linkTarget, ...rest } = post;
   return {
-    ...post,
+    ...rest,
+    ...(mediaUrl !== undefined && { mediaUrl }),
+    ...(mediaWidth !== undefined && { mediaWidth }),
+    ...(mediaHeight !== undefined && { mediaHeight }),
+    ...(mediaDurationSeconds !== undefined && { mediaDurationSeconds }),
+    ...(linkTarget !== undefined && { linkTarget }),
     createdAt: toTimestamp(post.createdAt),
     updatedAt: toTimestamp(post.updatedAt),
   };

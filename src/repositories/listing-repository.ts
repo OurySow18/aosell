@@ -77,7 +77,7 @@ export const ListingRepository = {
       categories: input.categories,
       media: existing?.media ?? [],
       attributes: existing?.attributes ?? [],
-      inventory: existing?.inventory ?? { isUnlimited: input.type === 'service', quantity: input.type === 'service' ? undefined : 10 },
+      inventory: existing?.inventory ?? (input.type === 'service' ? { isUnlimited: true } : { isUnlimited: false, quantity: 10 }),
       dishId: input.dishId,
       condiments: input.condiments,
       linkedVideoUrl: input.hasVideo ? existing?.linkedVideoUrl ?? 'https://example.com/listing-video.mp4' : undefined,

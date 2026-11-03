@@ -65,11 +65,13 @@ export const OrderRepository = {
     await updateDoc(doc(db, 'orders', order.id), {
       status: nextStatus,
       updatedAt: createTimestamp(),
+      // updateDoc() rejects a literal undefined field value just like
+      // setDoc() does — most timeline entries have no note/actor set.
       timeline: nextOrder.timeline.map((entry) => ({
         status: entry.status,
         at: Timestamp.fromDate(new Date(entry.at)),
-        note: entry.note,
-        actorUserId: entry.actorUserId,
+        ...(entry.note !== undefined && { note: entry.note }),
+        ...(entry.actorUserId !== undefined && { actorUserId: entry.actorUserId }),
       })),
     });
 

@@ -73,7 +73,7 @@ export const PostRepository = {
       mediaHeight?: number;
       mediaDurationSeconds?: number;
       caption: string;
-      linkTarget: PostLinkTarget;
+      linkTarget?: PostLinkTarget;
     }
   ): Promise<Post> {
     const ref = doc(collection(db, 'posts'));

@@ -105,15 +105,19 @@ service cloud.firestore {
     }
 
     function isValidLinkTarget() {
-      return request.resource.data.linkTarget is map
-        && request.resource.data.linkTarget.type in ['listing', 'seller']
-        && (
-          (request.resource.data.linkTarget.type == 'seller'
-            && request.resource.data.linkTarget.sellerId == request.resource.data.sellerId)
-          ||
-          (request.resource.data.linkTarget.type == 'listing'
-            && request.resource.data.linkTarget.listingId is string
-            && listingDoc(request.resource.data.linkTarget.listingId).data.sellerId == request.resource.data.sellerId)
+      // Absent entirely = a pure share post with no commercial link.
+      return !('linkTarget' in request.resource.data)
+        || (
+          request.resource.data.linkTarget is map
+          && request.resource.data.linkTarget.type in ['listing', 'seller']
+          && (
+            (request.resource.data.linkTarget.type == 'seller'
+              && request.resource.data.linkTarget.sellerId == request.resource.data.sellerId)
+            ||
+            (request.resource.data.linkTarget.type == 'listing'
+              && request.resource.data.linkTarget.listingId is string
+              && listingDoc(request.resource.data.linkTarget.listingId).data.sellerId == request.resource.data.sellerId)
+          )
         );
     }
 

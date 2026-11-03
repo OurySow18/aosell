@@ -60,15 +60,15 @@ service firebase.storage {
       allow delete: if isSignedIn() && request.auth.uid == userId || isAdmin();
     }
 
-    function canManagePostMedia(sellerId) {
-      return isSignedIn()
-        && firestore.get(/databases/(default)/documents/seller_profiles/$(sellerId)).data.ownerUserId == request.auth.uid;
-    }
-
-    match /post-media/{sellerId}/{fileName} {
+    // Keyed by the uploader's own uid (not the seller profile id): a seller
+    // profile can be created on-the-fly right before this upload (lazy
+    // "individual" profiles), and a Storage rule reading that Firestore doc
+    // immediately after it's written is not guaranteed to see it yet —
+    // request.auth.uid needs no such cross-product read and is never stale.
+    match /post-media/{ownerUserId}/{fileName} {
       allow read: if true;
-      allow write: if canManagePostMedia(sellerId) && (isValidImageUpload() || isValidVideoUpload());
-      allow delete: if canManagePostMedia(sellerId) || isAdmin();
+      allow write: if isSignedIn() && request.auth.uid == ownerUserId && (isValidImageUpload() || isValidVideoUpload());
+      allow delete: if (isSignedIn() && request.auth.uid == ownerUserId) || isAdmin();
     }
   }
 }
