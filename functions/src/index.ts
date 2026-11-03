@@ -241,16 +241,40 @@ export const onPostVideoUploaded = onObjectFinalized(async (event) => {
     return;
   }
 
-  // Output goes to its own {postId} subfolder rather than a fixed filename:
-  // the "web-hd" preset names its own output file, which this job doesn't
-  // control, so onPostVideoTranscoded below treats "any video that lands in
-  // this post's subfolder" as the ready file instead of matching a filename.
+  // A single-file MP4 mux (H.264/AAC) via an ad-hoc config, not a templateId
+  // preset: built-in presets like "preset/web-hd" produce segmented DASH
+  // output (a manifest plus separate video-only/audio-only .m4s chunks meant
+  // for an adaptive-streaming player), not one playable file. Resolution is
+  // left unset so Transcoder keeps the source's own dimensions — phone
+  // footage is usually portrait, and a fixed landscape size would stretch it.
+  // fileName is fixed ("output.mp4") so onPostVideoTranscoded below can match
+  // on it instead of treating any video that lands in the output folder as
+  // the ready file.
   await transcoderClient.createJob({
     parent: transcoderClient.locationPath(projectID.value(), TRANSCODER_LOCATION),
     job: {
       inputUri: `gs://${event.data.bucket}/${filePath}`,
       outputUri: `gs://${event.data.bucket}/post-media-transcoded/${ownerUserId}/${postId}/`,
-      templateId: 'preset/web-hd',
+      config: {
+        elementaryStreams: [
+          {
+            key: 'video-stream0',
+            videoStream: { h264: { bitrateBps: 2_500_000, frameRate: 30 } },
+          },
+          {
+            key: 'audio-stream0',
+            audioStream: { codec: 'aac', bitrateBps: 128_000 },
+          },
+        ],
+        muxStreams: [
+          {
+            key: 'output',
+            fileName: 'output.mp4',
+            container: 'mp4',
+            elementaryStreams: ['video-stream0', 'audio-stream0'],
+          },
+        ],
+      },
     },
   });
 });
@@ -261,7 +285,7 @@ export const onPostVideoTranscoded = onObjectFinalized(async (event) => {
   const filePath = event.data.name;
   const contentType = event.data.contentType;
 
-  if (!filePath.startsWith('post-media-transcoded/') || !contentType?.startsWith('video/')) {
+  if (!filePath.startsWith('post-media-transcoded/') || !filePath.endsWith('/output.mp4') || !contentType?.startsWith('video/')) {
     return;
   }
 
@@ -271,7 +295,12 @@ export const onPostVideoTranscoded = onObjectFinalized(async (event) => {
     return;
   }
 
-  const mediaUrl = `https://storage.googleapis.com/${event.data.bucket}/${filePath}`;
+  // storage.googleapis.com serves objects per GCS IAM/bucket ACLs, which
+  // ignore storage.rules entirely — using it 403s unless the bucket grants
+  // allUsers read at the IAM level. firebasestorage.googleapis.com is the
+  // endpoint that actually enforces storage.rules, which already allows
+  // public read on this path.
+  const mediaUrl = `https://firebasestorage.googleapis.com/v0/b/${event.data.bucket}/o/${encodeURIComponent(filePath)}?alt=media`;
   await db.collection('posts').doc(postId).set(
     { mediaUrl, mediaProcessingStatus: 'ready' },
     { merge: true }
