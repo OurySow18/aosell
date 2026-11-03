@@ -510,6 +510,7 @@ export function fromFirestorePostDoc(id: string, doc: FirestorePostDoc): Post {
     mediaDurationSeconds: doc.mediaDurationSeconds,
     caption: doc.caption ?? '',
     linkTarget: doc.linkTarget,
+    mediaProcessingStatus: doc.mediaProcessingStatus,
     likeCount: doc.likeCount ?? 0,
     commentCount: doc.commentCount ?? 0,
     createdAt: toIsoDate(doc.createdAt),
@@ -522,7 +523,7 @@ export function toFirestorePostDoc(post: Post): FirestorePostDoc {
   // not applicable (e.g. mediaDurationSeconds on an image post) — object
   // literal syntax still creates an own `undefined`-valued property for
   // them, which setDoc() rejects just like a missing linkTarget does.
-  const { mediaUrl, mediaWidth, mediaHeight, mediaDurationSeconds, linkTarget, ...rest } = post;
+  const { mediaUrl, mediaWidth, mediaHeight, mediaDurationSeconds, linkTarget, mediaProcessingStatus, ...rest } = post;
   return {
     ...rest,
     ...(mediaUrl !== undefined && { mediaUrl }),
@@ -530,6 +531,7 @@ export function toFirestorePostDoc(post: Post): FirestorePostDoc {
     ...(mediaHeight !== undefined && { mediaHeight }),
     ...(mediaDurationSeconds !== undefined && { mediaDurationSeconds }),
     ...(linkTarget !== undefined && { linkTarget }),
+    ...(mediaProcessingStatus !== undefined && { mediaProcessingStatus }),
     createdAt: toTimestamp(post.createdAt),
     updatedAt: toTimestamp(post.updatedAt),
   };

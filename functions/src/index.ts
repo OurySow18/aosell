@@ -1,10 +1,12 @@
+import { TranscoderServiceClient } from '@google-cloud/video-transcoder';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import { defineSecret } from 'firebase-functions/params';
+import { defineSecret, projectID } from 'firebase-functions/params';
 import { onCall } from 'firebase-functions/v2/https';
 import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onRequest } from 'firebase-functions/v2/https';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
 import Stripe from 'stripe';
 
 initializeApp();
@@ -211,6 +213,67 @@ export const onPostCommentWritten = onDocumentWritten('posts/{postId}/comments/{
   const delta = existsAfter ? 1 : -1;
   await db.collection('posts').doc(postId).set(
     { commentCount: FieldValue.increment(delta) },
+    { merge: true }
+  );
+});
+
+// Google Cloud's supported Transcoder API regions include us-central1, which
+// is also this project's default Functions region — no cross-region calls.
+const TRANSCODER_LOCATION = 'us-central1';
+const transcoderClient = new TranscoderServiceClient();
+
+// post/create.tsx uploads raw, untranscoded video to post-media/{uid}/{postId}.{ext}
+// (phone footage is usually .mov/HEVC, not the mp4/H.264 most players expect).
+// This fires on every object finalized in the whole default bucket — not just
+// video uploads — so it bails out early for anything outside that path/type.
+export const onPostVideoUploaded = onObjectFinalized(async (event) => {
+  const filePath = event.data.name;
+  const contentType = event.data.contentType;
+
+  if (!filePath.startsWith('post-media/') || !contentType?.startsWith('video/')) {
+    return;
+  }
+
+  const segments = filePath.split('/');
+  const ownerUserId = segments[1];
+  const postId = segments[2]?.replace(/\.[^.]+$/, '');
+  if (!ownerUserId || !postId) {
+    return;
+  }
+
+  // Output goes to its own {postId} subfolder rather than a fixed filename:
+  // the "web-hd" preset names its own output file, which this job doesn't
+  // control, so onPostVideoTranscoded below treats "any video that lands in
+  // this post's subfolder" as the ready file instead of matching a filename.
+  await transcoderClient.createJob({
+    parent: transcoderClient.locationPath(projectID.value(), TRANSCODER_LOCATION),
+    job: {
+      inputUri: `gs://${event.data.bucket}/${filePath}`,
+      outputUri: `gs://${event.data.bucket}/post-media-transcoded/${ownerUserId}/${postId}/`,
+      templateId: 'preset/web-hd',
+    },
+  });
+});
+
+// Reacts once the job started above finishes and writes its output — updates
+// the post so the feed swaps the raw upload for the standardized version.
+export const onPostVideoTranscoded = onObjectFinalized(async (event) => {
+  const filePath = event.data.name;
+  const contentType = event.data.contentType;
+
+  if (!filePath.startsWith('post-media-transcoded/') || !contentType?.startsWith('video/')) {
+    return;
+  }
+
+  const segments = filePath.split('/');
+  const postId = segments[2];
+  if (!postId) {
+    return;
+  }
+
+  const mediaUrl = `https://storage.googleapis.com/${event.data.bucket}/${filePath}`;
+  await db.collection('posts').doc(postId).set(
+    { mediaUrl, mediaProcessingStatus: 'ready' },
     { merge: true }
   );
 });

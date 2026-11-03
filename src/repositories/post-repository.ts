@@ -64,9 +64,17 @@ export const PostRepository = {
     );
   },
 
+  // Lets a caller reserve the post's id before it exists in Firestore, e.g.
+  // to embed it in a Storage upload path so a server-side process (video
+  // transcoding) can later find the right post document to update.
+  generateId(): string {
+    return doc(collection(db, 'posts')).id;
+  },
+
   async create(
     seller: SellerProfile,
     input: {
+      postId?: string;
       mediaType: PostMediaType;
       mediaUrl?: string;
       mediaWidth?: number;
@@ -74,9 +82,10 @@ export const PostRepository = {
       mediaDurationSeconds?: number;
       caption: string;
       linkTarget?: PostLinkTarget;
+      mediaProcessingStatus?: Post['mediaProcessingStatus'];
     }
   ): Promise<Post> {
-    const ref = doc(collection(db, 'posts'));
+    const ref = input.postId ? doc(db, 'posts', input.postId) : doc(collection(db, 'posts'));
     const post: Post = {
       id: ref.id,
       sellerId: seller.id,
@@ -87,6 +96,7 @@ export const PostRepository = {
       mediaDurationSeconds: input.mediaDurationSeconds,
       caption: input.caption,
       linkTarget: input.linkTarget,
+      mediaProcessingStatus: input.mediaProcessingStatus,
       likeCount: 0,
       commentCount: 0,
       createdAt: new Date().toISOString(),

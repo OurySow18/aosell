@@ -46,7 +46,34 @@ type SelectedMedia = {
   width?: number;
   height?: number;
   durationSeconds?: number;
+  mimeType?: string;
+  extension?: string;
 };
+
+const MIME_TO_EXTENSION: Record<string, string> = {
+  'video/quicktime': 'mov',
+  'video/mp4': 'mp4',
+  'video/x-m4v': 'm4v',
+  'video/3gpp': '3gp',
+};
+
+// expo-image-picker returns the asset's real mime type on most devices, but
+// falls back to inferring it from the file extension when absent — iOS
+// camera-roll videos are almost always .mov/QuickTime, never actually .mp4,
+// so that's the safer default over assuming .mp4.
+function resolveVideoFormat(asset: ImagePicker.ImagePickerAsset): { mimeType: string; extension: string } {
+  if (asset.mimeType) {
+    return { mimeType: asset.mimeType, extension: MIME_TO_EXTENSION[asset.mimeType] ?? asset.mimeType.split('/')[1] ?? 'mov' };
+  }
+
+  const uriExtension = asset.uri.split('.').pop()?.toLowerCase();
+  if (uriExtension && uriExtension.length <= 4) {
+    const matchingMimeType = Object.entries(MIME_TO_EXTENSION).find(([, ext]) => ext === uriExtension)?.[0];
+    return { mimeType: matchingMimeType ?? `video/${uriExtension}`, extension: uriExtension };
+  }
+
+  return { mimeType: 'video/quicktime', extension: 'mov' };
+}
 
 // A post can be a pure share (no commercial link at all), linked to the
 // poster's own shop, or linked to one of their existing listings. The
@@ -58,7 +85,7 @@ type LinkChoice = { kind: 'share' } | { kind: 'shop' } | { kind: 'listing'; list
 export default function CreatePostScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
-  const { currentUser, userProfile, currentSellerProfile, listings, ensureSellerProfile, createPost } = useAosell();
+  const { currentUser, userProfile, currentSellerProfile, listings, ensureSellerProfile, generatePostId, createPost } = useAosell();
 
   const [mediaMode, setMediaMode] = useState<PostMediaType>('image');
   const [selectedMedia, setSelectedMedia] = useState<SelectedMedia | null>(null);
@@ -111,11 +138,14 @@ export default function CreatePostScreen() {
     const asset = result.assets[0];
 
     if (mediaMode === 'video') {
+      const { mimeType, extension } = resolveVideoFormat(asset);
       setSelectedMedia({
         uri: asset.uri,
         width: asset.width || undefined,
         height: asset.height || undefined,
         durationSeconds: asset.duration ? asset.duration / 1000 : undefined,
+        mimeType,
+        extension,
       });
       return;
     }
@@ -158,15 +188,27 @@ export default function CreatePostScreen() {
         return;
       }
 
+      // Reserved up front (not left to createPost/PostRepository) so a video
+      // file can be named after it: the server-side transcoding function
+      // parses this id back out of the Storage path to know which post
+      // document to update once conversion finishes.
+      const postId = generatePostId();
+
       let mediaUrl: string | undefined;
+      let mediaProcessingStatus: 'pending' | undefined;
 
       if (mediaMode !== 'text' && selectedMedia) {
         const response = await fetch(selectedMedia.uri);
         const blob = await response.blob();
-        const fileName = `${Date.now()}-${mediaMode === 'video' ? 'video.mp4' : 'image.jpg'}`;
-        const storageRef = ref(storage, `post-media/${currentUser.id}/${fileName}`);
-        await uploadBytes(storageRef, blob, { contentType: mediaMode === 'video' ? 'video/mp4' : 'image/jpeg' });
+        const extension = mediaMode === 'video' ? (selectedMedia.extension ?? 'mov') : 'jpg';
+        const contentType = mediaMode === 'video' ? (selectedMedia.mimeType ?? 'video/quicktime') : 'image/jpeg';
+        const storageRef = ref(storage, `post-media/${currentUser.id}/${postId}.${extension}`);
+        await uploadBytes(storageRef, blob, { contentType });
         mediaUrl = await getDownloadURL(storageRef);
+        // Videos start out as the raw upload and get swapped for a
+        // standardized, re-encoded version once the transcoding function
+        // (triggered by this very upload) finishes in the background.
+        mediaProcessingStatus = mediaMode === 'video' ? 'pending' : undefined;
       }
 
       const linkTarget: PostLinkTarget | undefined =
@@ -177,6 +219,7 @@ export default function CreatePostScreen() {
             : undefined;
 
       const result = await createPost(sellerProfile, {
+        postId,
         mediaType: mediaMode,
         mediaUrl,
         mediaWidth: selectedMedia?.width,
@@ -184,6 +227,7 @@ export default function CreatePostScreen() {
         mediaDurationSeconds: selectedMedia?.durationSeconds,
         caption,
         linkTarget,
+        mediaProcessingStatus,
       });
 
       if (result) {

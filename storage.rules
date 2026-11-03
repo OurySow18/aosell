@@ -70,5 +70,12 @@ service firebase.storage {
       allow write: if isSignedIn() && request.auth.uid == ownerUserId && (isValidImageUpload() || isValidVideoUpload());
       allow delete: if (isSignedIn() && request.auth.uid == ownerUserId) || isAdmin();
     }
+
+    // Written only by the onPostVideoUploaded/onPostVideoTranscoded Cloud
+    // Functions (Admin SDK bypasses these rules entirely) — no client write
+    // rule needed here, just public read for playback.
+    match /post-media-transcoded/{ownerUserId}/{postId}/{fileName} {
+      allow read: if true;
+    }
   }
 }

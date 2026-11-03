@@ -122,9 +122,11 @@ type AosellContextValue = {
   getDishById: (id: string) => Dish | undefined;
   getPostById: (id: string) => Post | undefined;
   searchListings: (filters: ListingSearchFilters) => Listing[];
+  generatePostId: () => string;
   createPost: (
     sellerProfile: SellerProfile,
     input: {
+      postId?: string;
       mediaType: PostMediaType;
       mediaUrl?: string;
       mediaWidth?: number;
@@ -132,6 +134,7 @@ type AosellContextValue = {
       mediaDurationSeconds?: number;
       caption: string;
       linkTarget?: PostLinkTarget;
+      mediaProcessingStatus?: Post['mediaProcessingStatus'];
     }
   ) => Promise<Post | null>;
   toggleLike: (postId: string, liked: boolean) => Promise<void>;
@@ -480,9 +483,14 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     return feedPosts.find((post) => post.id === id);
   }
 
+  function generatePostId() {
+    return PostRepository.generateId();
+  }
+
   async function createPost(
     sellerProfile: SellerProfile,
     input: {
+      postId?: string;
       mediaType: PostMediaType;
       mediaUrl?: string;
       mediaWidth?: number;
@@ -490,6 +498,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
       mediaDurationSeconds?: number;
       caption: string;
       linkTarget?: PostLinkTarget;
+      mediaProcessingStatus?: Post['mediaProcessingStatus'];
     }
   ) {
     const post = await PostRepository.create(sellerProfile, input);
@@ -756,6 +765,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         getDishById,
         getPostById,
         searchListings,
+        generatePostId,
         createPost,
         toggleLike,
         addPostComment,

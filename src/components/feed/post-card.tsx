@@ -120,6 +120,11 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
 
       <View style={styles.mediaWrap}>
         <PostMedia isActive={isActive} onDoubleTap={handleDoubleTap} post={post} />
+        {post.mediaProcessingStatus === 'pending' ? (
+          <View pointerEvents="none" style={[styles.processingBadge, { backgroundColor: 'rgba(0,0,0,0.55)' }]}>
+            <Text style={styles.processingBadgeText}>{t('postCard.processingVideo')}</Text>
+          </View>
+        ) : null}
         <Animated.View
           pointerEvents="none"
           style={[
@@ -244,6 +249,8 @@ const styles = StyleSheet.create({
   followText: { fontSize: 13, lineHeight: 18 },
 
   mediaWrap: { position: 'relative' },
+  processingBadge: { position: 'absolute', left: 12, top: 12, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  processingBadgeText: { color: '#FFFFFF', fontSize: 12, lineHeight: 16 },
   heartBurst: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
 
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingTop: 10, paddingBottom: 4 },

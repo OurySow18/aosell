@@ -657,6 +657,7 @@ export const translations = {
       following: 'Following',
       saveAction: 'Save',
       viewComments: 'View all {count} comments',
+      processingVideo: 'Processing…',
     },
     postDetail: {
       notFoundTitle: 'Post not found',
@@ -1430,6 +1431,7 @@ export const translations = {
       following: 'Abonné',
       saveAction: 'Enregistrer',
       viewComments: 'Voir les {count} commentaires',
+      processingVideo: 'Traitement en cours…',
     },
     postDetail: {
       notFoundTitle: 'Publication introuvable',
@@ -2203,6 +2205,7 @@ export const translations = {
       following: 'Gefolgt',
       saveAction: 'Speichern',
       viewComments: 'Alle {count} Kommentare ansehen',
+      processingVideo: 'Wird verarbeitet…',
     },
     postDetail: {
       notFoundTitle: 'Beitrag nicht gefunden',

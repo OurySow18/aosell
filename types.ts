@@ -190,6 +190,7 @@ export interface Post {
   mediaDurationSeconds?: number;
   caption: string;
   linkTarget?: PostLinkTarget;
+  mediaProcessingStatus?: 'pending' | 'ready' | 'failed';
   likeCount: number;
   commentCount: number;
   createdAt: ISODateString;
