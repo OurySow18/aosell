@@ -133,6 +133,21 @@ service cloud.firestore {
         && isValidTimestamp(request.resource.data.updatedAt);
     }
 
+    // Only caption and linkTarget are editable post-publish (the media
+    // itself, counters and ownership stay fixed) — everything else must come
+    // back unchanged from what's already stored.
+    function isSafePostUpdate() {
+      return request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.mediaType == resource.data.mediaType
+        && request.resource.data.get('mediaUrl', null) == resource.data.get('mediaUrl', null)
+        && request.resource.data.likeCount == resource.data.likeCount
+        && request.resource.data.commentCount == resource.data.commentCount
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.caption is string
+        && isValidLinkTarget()
+        && isValidTimestamp(request.resource.data.updatedAt);
+    }
+
     function isValidCommentData(postId) {
       return request.resource.data.postId == postId
         && request.resource.data.authorUserId == request.auth.uid
@@ -406,7 +421,8 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && isSellerOwnerBySellerId(request.resource.data.sellerId)
         && isValidPostData();
-      allow update: if false;
+      allow update: if (isSellerOwnerBySellerId(resource.data.sellerId) || isAdmin())
+        && isSafePostUpdate();
       allow delete: if isSellerOwnerBySellerId(resource.data.sellerId) || isAdmin();
 
       match /likes/{userId} {

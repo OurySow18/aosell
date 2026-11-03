@@ -1,12 +1,14 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
   query,
   limit as queryLimit,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/config';
@@ -134,6 +136,21 @@ export const PostRepository = {
 
     await setDoc(ref, toFirestorePostCommentDoc(comment));
     return comment;
+  },
+
+  // Only caption and linkTarget are editable post-publish (matches
+  // firestore.rules' isSafePostUpdate, which locks every other field) — the
+  // media itself can't be swapped once a post is live. updateDoc only sends
+  // the keys given here, so every other field is left untouched and equals
+  // resource.data as the rule requires; deleteField() is needed (an
+  // `undefined` value would be silently dropped, leaving the old link set)
+  // to actually clear linkTarget when switching a post back to "share only".
+  async update(postId: string, input: { caption: string; linkTarget?: PostLinkTarget }) {
+    await updateDoc(doc(db, 'posts', postId), {
+      caption: input.caption,
+      linkTarget: input.linkTarget ?? deleteField(),
+      updatedAt: createTimestamp(),
+    });
   },
 
   async delete(postId: string) {

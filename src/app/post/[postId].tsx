@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PostMedia } from '@/components/feed/post-media';
 import { AppButton } from '@/components/ui/app-button';
@@ -9,6 +9,7 @@ import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLocale } from '@/hooks/use-locale';
 import { useAppTheme } from '@/hooks/use-theme';
+import { buildPostShareMessage } from '@/lib/posts';
 import { formatDate } from '@/lib/utils/format';
 import { PostRepository } from '@/repositories/post-repository';
 import { useAosell } from '@/providers/aosell-provider';
@@ -57,6 +58,13 @@ export default function PostDetailScreen() {
     }
   }
 
+  function handleShare() {
+    if (!post) {
+      return;
+    }
+    void Share.share({ message: buildPostShareMessage({ caption: post.caption, postId: post.id }) });
+  }
+
   function handleDelete() {
     Alert.alert(t('postDetail.deleteTitle'), t('postDetail.deleteDescription'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -83,7 +91,11 @@ export default function PostDetailScreen() {
             <Text style={[styles.body, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>{post.caption}</Text>
           ) : null}
         </View>
-        {isOwner ? <AppButton label={t('common.delete')} variant="danger" onPress={handleDelete} /> : null}
+        <View style={styles.headerActions}>
+          <AppButton label={t('postCard.shareAction')} variant="ghost" onPress={handleShare} />
+          {isOwner ? <AppButton label={t('common.modify')} variant="secondary" onPress={() => router.push(`/post/edit/${post.id}`)} /> : null}
+          {isOwner ? <AppButton label={t('common.delete')} variant="danger" onPress={handleDelete} /> : null}
+        </View>
       </View>
 
       <View style={[styles.commentsCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
@@ -123,6 +135,7 @@ export default function PostDetailScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   headerCopy: { flex: 1, gap: 4 },
+  headerActions: { gap: 8 },
   commentsCard: { borderWidth: 1, padding: 16, gap: 16 },
   commentList: { gap: 12 },
   commentRow: { gap: 2 },

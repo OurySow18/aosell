@@ -91,6 +91,14 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
     ]);
   }
 
+  function handleMorePress() {
+    Alert.alert(t('postCard.moreAction'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.modify'), onPress: () => router.push(`/post/edit/${post.id}`) },
+      { text: t('common.delete'), style: 'destructive', onPress: handleDeletePress },
+    ]);
+  }
+
   function handleOrderPress() {
     if (post.linkTarget?.type === 'listing' && post.linkTarget.listingId) {
       router.push(`/listing/${post.linkTarget.listingId}`);
@@ -119,7 +127,7 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
         </Pressable>
 
         {isOwner ? (
-          <Pressable accessibilityLabel={t('postCard.moreAction')} hitSlop={8} onPress={handleDeletePress}>
+          <Pressable accessibilityLabel={t('postCard.moreAction')} hitSlop={8} onPress={handleMorePress}>
             <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'ellipsis', android: 'more_vert', web: 'more_vert' }} />
           </Pressable>
         ) : currentUser?.id && seller && seller.ownerUserId !== currentUser.id ? (

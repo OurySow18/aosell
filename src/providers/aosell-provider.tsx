@@ -139,6 +139,7 @@ type AosellContextValue = {
   ) => Promise<Post | null>;
   toggleLike: (postId: string, liked: boolean) => Promise<void>;
   addPostComment: (postId: string, body: string) => Promise<PostComment | null>;
+  editPost: (postId: string, input: { caption: string; linkTarget?: PostLinkTarget }) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   addToCart: (listingId: string, forceReplace?: boolean) => Promise<AddToCartResult>;
   updateCartQuantity: (listingId: string, quantity: number) => Promise<void>;
@@ -538,6 +539,13 @@ export function AosellProvider({ children }: { children: ReactNode }) {
     return comment;
   }
 
+  async function editPost(postId: string, input: { caption: string; linkTarget?: PostLinkTarget }) {
+    await PostRepository.update(postId, input);
+    setFeedPosts((current) =>
+      current.map((post) => (post.id === postId ? { ...post, caption: input.caption, linkTarget: input.linkTarget } : post))
+    );
+  }
+
   async function deletePost(postId: string) {
     await PostRepository.delete(postId);
     setFeedPosts((current) => current.filter((post) => post.id !== postId));
@@ -769,6 +777,7 @@ export function AosellProvider({ children }: { children: ReactNode }) {
         createPost,
         toggleLike,
         addPostComment,
+        editPost,
         deletePost,
         addToCart,
         updateCartQuantity,

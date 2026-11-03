@@ -693,6 +693,12 @@ export const translations = {
       signInTitle: 'Sign in to post',
       signInDescription: 'Sign in or create an account to share a photo, video, or dish.',
     },
+    editPost: {
+      title: 'Edit post',
+      submit: 'Save',
+      errorTitle: 'Something went wrong',
+      errorDescription: 'We could not update your post. Please try again.',
+    },
     domain: {
       listingType: {
         product: 'Product',
@@ -1468,6 +1474,12 @@ export const translations = {
       signInTitle: 'Connectez-vous pour publier',
       signInDescription: 'Connectez-vous ou créez un compte pour partager une photo, une vidéo ou un plat.',
     },
+    editPost: {
+      title: 'Modifier la publication',
+      submit: 'Enregistrer',
+      errorTitle: 'Une erreur est survenue',
+      errorDescription: 'Impossible de mettre à jour votre publication. Veuillez réessayer.',
+    },
     domain: {
       listingType: {
         product: 'Produit',
@@ -2242,6 +2254,12 @@ export const translations = {
       errorDescription: 'Veröffentlichung fehlgeschlagen — versuche es erneut.',
       signInTitle: 'Melde dich an, um zu veröffentlichen',
       signInDescription: 'Melde dich an oder erstelle ein Konto, um ein Foto, Video oder Gericht zu teilen.',
+    },
+    editPost: {
+      title: 'Beitrag bearbeiten',
+      submit: 'Speichern',
+      errorTitle: 'Etwas ist schiefgelaufen',
+      errorDescription: 'Dein Beitrag konnte nicht aktualisiert werden. Bitte versuche es erneut.',
     },
     domain: {
       listingType: {
