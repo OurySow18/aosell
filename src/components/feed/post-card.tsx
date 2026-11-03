@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PostMedia } from '@/components/feed/post-media';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -21,11 +21,13 @@ type SymbolName = ComponentProps<typeof SymbolView>['name'];
 export function PostCard({ post, isActive = false }: { post: Post; isActive?: boolean }) {
   const theme = useAppTheme();
   const { t } = useLocale();
-  const { currentUser, getSellerById, getListingById, toggleLike, toggleFollow, followedSellerIds } = useAosell();
+  const { currentUser, currentSellerProfile, getSellerById, getListingById, toggleLike, toggleFollow, followedSellerIds, deletePost } =
+    useAosell();
   const seller = getSellerById(post.sellerId);
   const linkedListing =
     post.linkTarget?.type === 'listing' && post.linkTarget.listingId ? getListingById(post.linkTarget.listingId) : undefined;
   const isFollowing = followedSellerIds.includes(post.sellerId);
+  const isOwner = currentSellerProfile?.id === post.sellerId;
 
   const [liked, setLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -82,6 +84,13 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
     void Share.share({ message: buildPostShareMessage({ caption: post.caption, postId: post.id }) });
   }
 
+  function handleDeletePress() {
+    Alert.alert(t('postDetail.deleteTitle'), t('postDetail.deleteDescription'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => void deletePost(post.id) },
+    ]);
+  }
+
   function handleOrderPress() {
     if (post.linkTarget?.type === 'listing' && post.linkTarget.listingId) {
       router.push(`/listing/${post.linkTarget.listingId}`);
@@ -109,7 +118,11 @@ export function PostCard({ post, isActive = false }: { post: Post; isActive?: bo
           </View>
         </Pressable>
 
-        {currentUser?.id && seller && seller.ownerUserId !== currentUser.id ? (
+        {isOwner ? (
+          <Pressable accessibilityLabel={t('postCard.moreAction')} hitSlop={8} onPress={handleDeletePress}>
+            <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'ellipsis', android: 'more_vert', web: 'more_vert' }} />
+          </Pressable>
+        ) : currentUser?.id && seller && seller.ownerUserId !== currentUser.id ? (
           <Pressable onPress={handleFollowPress}>
             <Text style={[styles.followText, { color: isFollowing ? theme.colors.textMuted : theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
               {isFollowing ? t('postCard.following') : t('postCard.follow')}
