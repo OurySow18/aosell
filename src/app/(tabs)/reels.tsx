@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -27,6 +28,10 @@ type SymbolName = ComponentProps<typeof SymbolView>['name'];
 export default function ReelsScreen() {
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  // Tabs stay mounted when you switch away from one — without this, a video
+  // left playing when this tab loses focus (another tab, or a pushed screen
+  // like post detail/comments) would keep playing silently in the background.
+  const isScreenFocused = useIsFocused();
   const params = useLocalSearchParams<{ postId?: string }>();
   const requestedPostId = Array.isArray(params.postId) ? params.postId[0] : params.postId;
   const { feedPosts, currentSellerProfile, getSellerById, followedSellerIds, toggleFollow, toggleLike, deletePost } = useAosell();
@@ -69,7 +74,7 @@ export default function ReelsScreen() {
     ({ item }: ListRenderItemInfo<Post>) => (
       <ReelItem
         height={itemHeight}
-        isActive={item.id === activePostId}
+        isActive={item.id === activePostId && isScreenFocused}
         isOwner={currentSellerProfile?.id === item.sellerId}
         isFollowing={followedSellerIds.includes(item.sellerId)}
         onDelete={() => void deletePost(item.id)}
@@ -79,7 +84,7 @@ export default function ReelsScreen() {
         seller={getSellerById(item.sellerId)}
       />
     ),
-    [activePostId, currentSellerProfile?.id, deletePost, followedSellerIds, getSellerById, itemHeight, toggleFollow, toggleLike]
+    [activePostId, currentSellerProfile?.id, deletePost, followedSellerIds, getSellerById, isScreenFocused, itemHeight, toggleFollow, toggleLike]
   );
 
   return (
@@ -148,8 +153,10 @@ function ReelItem({
   });
 
   const [liked, setLiked] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const heartAnim = useRef(new Animated.Value(0)).current;
   const lastTapRef = useRef(0);
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!currentUser) {
@@ -159,17 +166,35 @@ function ReelItem({
     return PostRepository.subscribeLikeStatus(post.id, currentUser.id, setLiked);
   }, [post.id, currentUser?.id]);
 
+  // Leaving the video (scrolled away, or the whole Reels tab losing focus)
+  // always resets the manual pause, so the video autoplays again next time
+  // it becomes the active one instead of staying stuck paused.
   useEffect(() => {
-    if (isActive) {
+    if (!isActive) {
+      setIsPaused(false);
+    }
+  }, [isActive]);
+
+  useEffect(() => {
+    if (isActive && !isPaused) {
       player.play();
     } else {
       player.pause();
     }
-  }, [isActive, player]);
+  }, [isActive, isPaused, player]);
 
   useEffect(() => {
     player.muted = !soundOn;
   }, [player, soundOn]);
+
+  useEffect(
+    () => () => {
+      if (singleTapTimer.current) {
+        clearTimeout(singleTapTimer.current);
+      }
+    },
+    []
+  );
 
   function playHeartBurst() {
     heartAnim.setValue(0);
@@ -191,6 +216,10 @@ function ReelItem({
   function handlePress() {
     const now = Date.now();
     if (now - lastTapRef.current < DOUBLE_TAP_WINDOW_MS) {
+      if (singleTapTimer.current) {
+        clearTimeout(singleTapTimer.current);
+        singleTapTimer.current = null;
+      }
       lastTapRef.current = 0;
       if (currentUser) {
         playHeartBurst();
@@ -200,6 +229,10 @@ function ReelItem({
       }
     } else {
       lastTapRef.current = now;
+      singleTapTimer.current = setTimeout(() => {
+        singleTapTimer.current = null;
+        setIsPaused((current) => !current);
+      }, DOUBLE_TAP_WINDOW_MS);
     }
   }
 
@@ -228,6 +261,11 @@ function ReelItem({
     <View style={[styles.item, { height }]}>
       <Pressable onPress={handlePress} style={StyleSheet.absoluteFillObject}>
         <VideoView contentFit="cover" nativeControls={false} player={player} pointerEvents="none" style={StyleSheet.absoluteFillObject} />
+        {isPaused ? (
+          <View pointerEvents="none" style={styles.pauseOverlay}>
+            <SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={30} tintColor="#FFFFFF" />
+          </View>
+        ) : null}
         <Animated.View
           pointerEvents="none"
           style={[
@@ -311,6 +349,11 @@ const styles = StyleSheet.create({
   titleText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
 
   heartBurst: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  pauseOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   actionColumn: { position: 'absolute', right: 12, alignItems: 'center', gap: 20 },
   actionButton: { alignItems: 'center', gap: 4 },
