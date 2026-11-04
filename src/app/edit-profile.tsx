@@ -54,9 +54,20 @@ export default function EditProfileScreen() {
       return;
     }
 
+    const asset = result.assets[0];
+    // allowsEditing/aspect only drive a native crop UI — expo-image-picker's
+    // web shim ignores both, so without an explicit crop step here, a
+    // non-square photo picked on web would get force-stretched to a square
+    // by the resize below instead of cropped. Cropping to a centered square
+    // first makes this correct on every platform, including native (where
+    // it's a no-op on an already-square image from the native crop UI).
+    const squareSize = Math.min(asset.width, asset.height);
     const manipulated = await ImageManipulator.manipulateAsync(
-      result.assets[0].uri,
-      [{ resize: { width: AVATAR_DIMENSION, height: AVATAR_DIMENSION } }],
+      asset.uri,
+      [
+        { crop: { originX: (asset.width - squareSize) / 2, originY: (asset.height - squareSize) / 2, width: squareSize, height: squareSize } },
+        { resize: { width: AVATAR_DIMENSION, height: AVATAR_DIMENSION } },
+      ],
       { compress: AVATAR_COMPRESSION_QUALITY, format: ImageManipulator.SaveFormat.JPEG }
     );
 
