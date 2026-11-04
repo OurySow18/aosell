@@ -312,7 +312,17 @@ function ReelItem({
     <View style={[styles.item, { height }, isWideWeb && styles.itemWideWeb]}>
       <View style={isWideWeb ? [styles.videoFrame, { width: videoWidth, height }] : styles.videoFrameFill}>
         <Pressable onPress={handlePress} style={StyleSheet.absoluteFillObject}>
-          <VideoView contentFit="cover" nativeControls={false} player={player} pointerEvents="none" style={StyleSheet.absoluteFillObject} />
+          {/* The wide-web frame is a fixed 9:16 box, not the video's real
+              aspect ratio — "cover" would crop unpredictably, so it only
+              crops to fill edge to edge on native/mobile, where the frame IS
+              the full screen and cropping is the expected Reels look. */}
+          <VideoView
+            contentFit={isWideWeb ? 'contain' : 'cover'}
+            nativeControls={false}
+            player={player}
+            pointerEvents="none"
+            style={StyleSheet.absoluteFillObject}
+          />
           {isPaused ? (
             <View pointerEvents="none" style={styles.pauseOverlay}>
               <SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={30} tintColor="#FFFFFF" />
