@@ -9,6 +9,7 @@ import {
   limit as queryLimit,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 
 import { db } from '@/lib/firebase/config';
@@ -34,6 +35,23 @@ export const PostRepository = {
       (error) => {
         logFirestoreListenerError('post.feed', error);
         onChange(demoPosts);
+      }
+    );
+  },
+
+  // The global feed above is capped at 50 posts app-wide, so filtering it for
+  // "my posts" (profile grid, stats) silently drops older posts once enough
+  // other activity pushes them out of that window — this queries Firestore
+  // directly for just this seller's posts instead, with no such cap.
+  subscribeBySeller(sellerId: string, onChange: (posts: Post[]) => void) {
+    return onSnapshot(
+      query(collection(db, 'posts'), where('sellerId', '==', sellerId), orderBy('createdAt', 'desc')),
+      (snapshot) => {
+        onChange(snapshot.docs.map((item) => fromFirestorePostDoc(item.id, item.data() as FirestorePostDoc)));
+      },
+      (error) => {
+        logFirestoreListenerError('post.bySeller', error);
+        onChange([]);
       }
     );
   },

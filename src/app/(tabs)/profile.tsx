@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/app-button';
@@ -12,6 +12,7 @@ import { MaxContentWidth, palette } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { formatCompactNumber } from '@/lib/utils/format';
+import { PostRepository } from '@/repositories/post-repository';
 import { useAosell } from '@/providers/aosell-provider';
 import type { Post } from '@/types/domain';
 
@@ -26,8 +27,17 @@ export default function ProfileScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const { width } = useWindowDimensions();
-  const { currentUser, userProfile, currentSellerProfile, feedPosts, listings } = useAosell();
+  const { currentUser, userProfile, currentSellerProfile, listings } = useAosell();
   const [contentTab, setContentTab] = useState<ContentTab>('all');
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    if (!currentSellerProfile) {
+      setMyPosts([]);
+      return;
+    }
+    return PostRepository.subscribeBySeller(currentSellerProfile.id, setMyPosts);
+  }, [currentSellerProfile?.id]);
 
   function openSignIn() {
     router.push({ pathname: '/auth', params: { mode: 'signin', returnTo: '/profile' } });
@@ -51,7 +61,6 @@ export default function ProfileScreen() {
     );
   }
 
-  const myPosts = currentSellerProfile ? feedPosts.filter((post) => post.sellerId === currentSellerProfile.id) : [];
   const visiblePosts = contentTab === 'reels' ? myPosts.filter((post) => post.mediaType === 'video') : myPosts;
   const myProducts = currentSellerProfile ? listings.filter((listing) => listing.sellerId === currentSellerProfile.id) : [];
   const totalLikes = myPosts.reduce((sum, post) => sum + post.likeCount, 0);
