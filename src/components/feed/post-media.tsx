@@ -4,6 +4,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { palette } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useVideoSound } from '@/providers/video-sound-provider';
@@ -63,8 +64,11 @@ export function PostMedia({
   }
 
   if (post.mediaType === 'text') {
+    // Fixed ink background regardless of theme — theme.colors.text flips to
+    // a near-white color in dark mode, which would leave the caption's white
+    // text unreadable against it.
     return (
-      <View style={[styles.textCard, { backgroundColor: theme.colors.text, borderRadius: theme.radii.xl }]}>
+      <View style={[styles.textCard, { backgroundColor: palette.ink, borderRadius: theme.radii.xl }]}>
         <Text style={[styles.textCardCaption, { fontFamily: theme.typography.title.fontFamily }]}>{post.caption}</Text>
       </View>
     );

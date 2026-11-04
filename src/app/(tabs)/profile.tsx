@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { StatusPill } from '@/components/ui/status-pill';
-import { MaxContentWidth } from '@/constants/theme';
+import { MaxContentWidth, palette } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { useAosell } from '@/providers/aosell-provider';
@@ -176,7 +176,10 @@ function PostGridTile({
           <SymbolView tintColor={theme.colors.text} size={22} name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} />
         </View>
       ) : (
-        <View style={[StyleSheet.absoluteFillObject, styles.textTile, { backgroundColor: theme.colors.text }]}>
+        // Fixed ink background regardless of theme, matching post-media.tsx's
+        // text-post card — theme.colors.text flips to near-white in dark
+        // mode, which would leave this white caption unreadable against it.
+        <View style={[StyleSheet.absoluteFillObject, styles.textTile, { backgroundColor: palette.ink }]}>
           <Text numberOfLines={5} style={styles.textTileCaption}>
             {post.caption}
           </Text>
