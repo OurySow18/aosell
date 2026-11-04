@@ -5,10 +5,11 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import type { ComponentProps } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ListRenderItemInfo, ViewToken } from 'react-native';
-import { Alert, Animated, FlatList, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, FlatList, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/ui/empty-state';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useLocale } from '@/hooks/use-locale';
 import { buildPostShareMessage } from '@/lib/posts';
 import { PostRepository } from '@/repositories/post-repository';
@@ -18,6 +19,7 @@ import type { Post, SellerProfile } from '@/types/domain';
 
 const DOUBLE_TAP_WINDOW_MS = 280;
 const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 70 };
+const MAX_WEB_VIDEO_WIDTH = 420;
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 
@@ -28,6 +30,13 @@ type SymbolName = ComponentProps<typeof SymbolView>['name'];
 export default function ReelsScreen() {
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
+  const breakpoint = useBreakpoint();
+  // Full-bleed, overlaid controls suit a phone screen (native app, or a
+  // narrow mobile browser) — on wider web, that same layout reads as broken
+  // rather than immersive, so it switches to a centered column with controls
+  // beside the video and explicit up/down navigation, the way Facebook and
+  // TikTok's own web Reels/video pages do.
+  const isWideWeb = Platform.OS === 'web' && breakpoint !== 'mobile';
   // Tabs stay mounted when you switch away from one — without this, a video
   // left playing when this tab loses focus (another tab, or a pushed screen
   // like post detail/comments) would keep playing silently in the background.
@@ -70,21 +79,49 @@ export default function ReelsScreen() {
     [itemHeight]
   );
 
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= reels.length) {
+        return;
+      }
+      listRef.current?.scrollToIndex({ animated: true, index });
+    },
+    [reels.length]
+  );
+
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<Post>) => (
+    ({ item, index }: ListRenderItemInfo<Post>) => (
       <ReelItem
+        canGoNext={index < reels.length - 1}
+        canGoPrev={index > 0}
         height={itemHeight}
         isActive={item.id === activePostId && isScreenFocused}
         isOwner={currentSellerProfile?.id === item.sellerId}
         isFollowing={followedSellerIds.includes(item.sellerId)}
+        isWideWeb={isWideWeb}
         onDelete={() => void deletePost(item.id)}
         onFollow={() => void toggleFollow(item.sellerId, !followedSellerIds.includes(item.sellerId))}
         onLike={(liked) => void toggleLike(item.id, liked)}
+        onNext={() => scrollToIndex(index + 1)}
+        onPrev={() => scrollToIndex(index - 1)}
         post={item}
         seller={getSellerById(item.sellerId)}
       />
     ),
-    [activePostId, currentSellerProfile?.id, deletePost, followedSellerIds, getSellerById, isScreenFocused, itemHeight, toggleFollow, toggleLike]
+    [
+      activePostId,
+      currentSellerProfile?.id,
+      deletePost,
+      followedSellerIds,
+      getSellerById,
+      isScreenFocused,
+      isWideWeb,
+      itemHeight,
+      reels.length,
+      scrollToIndex,
+      toggleFollow,
+      toggleLike,
+    ]
   );
 
   return (
@@ -125,23 +162,33 @@ export default function ReelsScreen() {
 }
 
 function ReelItem({
+  canGoNext,
+  canGoPrev,
   height,
   isActive,
   isFollowing,
   isOwner,
+  isWideWeb,
   onDelete,
   onFollow,
   onLike,
+  onNext,
+  onPrev,
   post,
   seller,
 }: {
+  canGoNext: boolean;
+  canGoPrev: boolean;
   height: number;
   isActive: boolean;
   isFollowing: boolean;
   isOwner: boolean;
+  isWideWeb: boolean;
   onDelete: () => void;
   onFollow: () => void;
   onLike: (liked: boolean) => void;
+  onNext: () => void;
+  onPrev: () => void;
   post: Post;
   seller: SellerProfile | undefined;
 }) {
@@ -259,26 +306,46 @@ function ReelItem({
     ]);
   }
 
-  return (
-    <View style={[styles.item, { height }]}>
-      <Pressable onPress={handlePress} style={StyleSheet.absoluteFillObject}>
-        <VideoView contentFit="cover" nativeControls={false} player={player} pointerEvents="none" style={StyleSheet.absoluteFillObject} />
-        {isPaused ? (
-          <View pointerEvents="none" style={styles.pauseOverlay}>
-            <SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={30} tintColor="#FFFFFF" />
-          </View>
-        ) : null}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.heartBurst,
-            { opacity: heartAnim, transform: [{ scale: heartAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.2] }) }] },
-          ]}>
-          <SymbolView name={{ ios: 'heart.fill', android: 'favorite', web: 'favorite' }} size={96} tintColor="#FFFFFF" />
-        </Animated.View>
-      </Pressable>
+  const videoWidth = isWideWeb ? Math.min(height * (9 / 16), MAX_WEB_VIDEO_WIDTH) : undefined;
 
-      <View style={[styles.actionColumn, { bottom: insets.bottom + 110 }]}>
+  return (
+    <View style={[styles.item, { height }, isWideWeb && styles.itemWideWeb]}>
+      <View style={isWideWeb ? [styles.videoFrame, { width: videoWidth, height }] : styles.videoFrameFill}>
+        <Pressable onPress={handlePress} style={StyleSheet.absoluteFillObject}>
+          <VideoView contentFit="cover" nativeControls={false} player={player} pointerEvents="none" style={StyleSheet.absoluteFillObject} />
+          {isPaused ? (
+            <View pointerEvents="none" style={styles.pauseOverlay}>
+              <SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={30} tintColor="#FFFFFF" />
+            </View>
+          ) : null}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.heartBurst,
+              { opacity: heartAnim, transform: [{ scale: heartAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.2] }) }] },
+            ]}>
+            <SymbolView name={{ ios: 'heart.fill', android: 'favorite', web: 'favorite' }} size={96} tintColor="#FFFFFF" />
+          </Animated.View>
+        </Pressable>
+
+        <View style={[styles.bottomCopy, { bottom: insets.bottom + 18, right: isWideWeb ? 16 : 84 }]}>
+          <View style={styles.sellerRow}>
+            <Text style={styles.sellerName}>{seller?.brandName ?? t('listingDetail.sellerFallback')}</Text>
+            {!isOwner ? (
+              <Pressable onPress={onFollow} style={[styles.followPill, isFollowing && styles.followPillActive]}>
+                <Text style={styles.followPillText}>{isFollowing ? t('postCard.following') : t('postCard.follow')}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {post.caption ? (
+            <Text numberOfLines={2} style={styles.caption}>
+              {post.caption}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      <View style={[styles.actionColumn, isWideWeb ? styles.actionColumnWideWeb : [styles.actionColumnOverlay, { bottom: insets.bottom + 110 }]]}>
         <ReelAction
           count={post.likeCount}
           icon={liked ? { ios: 'heart.fill', android: 'favorite', web: 'favorite' } : { ios: 'heart', android: 'favorite_border', web: 'favorite_border' }}
@@ -301,24 +368,21 @@ function ReelItem({
           onPress={toggleSound}
           tint="#FFFFFF"
         />
-        {isOwner ? <ReelAction icon={{ ios: 'ellipsis', android: 'more_vert', web: 'more_vert' }} onPress={handleMore} tint="#FFFFFF" /> : null}
-      </View>
-
-      <View style={[styles.bottomCopy, { bottom: insets.bottom + 18 }]}>
-        <View style={styles.sellerRow}>
-          <Text style={styles.sellerName}>{seller?.brandName ?? t('listingDetail.sellerFallback')}</Text>
-          {!isOwner ? (
-            <Pressable onPress={onFollow} style={[styles.followPill, isFollowing && styles.followPillActive]}>
-              <Text style={styles.followPillText}>{isFollowing ? t('postCard.following') : t('postCard.follow')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-        {post.caption ? (
-          <Text numberOfLines={2} style={styles.caption}>
-            {post.caption}
-          </Text>
+        {isOwner ? (
+          <ReelAction icon={{ ios: 'ellipsis', android: 'more_vert', web: 'more_vert' }} onPress={handleMore} tint="#FFFFFF" />
         ) : null}
       </View>
+
+      {isWideWeb ? (
+        <View style={styles.chevronColumn}>
+          <Pressable disabled={!canGoPrev} onPress={onPrev} style={[styles.chevronButton, !canGoPrev && styles.chevronDisabled]}>
+            <SymbolView name={{ ios: 'chevron.up', android: 'keyboard_arrow_up', web: 'keyboard_arrow_up' }} size={22} tintColor="#FFFFFF" />
+          </Pressable>
+          <Pressable disabled={!canGoNext} onPress={onNext} style={[styles.chevronButton, !canGoNext && styles.chevronDisabled]}>
+            <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={22} tintColor="#FFFFFF" />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -362,7 +426,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  actionColumn: { position: 'absolute', right: 12, alignItems: 'center', gap: 20 },
+  actionColumn: { alignItems: 'center', gap: 20 },
+  actionColumnOverlay: { position: 'absolute', right: 12 },
+  actionColumnWideWeb: { position: 'relative' },
   actionButton: { alignItems: 'center', gap: 4 },
   actionCount: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
 
@@ -373,4 +439,12 @@ const styles = StyleSheet.create({
   followPillActive: { borderColor: 'rgba(255,255,255,0.5)' },
   followPillText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
   caption: { color: '#FFFFFF', fontSize: 14, lineHeight: 19 },
+
+  itemWideWeb: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
+  videoFrame: { position: 'relative', overflow: 'hidden', borderRadius: 12, backgroundColor: '#000000' },
+  videoFrameFill: { ...StyleSheet.absoluteFillObject },
+
+  chevronColumn: { gap: 12 },
+  chevronButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  chevronDisabled: { opacity: 0.3 },
 });
