@@ -178,6 +178,7 @@ export function fromFirestoreSellerProfileDoc(
     verificationStatus: doc.verificationStatus,
     ratingAverage: doc.ratingAverage,
     ratingCount: doc.ratingCount,
+    followerCount: doc.followerCount ?? 0,
     isOpen: doc.isOpen,
     tags: doc.tags ?? [],
     cuisineSpecialties: doc.cuisineSpecialties ?? [],

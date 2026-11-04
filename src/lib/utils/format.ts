@@ -9,6 +9,12 @@ export function formatMoney(money: Money) {
   }).format(money.amountCents / 100);
 }
 
+// Keeps stat counters (followers, likes…) to a fixed width as they grow —
+// "1,2 k" instead of "1234" — matching how TikTok/Instagram display these.
+export function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat(getIntlLocale(), { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
 export function formatDate(value: string) {
   return new Intl.DateTimeFormat(getIntlLocale(), {
     day: '2-digit',

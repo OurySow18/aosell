@@ -261,7 +261,11 @@ service cloud.firestore {
         && request.resource.data.tags is list
         && isValidTimestamp(request.resource.data.createdAt)
         && isValidTimestamp(request.resource.data.updatedAt);
-      allow update: if isSellerOwnerBySellerId(sellerId) || isAdmin();
+      // followerCount is only ever written by the onSellerFollowWritten Cloud
+      // Function (Admin SDK bypasses rules) — no client write path sets it,
+      // so this just blocks it from being tampered with via a normal update.
+      allow update: if (isSellerOwnerBySellerId(sellerId) || isAdmin())
+        && request.resource.data.get('followerCount', 0) == resource.data.get('followerCount', 0);
       allow delete: if isAdmin();
     }
 

@@ -11,6 +11,7 @@ import { StatusPill } from '@/components/ui/status-pill';
 import { MaxContentWidth, palette } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
+import { formatCompactNumber } from '@/lib/utils/format';
 import { useAosell } from '@/providers/aosell-provider';
 import type { Post } from '@/types/domain';
 
@@ -25,7 +26,7 @@ export default function ProfileScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
   const { width } = useWindowDimensions();
-  const { currentUser, userProfile, currentSellerProfile, feedPosts } = useAosell();
+  const { currentUser, userProfile, currentSellerProfile, feedPosts, listings } = useAosell();
   const [contentTab, setContentTab] = useState<ContentTab>('all');
 
   function openSignIn() {
@@ -52,6 +53,8 @@ export default function ProfileScreen() {
 
   const myPosts = currentSellerProfile ? feedPosts.filter((post) => post.sellerId === currentSellerProfile.id) : [];
   const visiblePosts = contentTab === 'reels' ? myPosts.filter((post) => post.mediaType === 'video') : myPosts;
+  const myProducts = currentSellerProfile ? listings.filter((listing) => listing.sellerId === currentSellerProfile.id) : [];
+  const totalLikes = myPosts.reduce((sum, post) => sum + post.likeCount, 0);
 
   const contentWidth = Math.min(width, MaxContentWidth) - 40;
   const tileSize = (contentWidth - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
@@ -93,11 +96,11 @@ export default function ProfileScreen() {
           {currentSellerProfile ? <StatusPill label={t('profileScreen.sellerProfileActive')} tone="success" /> : null}
         </View>
 
-        <View style={styles.statBlock}>
-          <Text style={[styles.statValue, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
-            {myPosts.length}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('profileScreen.postsStat')}</Text>
+        <View style={styles.statRow}>
+          <StatBlock label={t('profileScreen.followersStat')} theme={theme} value={currentSellerProfile?.followerCount ?? 0} />
+          <StatBlock label={t('profileScreen.likesStat')} theme={theme} value={totalLikes} />
+          <StatBlock label={t('profileScreen.productsStat')} theme={theme} value={myProducts.length} />
+          <StatBlock label={t('profileScreen.postsStat')} theme={theme} value={myPosts.length} />
         </View>
 
         {userProfile.bio ? <Text style={[styles.bio, { color: theme.colors.text }]}>{userProfile.bio}</Text> : null}
@@ -142,6 +145,19 @@ export default function ProfileScreen() {
         </View>
       )}
     </AppScreen>
+  );
+}
+
+function StatBlock({ label, theme, value }: { label: string; theme: AppTheme; value: number }) {
+  return (
+    <View style={styles.statBlock}>
+      <Text style={[styles.statValue, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
+        {formatCompactNumber(value)}
+      </Text>
+      <Text numberOfLines={1} style={[styles.statLabel, { color: theme.colors.textMuted }]}>
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -211,9 +227,10 @@ const styles = StyleSheet.create({
 
   badgeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 },
 
-  statBlock: { alignItems: 'center', marginTop: 12 },
-  statValue: { fontSize: 20, lineHeight: 25 },
-  statLabel: { fontSize: 12, lineHeight: 16 },
+  statRow: { flexDirection: 'row', width: '100%', marginTop: 14 },
+  statBlock: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: { fontSize: 18, lineHeight: 23 },
+  statLabel: { fontSize: 11, lineHeight: 14 },
 
   bio: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 10, paddingHorizontal: 20 },
 

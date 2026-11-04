@@ -138,6 +138,7 @@ export interface SellerProfile {
   verificationStatus: VerificationStatus;
   ratingAverage?: number;
   ratingCount?: number;
+  followerCount?: number;
   isOpen?: boolean;
   tags: string[];
   cuisineSpecialties: Cuisine[];

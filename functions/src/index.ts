@@ -217,6 +217,25 @@ export const onPostCommentWritten = onDocumentWritten('posts/{postId}/comments/{
   );
 });
 
+// Follows are stored per-follower, at user_profiles/{userId}/follows/{sellerId}
+// (there's no reverse index on the seller side), so the seller's own
+// follower count has to be kept as a denormalized counter here instead.
+export const onSellerFollowWritten = onDocumentWritten('user_profiles/{userId}/follows/{sellerId}', async (event) => {
+  const sellerId = event.params.sellerId;
+  const existedBefore = event.data?.before.exists ?? false;
+  const existsAfter = event.data?.after.exists ?? false;
+
+  if (existedBefore === existsAfter) {
+    return;
+  }
+
+  const delta = existsAfter ? 1 : -1;
+  await db.collection('seller_profiles').doc(sellerId).set(
+    { followerCount: FieldValue.increment(delta) },
+    { merge: true }
+  );
+});
+
 // Google Cloud's supported Transcoder API regions include us-central1, which
 // is also this project's default Functions region — no cross-region calls.
 const TRANSCODER_LOCATION = 'us-central1';
