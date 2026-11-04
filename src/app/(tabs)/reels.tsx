@@ -321,7 +321,7 @@ function ReelItem({
             nativeControls={false}
             player={player}
             pointerEvents="none"
-            style={StyleSheet.absoluteFillObject}
+            style={styles.videoFill}
           />
           {isPaused ? (
             <View pointerEvents="none" style={styles.pauseOverlay}>
@@ -453,6 +453,12 @@ const styles = StyleSheet.create({
   itemWideWeb: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
   videoFrame: { position: 'relative', overflow: 'hidden', borderRadius: 12, backgroundColor: '#000000' },
   videoFrameFill: { ...StyleSheet.absoluteFillObject },
+  // On web, a <video> left to size itself from top/left/right/bottom:0 alone
+  // can keep its intrinsic (source) dimensions in some browsers instead of
+  // stretching to the frame — which makes contentFit a no-op, since
+  // object-fit only has something to resize within once the box itself is
+  // explicitly sized. width/height: '100%' makes that explicit.
+  videoFill: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
 
   chevronColumn: { gap: 12 },
   chevronButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
