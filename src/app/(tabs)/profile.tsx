@@ -7,8 +7,6 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { AppButton } from '@/components/ui/app-button';
 import { AppScreen } from '@/components/ui/app-screen';
 import { EmptyState } from '@/components/ui/empty-state';
-import { SectionTitle } from '@/components/ui/section-title';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import { StatusPill } from '@/components/ui/status-pill';
 import { MaxContentWidth, palette } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -21,6 +19,7 @@ type ContentTab = 'all' | 'reels';
 
 const GRID_GAP = 2;
 const GRID_COLUMNS = 3;
+const AVATAR_SIZE = 88;
 
 export default function ProfileScreen() {
   const theme = useAppTheme();
@@ -67,63 +66,55 @@ export default function ProfileScreen() {
 
   return (
     <AppScreen>
-      <View style={styles.headerRow}>
-        <View style={styles.headerTitleWrap}>
-          <SectionTitle
-            eyebrow={t('profileScreen.eyebrow')}
-            title={userProfile.displayName}
-            description={userProfile.bio ?? t('profileScreen.fallbackDescription')}
-          />
-        </View>
-        <Pressable
-          accessibilityLabel={t('profileScreen.settingsAction')}
-          onPress={() => router.push('/settings')}
-          style={[styles.settingsButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <SymbolView tintColor={theme.colors.text} size={20} name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }} />
+      <View style={styles.topRow}>
+        <Pressable accessibilityLabel={t('profileScreen.settingsAction')} onPress={() => router.push('/settings')}>
+          <SymbolView tintColor={theme.colors.text} size={22} name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }} />
         </Pressable>
       </View>
 
-      <View style={[styles.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-        <View style={styles.heroTop}>
-          <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint, borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
-            {userProfile.avatarUrl ? (
-              <Image contentFit="cover" source={{ uri: userProfile.avatarUrl }} style={StyleSheet.absoluteFillObject} />
-            ) : (
-              <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
-                {userProfile.displayName.slice(0, 2).toUpperCase()}
-              </Text>
-            )}
-          </View>
-          <View style={styles.heroCopy}>
-            <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
-              {userProfile.displayName}
+      <View style={styles.header}>
+        <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint, borderColor: theme.colors.border, borderRadius: AVATAR_SIZE / 2 }]}>
+          {userProfile.avatarUrl ? (
+            <Image contentFit="cover" source={{ uri: userProfile.avatarUrl }} style={StyleSheet.absoluteFillObject} />
+          ) : (
+            <Text style={[styles.avatarInitials, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
+              {userProfile.displayName.slice(0, 2).toUpperCase()}
             </Text>
-            <Text style={[styles.body, { color: theme.colors.textMuted, fontFamily: theme.typography.body.fontFamily }]}>
-              {currentUser.email}
-            </Text>
-          </View>
+          )}
         </View>
-        <View style={styles.row}>
+
+        <Text style={[styles.displayName, { color: theme.colors.text, fontFamily: theme.typography.title.fontFamily }]}>
+          {userProfile.displayName}
+        </Text>
+        <Text style={[styles.email, { color: theme.colors.textMuted }]}>{currentUser.email}</Text>
+
+        <View style={styles.badgeRow}>
           <StatusPill label={currentUser.role === 'seller' ? t('auth.seller') : t('auth.buyer')} tone="brand" />
           {currentSellerProfile ? <StatusPill label={t('profileScreen.sellerProfileActive')} tone="success" /> : null}
         </View>
-        <View style={styles.statsRow}>
+
+        <View style={styles.statBlock}>
           <Text style={[styles.statValue, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>
             {myPosts.length}
           </Text>
           <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('profileScreen.postsStat')}</Text>
         </View>
-        <AppButton fullWidth label={t('editProfile.title')} variant="secondary" onPress={() => router.push('/edit-profile')} />
+
+        {userProfile.bio ? <Text style={[styles.bio, { color: theme.colors.text }]}>{userProfile.bio}</Text> : null}
+
+        <Pressable
+          onPress={() => router.push('/edit-profile')}
+          style={[styles.editButton, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.md }]}>
+          <Text style={[styles.editButtonText, { color: theme.colors.text, fontFamily: theme.typography.label.fontFamily }]}>
+            {t('editProfile.title')}
+          </Text>
+        </Pressable>
       </View>
 
-      <SegmentedControl
-        onChange={setContentTab}
-        options={[
-          { value: 'all', label: t('profileScreen.tabAll') },
-          { value: 'reels', label: t('profileScreen.tabReels') },
-        ]}
-        value={contentTab}
-      />
+      <View style={[styles.tabRow, { borderBottomColor: theme.colors.border }]}>
+        <ProfileTab active={contentTab === 'all'} label={t('profileScreen.tabAll')} onPress={() => setContentTab('all')} theme={theme} />
+        <ProfileTab active={contentTab === 'reels'} label={t('profileScreen.tabReels')} onPress={() => setContentTab('reels')} theme={theme} />
+      </View>
 
       {visiblePosts.length ? (
         <View style={styles.grid}>
@@ -151,6 +142,20 @@ export default function ProfileScreen() {
         </View>
       )}
     </AppScreen>
+  );
+}
+
+function ProfileTab({ active, label, onPress, theme }: { active: boolean; label: string; onPress: () => void; theme: AppTheme }) {
+  return (
+    <Pressable onPress={onPress} style={[styles.tab, active && { borderBottomColor: theme.colors.text }]}>
+      <Text
+        style={[
+          styles.tabLabel,
+          { color: active ? theme.colors.text : theme.colors.textMuted, fontFamily: active ? theme.typography.label.fontFamily : theme.typography.body.fontFamily },
+        ]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -185,32 +190,48 @@ function PostGridTile({
           </Text>
         </View>
       )}
+      {post.likeCount > 0 ? (
+        <View pointerEvents="none" style={styles.tileLikeBadge}>
+          <SymbolView name={{ ios: 'heart.fill', android: 'favorite', web: 'favorite' }} size={11} tintColor="#FFFFFF" />
+          <Text style={styles.tileLikeCount}>{post.likeCount}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  headerTitleWrap: { flex: 1, minWidth: 0 },
-  settingsButton: { width: 40, height: 40, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  topRow: { flexDirection: 'row', justifyContent: 'flex-end' },
 
-  heroCard: { borderWidth: 1, padding: 20, gap: 16 },
-  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderWidth: 1, overflow: 'hidden' },
-  heroCopy: { gap: 4, flex: 1 },
-  row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  statsRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  header: { alignItems: 'center', gap: 4 },
+  avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, alignItems: 'center', justifyContent: 'center', borderWidth: 1, overflow: 'hidden', marginBottom: 6 },
+  avatarInitials: { fontSize: 26, lineHeight: 32 },
+  displayName: { fontSize: 20, lineHeight: 26, textAlign: 'center' },
+  email: { fontSize: 13, lineHeight: 18 },
+
+  badgeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 },
+
+  statBlock: { alignItems: 'center', marginTop: 12 },
   statValue: { fontSize: 20, lineHeight: 25 },
-  statLabel: { fontSize: 13, lineHeight: 18 },
+  statLabel: { fontSize: 12, lineHeight: 16 },
+
+  bio: { fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 10, paddingHorizontal: 20 },
+
+  editButton: { minWidth: 180, height: 38, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, marginTop: 14 },
+  editButtonText: { fontSize: 14, lineHeight: 18 },
+
+  tabRow: { flexDirection: 'row', borderBottomWidth: 1 },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabLabel: { fontSize: 14, lineHeight: 18 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   videoTile: { alignItems: 'center', justifyContent: 'center' },
   textTile: { padding: 8, justifyContent: 'center' },
   textTileCaption: { color: '#FFFFFF', fontSize: 11, lineHeight: 14 },
+  tileLikeBadge: { position: 'absolute', left: 6, bottom: 6, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  tileLikeCount: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
 
   emptyGrid: { gap: 12 },
 
   loadingEmail: { textAlign: 'center', fontSize: 13, lineHeight: 18 },
-  title: { fontSize: 22, lineHeight: 28 },
-  body: { fontSize: 15, lineHeight: 21 },
 });
