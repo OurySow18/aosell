@@ -92,6 +92,7 @@ export default function ReelsScreen() {
       {itemHeight > 0 ? (
         reels.length ? (
           <FlatList
+            contentContainerStyle={styles.listContent}
             data={reels}
             decelerationRate="fast"
             getItemLayout={getItemLayout}
@@ -105,6 +106,7 @@ export default function ReelsScreen() {
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
             snapToInterval={itemHeight}
+            style={styles.list}
             viewabilityConfig={VIEWABILITY_CONFIG}
             windowSize={3}
           />
@@ -342,6 +344,11 @@ function ReelAction({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000000' },
+  // Without an explicit style, react-native-web's FlatList doesn't reliably
+  // stretch to fill its parent or keep a single-column flow — items can end
+  // up side by side instead of stacked and paged vertically.
+  list: { flex: 1, width: '100%' },
+  listContent: { flexDirection: 'column' },
   item: { width: '100%', backgroundColor: '#000000' },
   empty: { paddingHorizontal: 20 },
 
