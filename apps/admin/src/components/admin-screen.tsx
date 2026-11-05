@@ -28,11 +28,11 @@ export function AdminScreen({ title, children }: { title: string; children: Reac
               return (
                 <Link asChild href={item.href} key={item.label}>
                   <Pressable
-                    style={[
+                    style={StyleSheet.flatten([
                       styles.navItem,
                       { borderRadius: theme.radii.md },
                       active && { backgroundColor: theme.colors.accentTint },
-                    ]}>
+                    ])}>
                     <Text
                       style={[
                         styles.navLabel,
