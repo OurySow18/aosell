@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AdminLogo } from '@/components/admin-logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useAdminAuth } from '@/providers/admin-auth';
 
 export default function AdminIndexScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { status, signIn, signInWithGoogle, signInWithApple, signOut } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,11 +35,11 @@ export default function AdminIndexScreen() {
         <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
           <AdminLogo theme={theme} />
           <Text style={[styles.message, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.body }]}>
-            Ce compte n'a pas accès au dashboard admin.
+            {t('auth.noAccess')}
           </Text>
           <Pressable onPress={() => void signOut()}>
             <Text style={[styles.link, { color: theme.colors.secondaryText, fontFamily: theme.typography.fontFamily.bodySemi }]}>
-              Se déconnecter
+              {t('sidebar.signOut')}
             </Text>
           </Pressable>
         </View>
@@ -50,7 +53,7 @@ export default function AdminIndexScreen() {
     try {
       await signIn(email, password);
     } catch {
-      setError('Email ou mot de passe invalide.');
+      setError(t('auth.signInError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -62,7 +65,7 @@ export default function AdminIndexScreen() {
     try {
       await method();
     } catch {
-      setError('Connexion annulée ou refusée.');
+      setError(t('auth.socialError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -71,14 +74,17 @@ export default function AdminIndexScreen() {
   return (
     <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
-        <AdminLogo theme={theme} />
+        <View style={styles.cardTop}>
+          <AdminLogo theme={theme} />
+          <LanguageSwitcher theme={theme} />
+        </View>
 
         <View style={styles.form}>
           <TextInput
             autoCapitalize="none"
             keyboardType="email-address"
             onChangeText={setEmail}
-            placeholder="Email"
+            placeholder={t('auth.email')}
             placeholderTextColor={theme.colors.textMuted}
             style={[
               styles.input,
@@ -88,7 +94,7 @@ export default function AdminIndexScreen() {
           />
           <TextInput
             onChangeText={setPassword}
-            placeholder="Mot de passe"
+            placeholder={t('auth.password')}
             placeholderTextColor={theme.colors.textMuted}
             secureTextEntry
             style={[
@@ -103,14 +109,14 @@ export default function AdminIndexScreen() {
             onPress={() => void handleSignIn()}
             style={[styles.button, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg, opacity: isSubmitting ? 0.6 : 1 }]}>
             <Text style={[styles.buttonText, { color: theme.colors.background, fontFamily: theme.typography.fontFamily.bodySemi }]}>
-              {isSubmitting ? '...' : 'Se connecter'}
+              {isSubmitting ? '...' : t('auth.signIn')}
             </Text>
           </Pressable>
         </View>
 
         <View style={styles.dividerRow}>
           <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-          <Text style={[styles.dividerText, { color: theme.colors.textMuted, fontFamily: theme.typography.fontFamily.body }]}>ou</Text>
+          <Text style={[styles.dividerText, { color: theme.colors.textMuted, fontFamily: theme.typography.fontFamily.body }]}>{t('auth.or')}</Text>
           <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
         </View>
 
@@ -120,7 +126,7 @@ export default function AdminIndexScreen() {
             onPress={() => void handleSocialSignIn(signInWithGoogle)}
             style={[styles.socialButton, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
             <Text style={[styles.socialButtonText, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.bodySemi }]}>
-              Google
+              {t('auth.continueGoogle')}
             </Text>
           </Pressable>
           <Pressable
@@ -128,7 +134,7 @@ export default function AdminIndexScreen() {
             onPress={() => void handleSocialSignIn(signInWithApple)}
             style={[styles.socialButton, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
             <Text style={[styles.socialButtonText, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.bodySemi }]}>
-              Apple
+              {t('auth.continueApple')}
             </Text>
           </Pressable>
         </View>
@@ -140,6 +146,7 @@ export default function AdminIndexScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   card: { width: 360, borderWidth: 1, padding: 28, gap: 24 },
+  cardTop: { gap: 12 },
   form: { gap: 12 },
   input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   button: { paddingVertical: 13, alignItems: 'center', marginTop: 4 },

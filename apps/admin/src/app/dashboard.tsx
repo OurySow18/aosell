@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AdminScreen } from '@/components/admin-screen';
 import { StatusPill } from '@/components/status-pill';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useAdminAuth } from '@/providers/admin-auth';
 import type { AppTheme } from '@/hooks/use-theme';
 
@@ -71,6 +72,7 @@ function ToDoRow({
 
 export default function DashboardScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { status } = useAdminAuth();
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [couriers, setCouriers] = useState<CourierProfile[]>([]);
@@ -108,21 +110,21 @@ export default function DashboardScreen() {
   const maxBar = Math.max(...HOURLY_EXAMPLE.map(([, v]) => v));
 
   return (
-    <AdminScreen subtitle="Vue d'ensemble, Bremen · mélange de données réelles et d'exemples" title="Tableau de bord">
+    <AdminScreen subtitle={t('dashboard.subtitle')} title={t('dashboard.title')}>
       <View style={styles.kpiRow}>
-        <Kpi label="Commandes (total)" theme={theme} value={String(orders.length)} />
-        <Kpi label="Vendeurs actifs" theme={theme} value={String(activeSellers)} />
-        <Kpi label="Livreurs en ligne" theme={theme} value={`${onlineCouriers.length} / ${couriers.length}`} />
-        <Kpi label="Livraisons sans livreur" theme={theme} value={String(unassignedDeliveries)} />
+        <Kpi label={t('dashboard.kpiOrders')} theme={theme} value={String(orders.length)} />
+        <Kpi label={t('dashboard.kpiActiveSellers')} theme={theme} value={String(activeSellers)} />
+        <Kpi label={t('dashboard.kpiCouriersOnline')} theme={theme} value={`${onlineCouriers.length} / ${couriers.length}`} />
+        <Kpi label={t('dashboard.kpiUnassigned')} theme={theme} value={String(unassignedDeliveries)} />
       </View>
 
       <View style={styles.twoCol}>
         <View style={[styles.chartCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
           <View style={styles.chartHeader}>
             <Text style={[styles.cardTitle, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>
-              Commandes par heure
+              {t('dashboard.chartTitle')}
             </Text>
-            <Text style={[styles.chartNote, { color: theme.colors.textMuted }]}>Exemple · pas encore de suivi horaire réel</Text>
+            <Text style={[styles.chartNote, { color: theme.colors.textMuted }]}>{t('dashboard.chartNote')}</Text>
           </View>
           <View style={styles.bars}>
             {HOURLY_EXAMPLE.map(([hour, value], index) => {
@@ -148,38 +150,38 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.todoCol}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>À traiter</Text>
+          <Text style={[styles.cardTitle, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>{t('dashboard.toDo')}</Text>
           <ToDoRow
             count={pendingSellers}
             href="/sellers"
-            subtitle="Dossiers d'inscription à vérifier"
+            subtitle={t('dashboard.toDoSellersSubtitle')}
             theme={theme}
             tint={theme.colors.warningTint}
-            title="Vendeurs à valider"
+            title={t('dashboard.toDoSellersTitle')}
           />
           <ToDoRow
             count={pendingCouriers}
             href="/couriers"
-            subtitle="Profils livreur à vérifier"
+            subtitle={t('dashboard.toDoCouriersSubtitle')}
             theme={theme}
             tint={theme.colors.warningTint}
-            title="Livreurs à valider"
+            title={t('dashboard.toDoCouriersTitle')}
           />
           <ToDoRow
             count={5}
             href="/moderation"
-            subtitle="Fil social · exemple"
+            subtitle={t('dashboard.toDoModerationSubtitle')}
             theme={theme}
             tint={theme.colors.surfaceMuted}
-            title="Publications signalées"
+            title={t('dashboard.toDoModerationTitle')}
           />
           <ToDoRow
             count={1}
             href="/payments"
-            subtitle="IBAN à vérifier · exemple"
+            subtitle={t('dashboard.toDoPaymentsSubtitle')}
             theme={theme}
             tint={theme.colors.surfaceMuted}
-            title="Versement bloqué"
+            title={t('dashboard.toDoPaymentsTitle')}
           />
         </View>
       </View>
@@ -188,10 +190,10 @@ export default function DashboardScreen() {
         <View style={[styles.tableCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
           <View style={styles.chartHeader}>
             <Text style={[styles.cardTitle, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>
-              Commandes en cours ({liveOrders.length})
+              {t('dashboard.liveOrders', { count: liveOrders.length })}
             </Text>
             <Link href="/orders" style={[styles.link, { color: theme.colors.text }]}>
-              Tout voir
+              {t('dashboard.seeAll')}
             </Link>
           </View>
           {liveOrders.slice(0, 6).map((order, index) => (
@@ -201,38 +203,42 @@ export default function DashboardScreen() {
                 {sellerName(order.sellerId)}
               </Text>
               <Text style={[styles.liveTotal, { color: theme.colors.text }]}>{(order.total.amountCents / 100).toFixed(2)} €</Text>
-              <StatusPill label={order.status} theme={theme} tone="neutral" />
+              <StatusPill label={t(`domain.orderStatus.${order.status}`)} theme={theme} tone="neutral" />
               <Text style={[styles.liveAge, { color: theme.colors.textMuted }]}>{relativeMinutes(order.createdAt)}</Text>
             </View>
           ))}
-          {!liveOrders.length ? <Text style={[styles.chartNote, { color: theme.colors.textMuted, padding: 16 }]}>Aucune commande en cours.</Text> : null}
+          {!liveOrders.length ? (
+            <Text style={[styles.chartNote, { color: theme.colors.textMuted, padding: 16 }]}>{t('dashboard.noLiveOrders')}</Text>
+          ) : null}
         </View>
 
         <View style={styles.todoCol}>
           <View style={[styles.courierCard, { backgroundColor: theme.colors.text, borderRadius: theme.radii.xl }]}>
-            <Text style={styles.courierTitle}>Livreurs en ligne</Text>
+            <Text style={styles.courierTitle}>{t('dashboard.couriersOnline')}</Text>
             <View style={styles.courierBig}>
               <Text style={styles.courierNumber}>{onlineCouriers.length}</Text>
-              <Text style={styles.courierOf}>sur {couriers.length} inscrits</Text>
+              <Text style={styles.courierOf}>{t('dashboard.ofRegistered', { count: couriers.length })}</Text>
             </View>
             <View style={styles.courierLegend}>
-              <Text style={styles.courierLegendItem}>● {onDeliveryCouriers} en course</Text>
-              <Text style={styles.courierLegendItem}>● {availableCouriers} disponibles</Text>
+              <Text style={styles.courierLegendItem}>● {t('dashboard.onDelivery', { count: onDeliveryCouriers })}</Text>
+              <Text style={styles.courierLegendItem}>● {t('dashboard.available', { count: availableCouriers })}</Text>
             </View>
           </View>
           <View style={[styles.tableCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl, padding: 20, gap: 10 }]}>
             <Text style={[styles.cardTitle, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>
-              Meilleurs vendeurs du jour
+              {t('dashboard.topSellers')}
             </Text>
-            <Text style={[styles.chartNote, { color: theme.colors.textMuted }]}>Exemple · pas encore de calcul de CA par vendeur</Text>
-            {TOP_SELLERS_EXAMPLE.map((t) => (
-              <View key={t.rank} style={styles.topRow}>
-                <Text style={[styles.topRank, { color: theme.colors.textMuted }]}>{t.rank}</Text>
+            <Text style={[styles.chartNote, { color: theme.colors.textMuted }]}>{t('dashboard.topSellersNote')}</Text>
+            {TOP_SELLERS_EXAMPLE.map((row) => (
+              <View key={row.rank} style={styles.topRow}>
+                <Text style={[styles.topRank, { color: theme.colors.textMuted }]}>{row.rank}</Text>
                 <Text numberOfLines={1} style={[styles.topName, { color: theme.colors.text }]}>
-                  {t.name}
+                  {row.name}
                 </Text>
-                <Text style={[styles.topMeta, { color: theme.colors.textMuted }]}>{t.orders} cmd</Text>
-                <Text style={[styles.topMeta, { color: theme.colors.text, fontWeight: '700' }]}>{t.rev}</Text>
+                <Text style={[styles.topMeta, { color: theme.colors.textMuted }]}>
+                  {row.orders} {t('dashboard.ordersAbbrev')}
+                </Text>
+                <Text style={[styles.topMeta, { color: theme.colors.text, fontWeight: '700' }]}>{row.rev}</Text>
               </View>
             ))}
           </View>

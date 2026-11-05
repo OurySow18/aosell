@@ -5,27 +5,39 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AdminScreen } from '@/components/admin-screen';
-import { StatusPill, toneForVerificationStatus } from '@/components/status-pill';
+import { StatusPill } from '@/components/status-pill';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useAdminAuth } from '@/providers/admin-auth';
 import type { AppTheme } from '@/hooks/use-theme';
 
 type Tab = 'pending' | 'active' | 'rejected';
 
-function Tabs({ tab, setTab, counts, theme }: { tab: Tab; setTab: (t: Tab) => void; counts: Record<Tab, number>; theme: AppTheme }) {
-  const labels: Record<Tab, string> = { pending: 'En attente', active: 'Actifs', rejected: 'Rejetés' };
+function Tabs({
+  tab,
+  setTab,
+  counts,
+  theme,
+  labels,
+}: {
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  counts: Record<Tab, number>;
+  theme: AppTheme;
+  labels: Record<Tab, string>;
+}) {
   return (
     <View style={[styles.tabs, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.md }]}>
-      {(['pending', 'active', 'rejected'] as Tab[]).map((t) => (
+      {(['pending', 'active', 'rejected'] as Tab[]).map((item) => (
         <Text
-          key={t}
-          onPress={() => setTab(t)}
+          key={item}
+          onPress={() => setTab(item)}
           style={[
             styles.tab,
-            { borderRadius: theme.radii.sm, color: tab === t ? theme.colors.text : theme.colors.textMuted },
-            tab === t && { backgroundColor: theme.colors.surface },
+            { borderRadius: theme.radii.sm, color: tab === item ? theme.colors.text : theme.colors.textMuted },
+            tab === item && { backgroundColor: theme.colors.surface },
           ]}>
-          {labels[t]} {counts[t]}
+          {labels[item]} {counts[item]}
         </Text>
       ))}
     </View>
@@ -34,6 +46,7 @@ function Tabs({ tab, setTab, counts, theme }: { tab: Tab; setTab: (t: Tab) => vo
 
 export default function CouriersScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { status } = useAdminAuth();
   const [couriers, setCouriers] = useState<CourierProfile[]>([]);
   const [tab, setTab] = useState<Tab>('pending');
@@ -57,9 +70,10 @@ export default function CouriersScreen() {
   }
 
   return (
-    <AdminScreen subtitle="Livreurs indépendants de Bremen" title={`Livreurs (${couriers.length})`}>
+    <AdminScreen subtitle={t('couriers.subtitle')} title={t('couriers.title', { count: couriers.length })}>
       <Tabs
         counts={{ pending: grouped.pending.length, active: grouped.active.length, rejected: grouped.rejected.length }}
+        labels={{ pending: t('couriers.tabPending'), active: t('couriers.tabActive'), rejected: t('couriers.tabRejected') }}
         setTab={setTab}
         tab={tab}
         theme={theme}
@@ -87,18 +101,18 @@ export default function CouriersScreen() {
                 <Text
                   onPress={() => void CourierRepository.setVerificationStatus(courier.id, 'verified')}
                   style={[styles.actionBtn, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md, color: theme.colors.onAccent }]}>
-                  Valider
+                  {t('couriers.approve')}
                 </Text>
                 <Text
                   onPress={() => void CourierRepository.setVerificationStatus(courier.id, 'rejected')}
                   style={[styles.actionBtn, styles.actionDanger, { borderColor: theme.colors.errorTint, borderRadius: theme.radii.md, color: theme.colors.error }]}>
-                  Refuser
+                  {t('couriers.reject')}
                 </Text>
               </View>
             </View>
           ))}
           {!grouped.pending.length ? (
-            <Text style={[styles.empty, { color: theme.colors.textMuted }]}>Aucune demande en attente.</Text>
+            <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{t('couriers.emptyPending')}</Text>
           ) : null}
         </View>
       ) : (
@@ -109,7 +123,11 @@ export default function CouriersScreen() {
                 <Text style={[styles.cardName, { color: theme.colors.text }]}>{courier.displayName}</Text>
                 <Text style={[styles.cardMeta, { color: theme.colors.textMuted }]}>{courier.phoneNumber}</Text>
               </View>
-              <StatusPill label={courier.availability} theme={theme} tone={courier.availability === 'offline' ? 'neutral' : 'success'} />
+              <StatusPill
+                label={t(`domain.availability.${courier.availability}`)}
+                theme={theme}
+                tone={courier.availability === 'offline' ? 'neutral' : 'success'}
+              />
               <Text style={[styles.rowCell, { color: theme.colors.text, fontWeight: '600' }]}>
                 {((courier.totalEarnedCents ?? 0) / 100).toFixed(2)} €
               </Text>
@@ -117,18 +135,20 @@ export default function CouriersScreen() {
                 <Text
                   onPress={() => void CourierRepository.setVerificationStatus(courier.id, 'rejected')}
                   style={[styles.linkDanger, { color: theme.colors.error }]}>
-                  Suspendre
+                  {t('couriers.suspend')}
                 </Text>
               ) : (
                 <Text
                   onPress={() => void CourierRepository.setVerificationStatus(courier.id, 'pending')}
                   style={[styles.link, { color: theme.colors.text }]}>
-                  Réexaminer
+                  {t('couriers.review')}
                 </Text>
               )}
             </View>
           ))}
-          {!grouped[tab].length ? <Text style={[styles.empty, { color: theme.colors.textMuted, padding: 20 }]}>Aucun livreur ici.</Text> : null}
+          {!grouped[tab].length ? (
+            <Text style={[styles.empty, { color: theme.colors.textMuted, padding: 20 }]}>{t('couriers.emptyList')}</Text>
+          ) : null}
         </View>
       )}
     </AdminScreen>

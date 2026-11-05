@@ -20,13 +20,6 @@ export function StatusPill({ label, tone, theme }: { label: string; tone: Tone; 
   );
 }
 
-export function toneForVerificationStatus(status: string): Tone {
-  if (status === 'verified') return 'success';
-  if (status === 'rejected') return 'error';
-  if (status === 'pending') return 'warning';
-  return 'neutral';
-}
-
 const styles = StyleSheet.create({
   pill: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
   label: { fontSize: 12, lineHeight: 16 },

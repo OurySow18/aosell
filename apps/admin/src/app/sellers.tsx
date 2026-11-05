@@ -6,13 +6,25 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AdminScreen } from '@/components/admin-screen';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useAdminAuth } from '@/providers/admin-auth';
 import type { AppTheme } from '@/hooks/use-theme';
 
 type Tab = 'pending' | 'active' | 'rejected';
 
-function Tabs({ tab, setTab, counts, theme }: { tab: Tab; setTab: (t: Tab) => void; counts: Record<Tab, number>; theme: AppTheme }) {
-  const labels: Record<Tab, string> = { pending: 'En attente', active: 'Actifs', rejected: 'Rejetés' };
+function Tabs({
+  tab,
+  setTab,
+  counts,
+  theme,
+  labels,
+}: {
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  counts: Record<Tab, number>;
+  theme: AppTheme;
+  labels: Record<Tab, string>;
+}) {
   return (
     <View style={[styles.tabs, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.md }]}>
       {(['pending', 'active', 'rejected'] as Tab[]).map((t) => (
@@ -33,6 +45,7 @@ function Tabs({ tab, setTab, counts, theme }: { tab: Tab; setTab: (t: Tab) => vo
 
 export default function SellersScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { status } = useAdminAuth();
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [tab, setTab] = useState<Tab>('pending');
@@ -56,9 +69,10 @@ export default function SellersScreen() {
   }
 
   return (
-    <AdminScreen subtitle="Restaurants, traiteurs et commerces de Bremen" title={`Vendeurs (${sellers.length})`}>
+    <AdminScreen subtitle={t('sellers.subtitle')} title={t('sellers.title', { count: sellers.length })}>
       <Tabs
         counts={{ pending: grouped.pending.length, active: grouped.active.length, rejected: grouped.rejected.length }}
+        labels={{ pending: t('sellers.tabPending'), active: t('sellers.tabActive'), rejected: t('sellers.tabRejected') }}
         setTab={setTab}
         tab={tab}
         theme={theme}
@@ -77,7 +91,7 @@ export default function SellersScreen() {
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.cardName, { color: theme.colors.text }]}>{seller.brandName}</Text>
                   <Text style={[styles.cardMeta, { color: theme.colors.textMuted }]}>
-                    {seller.type} · {seller.city}, {seller.countryCode}
+                    {t(`domain.sellerType.${seller.type}`)} · {seller.city}, {seller.countryCode}
                   </Text>
                 </View>
               </View>
@@ -85,18 +99,18 @@ export default function SellersScreen() {
                 <Text
                   onPress={() => void SellerRepository.setVerificationStatus(seller.id, 'verified')}
                   style={[styles.actionBtn, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.md, color: theme.colors.onAccent }]}>
-                  Valider
+                  {t('sellers.approve')}
                 </Text>
                 <Text
                   onPress={() => void SellerRepository.setVerificationStatus(seller.id, 'rejected')}
                   style={[styles.actionBtn, styles.actionDanger, { borderColor: theme.colors.errorTint, borderRadius: theme.radii.md, color: theme.colors.error }]}>
-                  Refuser
+                  {t('sellers.reject')}
                 </Text>
               </View>
             </View>
           ))}
           {!grouped.pending.length ? (
-            <Text style={[styles.empty, { color: theme.colors.textMuted }]}>Aucune demande en attente.</Text>
+            <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{t('sellers.emptyPending')}</Text>
           ) : null}
         </View>
       ) : (
@@ -105,7 +119,7 @@ export default function SellersScreen() {
             <View key={seller.id} style={[styles.row, index > 0 && { borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
               <View style={styles.rowInfo}>
                 <Text style={[styles.cardName, { color: theme.colors.text }]}>{seller.brandName}</Text>
-                <Text style={[styles.cardMeta, { color: theme.colors.textMuted }]}>{seller.type}</Text>
+                <Text style={[styles.cardMeta, { color: theme.colors.textMuted }]}>{t(`domain.sellerType.${seller.type}`)}</Text>
               </View>
               <Text style={[styles.rowCell, { color: theme.colors.textMuted }]}>
                 {seller.city}, {seller.countryCode}
@@ -114,18 +128,20 @@ export default function SellersScreen() {
                 <Text
                   onPress={() => void SellerRepository.setVerificationStatus(seller.id, 'rejected')}
                   style={[styles.linkDanger, { color: theme.colors.error }]}>
-                  Suspendre
+                  {t('sellers.suspend')}
                 </Text>
               ) : (
                 <Text
                   onPress={() => void SellerRepository.setVerificationStatus(seller.id, 'pending')}
                   style={[styles.link, { color: theme.colors.text }]}>
-                  Réexaminer
+                  {t('sellers.review')}
                 </Text>
               )}
             </View>
           ))}
-          {!grouped[tab].length ? <Text style={[styles.empty, { color: theme.colors.textMuted, padding: 20 }]}>Aucun vendeur ici.</Text> : null}
+          {!grouped[tab].length ? (
+            <Text style={[styles.empty, { color: theme.colors.textMuted, padding: 20 }]}>{t('sellers.emptyList')}</Text>
+          ) : null}
         </View>
       )}
     </AdminScreen>

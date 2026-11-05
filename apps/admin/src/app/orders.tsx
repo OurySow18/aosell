@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { AdminScreen } from '@/components/admin-screen';
 import { StatusPill } from '@/components/status-pill';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useAdminAuth } from '@/providers/admin-auth';
 
 function toneForOrderStatus(status: OrderStatus) {
@@ -25,6 +26,7 @@ function relativeTime(iso: string) {
 
 export default function OrdersScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { status } = useAdminAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
@@ -45,15 +47,15 @@ export default function OrdersScreen() {
   const sellerName = (id: string) => sellers.find((s) => s.id === id)?.brandName ?? id.slice(0, 8);
 
   return (
-    <AdminScreen subtitle="Toutes les commandes, triées par date" title={`Commandes (${orders.length})`}>
+    <AdminScreen subtitle={t('orders.subtitle')} title={t('orders.title', { count: orders.length })}>
       <View style={[styles.tableCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
         <View style={[styles.headerRow, { borderBottomColor: theme.colors.border }]}>
-          <Text style={[styles.headerCell, styles.colId, { color: theme.colors.textMuted }]}>N°</Text>
-          <Text style={[styles.headerCell, styles.colVendor, { color: theme.colors.textMuted }]}>Vendeur</Text>
-          <Text style={[styles.headerCell, styles.colLivraison, { color: theme.colors.textMuted }]}>Livraison</Text>
-          <Text style={[styles.headerCell, styles.colAmount, { color: theme.colors.textMuted }]}>Montant</Text>
-          <Text style={[styles.headerCell, styles.colStatus, { color: theme.colors.textMuted }]}>Statut</Text>
-          <Text style={[styles.headerCell, styles.colAge, { color: theme.colors.textMuted }]}>Depuis</Text>
+          <Text style={[styles.headerCell, styles.colId, { color: theme.colors.textMuted }]}>{t('orders.colNumber')}</Text>
+          <Text style={[styles.headerCell, styles.colVendor, { color: theme.colors.textMuted }]}>{t('orders.colSeller')}</Text>
+          <Text style={[styles.headerCell, styles.colLivraison, { color: theme.colors.textMuted }]}>{t('orders.colDelivery')}</Text>
+          <Text style={[styles.headerCell, styles.colAmount, { color: theme.colors.textMuted }]}>{t('orders.colAmount')}</Text>
+          <Text style={[styles.headerCell, styles.colStatus, { color: theme.colors.textMuted }]}>{t('orders.colStatus')}</Text>
+          <Text style={[styles.headerCell, styles.colAge, { color: theme.colors.textMuted }]}>{t('orders.colSince')}</Text>
         </View>
         {orders.map((order, index) => (
           <View key={order.id} style={[styles.row, index > 0 && { borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
@@ -64,18 +66,21 @@ export default function OrdersScreen() {
             <Text style={[styles.cell, styles.colLivraison, { color: theme.colors.textMuted }]}>
               {order.deliveryMode === 'aosell'
                 ? order.courierId
-                  ? `Livreur ${order.courierId.slice(0, 6)} (${order.courierAssignmentStatus ?? '—'})`
-                  : 'Livreur à assigner'
-                : 'Par le vendeur'}
+                  ? t('orders.courierLabel', {
+                      id: order.courierId.slice(0, 6),
+                      status: order.courierAssignmentStatus ? t(`domain.assignmentStatus.${order.courierAssignmentStatus}`) : '—',
+                    })
+                  : t('orders.courierToAssign')
+                : t('orders.bySeller')}
             </Text>
             <Text style={[styles.cell, styles.colAmount, { color: theme.colors.text }]}>{(order.total.amountCents / 100).toFixed(2)} €</Text>
             <View style={styles.colStatus}>
-              <StatusPill label={order.status} theme={theme} tone={toneForOrderStatus(order.status)} />
+              <StatusPill label={t(`domain.orderStatus.${order.status}`)} theme={theme} tone={toneForOrderStatus(order.status)} />
             </View>
             <Text style={[styles.cell, styles.colAge, { color: theme.colors.textMuted }]}>{relativeTime(order.createdAt)}</Text>
           </View>
         ))}
-        {!orders.length ? <Text style={[styles.empty, { color: theme.colors.textMuted }]}>Aucune commande pour l'instant.</Text> : null}
+        {!orders.length ? <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{t('orders.empty')}</Text> : null}
       </View>
     </AdminScreen>
   );

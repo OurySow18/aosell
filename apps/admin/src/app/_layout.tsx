@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { LocaleProvider } from '@/lib/i18n';
 import { AdminAuthProvider } from '@/providers/admin-auth';
 
 export default function RootLayout() {
@@ -22,17 +23,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AdminAuthProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="dashboard" />
-          <Stack.Screen name="sellers" />
-          <Stack.Screen name="couriers" />
-          <Stack.Screen name="orders" />
-          <Stack.Screen name="moderation" />
-          <Stack.Screen name="payments" />
-        </Stack>
-      </AdminAuthProvider>
+      <LocaleProvider>
+        <AdminAuthProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="dashboard" />
+            <Stack.Screen name="sellers" />
+            <Stack.Screen name="couriers" />
+            <Stack.Screen name="orders" />
+            <Stack.Screen name="moderation" />
+            <Stack.Screen name="payments" />
+          </Stack>
+        </AdminAuthProvider>
+      </LocaleProvider>
     </SafeAreaProvider>
   );
 }

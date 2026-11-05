@@ -7,7 +7,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AdminLogo } from '@/components/admin-logo';
 import { Icon } from '@/components/icon';
 import type { IconName } from '@/components/icon';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useAdminAuth } from '@/providers/admin-auth';
 
 type NavItem = { href: Href; label: string; icon: IconName; badge?: number; disabled?: boolean };
@@ -24,6 +26,7 @@ export function AdminScreen({
   children: React.ReactNode;
 }) {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { currentUser, signOut } = useAdminAuth();
   const pathname = usePathname();
   const [pendingSellers, setPendingSellers] = useState(0);
@@ -41,12 +44,12 @@ export function AdminScreen({
   }, []);
 
   const navItems: NavItem[] = [
-    { href: '/dashboard', label: 'Tableau de bord', icon: 'dashboard' },
-    { href: '/orders', label: 'Commandes', icon: 'orders' },
-    { href: '/sellers', label: 'Vendeurs', icon: 'sellers', badge: pendingSellers || undefined },
-    { href: '/couriers', label: 'Livreurs', icon: 'couriers', badge: pendingCouriers || undefined },
-    { href: '/moderation', label: 'Modération', icon: 'moderation', badge: 5 },
-    { href: '/payments', label: 'Paiements', icon: 'payments', badge: 1 },
+    { href: '/dashboard', label: t('nav.dashboard'), icon: 'dashboard' },
+    { href: '/orders', label: t('nav.orders'), icon: 'orders' },
+    { href: '/sellers', label: t('nav.sellers'), icon: 'sellers', badge: pendingSellers || undefined },
+    { href: '/couriers', label: t('nav.couriers'), icon: 'couriers', badge: pendingCouriers || undefined },
+    { href: '/moderation', label: t('nav.moderation'), icon: 'moderation', badge: 5 },
+    { href: '/payments', label: t('nav.payments'), icon: 'payments', badge: 1 },
   ];
 
   const initials = (currentUser?.email ?? '??').slice(0, 2).toUpperCase();
@@ -96,7 +99,7 @@ export function AdminScreen({
         </View>
 
         <View style={styles.sidebarBottom}>
-          <Text style={styles.villeLabel}>Ville</Text>
+          <Text style={styles.villeLabel}>{t('sidebar.city')}</Text>
           <View style={styles.villePill}>
             <Text style={styles.villeText}>Bremen</Text>
           </View>
@@ -106,13 +109,14 @@ export function AdminScreen({
             </View>
             <View style={styles.userMeta}>
               <Text numberOfLines={1} style={styles.userName}>
-                Équipe ops
+                {t('sidebar.team')}
               </Text>
               <Pressable onPress={() => void signOut()}>
-                <Text style={styles.signOut}>Se déconnecter</Text>
+                <Text style={styles.signOut}>{t('sidebar.signOut')}</Text>
               </Pressable>
             </View>
           </View>
+          <LanguageSwitcher onDark theme={theme} />
         </View>
       </View>
 
