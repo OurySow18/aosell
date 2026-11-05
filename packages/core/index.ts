@@ -1,5 +1,6 @@
 export * from './types';
 export * from './firestore_types';
+export * from './theme';
 export * from './lib/firebase/config';
 export * from './lib/firebase/listener-errors';
 export * from './lib/firebase/mappers';

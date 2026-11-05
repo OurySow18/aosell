@@ -2,9 +2,12 @@ import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { AdminLogo } from '@/components/admin-logo';
+import { useAppTheme } from '@/hooks/use-theme';
 import { useAdminAuth } from '@/providers/admin-auth';
 
 export default function AdminIndexScreen() {
+  const theme = useAppTheme();
   const { status, signIn, signInWithGoogle, signInWithApple, signOut } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,8 +16,8 @@ export default function AdminIndexScreen() {
 
   if (status === 'loading') {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
+      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
   }
@@ -25,13 +28,18 @@ export default function AdminIndexScreen() {
 
   if (status === 'not-admin') {
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>
-          Ce compte n'a pas accès au dashboard admin.
-        </Text>
-        <Pressable onPress={() => void signOut()}>
-          <Text style={styles.link}>Se déconnecter</Text>
-        </Pressable>
+      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
+          <AdminLogo theme={theme} />
+          <Text style={[styles.message, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.body }]}>
+            Ce compte n'a pas accès au dashboard admin.
+          </Text>
+          <Pressable onPress={() => void signOut()}>
+            <Text style={[styles.link, { color: theme.colors.secondaryText, fontFamily: theme.typography.fontFamily.bodySemi }]}>
+              Se déconnecter
+            </Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -61,63 +69,88 @@ export default function AdminIndexScreen() {
   }
 
   return (
-    <View style={styles.center}>
-      <Text style={styles.title}>AoSell Admin</Text>
-      <TextInput
-        autoCapitalize="none"
-        keyboardType="email-address"
-        onChangeText={setEmail}
-        placeholder="Email"
-        style={styles.input}
-        value={email}
-      />
-      <TextInput
-        onChangeText={setPassword}
-        placeholder="Mot de passe"
-        secureTextEntry
-        style={styles.input}
-        value={password}
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable disabled={isSubmitting} onPress={() => void handleSignIn()} style={styles.button}>
-        <Text style={styles.buttonText}>{isSubmitting ? '...' : 'Se connecter'}</Text>
-      </Pressable>
+    <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
+        <AdminLogo theme={theme} />
 
-      <Text style={styles.or}>ou</Text>
+        <View style={styles.form}>
+          <TextInput
+            autoCapitalize="none"
+            keyboardType="email-address"
+            onChangeText={setEmail}
+            placeholder="Email"
+            placeholderTextColor={theme.colors.textMuted}
+            style={[
+              styles.input,
+              { borderColor: theme.colors.border, borderRadius: theme.radii.lg, color: theme.colors.text, fontFamily: theme.typography.fontFamily.body },
+            ]}
+            value={email}
+          />
+          <TextInput
+            onChangeText={setPassword}
+            placeholder="Mot de passe"
+            placeholderTextColor={theme.colors.textMuted}
+            secureTextEntry
+            style={[
+              styles.input,
+              { borderColor: theme.colors.border, borderRadius: theme.radii.lg, color: theme.colors.text, fontFamily: theme.typography.fontFamily.body },
+            ]}
+            value={password}
+          />
+          {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => void handleSignIn()}
+            style={[styles.button, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg, opacity: isSubmitting ? 0.6 : 1 }]}>
+            <Text style={[styles.buttonText, { color: theme.colors.background, fontFamily: theme.typography.fontFamily.bodySemi }]}>
+              {isSubmitting ? '...' : 'Se connecter'}
+            </Text>
+          </Pressable>
+        </View>
 
-      <Pressable
-        disabled={isSubmitting}
-        onPress={() => void handleSocialSignIn(signInWithGoogle)}
-        style={[styles.button, styles.socialButton]}>
-        <Text style={styles.buttonText}>Continuer avec Google</Text>
-      </Pressable>
-      <Pressable
-        disabled={isSubmitting}
-        onPress={() => void handleSocialSignIn(signInWithApple)}
-        style={[styles.button, styles.socialButton]}>
-        <Text style={styles.buttonText}>Continuer avec Apple</Text>
-      </Pressable>
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+          <Text style={[styles.dividerText, { color: theme.colors.textMuted, fontFamily: theme.typography.fontFamily.body }]}>ou</Text>
+          <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+        </View>
+
+        <View style={styles.socialRow}>
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => void handleSocialSignIn(signInWithGoogle)}
+            style={[styles.socialButton, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <Text style={[styles.socialButtonText, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.bodySemi }]}>
+              Google
+            </Text>
+          </Pressable>
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => void handleSocialSignIn(signInWithApple)}
+            style={[styles.socialButton, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <Text style={[styles.socialButtonText, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.bodySemi }]}>
+              Apple
+            </Text>
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
-  input: {
-    width: 280,
-    borderWidth: 1,
-    borderColor: '#D0D0D0',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-  },
-  button: { backgroundColor: '#1A1A1A', borderRadius: 6, paddingHorizontal: 20, paddingVertical: 10, marginTop: 8, width: 280, alignItems: 'center' },
-  socialButton: { backgroundColor: '#3C4043' },
-  buttonText: { color: '#FFFFFF', fontWeight: '600' },
-  or: { color: '#888888', fontSize: 12, marginTop: 4 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  card: { width: 360, borderWidth: 1, padding: 28, gap: 24 },
+  form: { gap: 12 },
+  input: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  button: { paddingVertical: 13, alignItems: 'center', marginTop: 4 },
+  buttonText: { fontSize: 15 },
+  error: { fontSize: 13 },
   message: { fontSize: 15, textAlign: 'center' },
-  link: { color: '#1A73E8', marginTop: 8 },
-  error: { color: '#B00020', fontSize: 13 },
+  link: { fontSize: 14, textAlign: 'center' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12 },
+  socialRow: { flexDirection: 'row', gap: 10 },
+  socialButton: { flex: 1, borderWidth: 1, paddingVertical: 11, alignItems: 'center' },
+  socialButtonText: { fontSize: 14 },
 });
