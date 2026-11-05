@@ -2,7 +2,7 @@ import { CourierRepository } from '@aosell/core';
 import * as Location from 'expo-location';
 import { Link, Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/bottom-nav';
@@ -18,7 +18,7 @@ function isToday(iso: string) {
 
 export default function CourierHomeScreen() {
   const theme = useAppTheme();
-  const { isLoading, currentUser, courierProfile, signUp, signIn, signOut } = useCourierAuth();
+  const { isLoading, currentUser, courierProfile, signUp, signIn, signInWithGoogle, signInWithApple, signOut } = useCourierAuth();
 
   if (isLoading) {
     return (
@@ -29,7 +29,7 @@ export default function CourierHomeScreen() {
   }
 
   if (!currentUser) {
-    return <AuthForm onSignIn={signIn} onSignUp={signUp} theme={theme} />;
+    return <AuthForm onSignIn={signIn} onSignInWithApple={signInWithApple} onSignInWithGoogle={signInWithGoogle} onSignUp={signUp} theme={theme} />;
   }
 
   if (!courierProfile) {
@@ -52,7 +52,19 @@ export default function CourierHomeScreen() {
   return <Dashboard courierId={courierProfile.id} displayName={courierProfile.displayName} theme={theme} vehicleType={courierProfile.vehicleType} city={courierProfile.city} availability={courierProfile.availability} />;
 }
 
-function AuthForm({ onSignIn, onSignUp, theme }: { onSignIn: (i: { email: string; password: string }) => Promise<void>; onSignUp: (i: { email: string; password: string }) => Promise<void>; theme: ReturnType<typeof useAppTheme> }) {
+function AuthForm({
+  onSignIn,
+  onSignUp,
+  onSignInWithGoogle,
+  onSignInWithApple,
+  theme,
+}: {
+  onSignIn: (i: { email: string; password: string }) => Promise<void>;
+  onSignUp: (i: { email: string; password: string }) => Promise<void>;
+  onSignInWithGoogle: () => Promise<void>;
+  onSignInWithApple: () => Promise<void>;
+  theme: ReturnType<typeof useAppTheme>;
+}) {
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,6 +79,18 @@ function AuthForm({ onSignIn, onSignUp, theme }: { onSignIn: (i: { email: string
       else await onSignUp({ email, password });
     } catch {
       setError(mode === 'signIn' ? 'Email ou mot de passe invalide.' : "Impossible de créer le compte.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleSocialSignIn(method: () => Promise<void>) {
+    setError('');
+    setIsSubmitting(true);
+    try {
+      await method();
+    } catch {
+      setError('Connexion annulée ou refusée.');
     } finally {
       setIsSubmitting(false);
     }
@@ -96,6 +120,25 @@ function AuthForm({ onSignIn, onSignUp, theme }: { onSignIn: (i: { email: string
       <Pressable disabled={isSubmitting} onPress={() => void handleSubmit()} style={[styles.primaryButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg }]}>
         <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : mode === 'signIn' ? 'Se connecter' : "Créer un compte"}</Text>
       </Pressable>
+
+      {Platform.OS === 'web' ? (
+        <>
+          <Text style={[styles.orText, { color: theme.colors.textMuted }]}>ou</Text>
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => void handleSocialSignIn(onSignInWithGoogle)}
+            style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
+            <Text style={styles.secondaryButtonText}>Continuer avec Google</Text>
+          </Pressable>
+          <Pressable
+            disabled={isSubmitting}
+            onPress={() => void handleSocialSignIn(onSignInWithApple)}
+            style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
+            <Text style={styles.secondaryButtonText}>Continuer avec Apple</Text>
+          </Pressable>
+        </>
+      ) : null}
+
       <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
         <Text style={[styles.link, { color: theme.colors.secondaryText }]}>
           {mode === 'signIn' ? "Pas encore de compte ? S'inscrire" : 'Déjà un compte ? Se connecter'}
@@ -271,6 +314,9 @@ const styles = StyleSheet.create({
   input: { width: 280, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   primaryButton: { paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center', marginTop: 4 },
   primaryButtonText: { fontSize: 15, fontWeight: '700' },
+  orText: { fontSize: 12, marginTop: 4 },
+  secondaryButton: { width: 280, paddingVertical: 13, alignItems: 'center' },
+  secondaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   message: { fontSize: 15, textAlign: 'center' },
   link: { fontSize: 13, fontWeight: '600', marginTop: 4 },
   error: { fontSize: 13 },
