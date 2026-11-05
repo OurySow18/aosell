@@ -25,9 +25,12 @@ export default function RootLayout() {
       <AdminAuthProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
+          <Stack.Screen name="dashboard" />
           <Stack.Screen name="sellers" />
           <Stack.Screen name="couriers" />
           <Stack.Screen name="orders" />
+          <Stack.Screen name="moderation" />
+          <Stack.Screen name="payments" />
         </Stack>
       </AdminAuthProvider>
     </SafeAreaProvider>

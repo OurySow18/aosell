@@ -23,7 +23,7 @@ export default function AdminIndexScreen() {
   }
 
   if (status === 'admin') {
-    return <Redirect href="/orders" />;
+    return <Redirect href="/dashboard" />;
   }
 
   if (status === 'not-admin') {
