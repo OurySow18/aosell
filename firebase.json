@@ -15,7 +15,7 @@
     }
   ],
   "hosting": {
-    "public": "dist",
+    "public": "apps/customer/dist",
     "cleanUrls": true,
     "trailingSlash": false,
     "ignore": ["firebase.json", "**/.*"],

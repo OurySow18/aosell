@@ -17,40 +17,52 @@ This repository now contains:
 
 The app now wires Firebase Authentication and Firestore subscriptions into the provider layer. Public sellers and active listings load from Firestore, private buyer/seller state subscribes after sign-in, and key mutations write back to Firestore. Seeded data remains as a fallback for the public marketplace shell if Firestore is unavailable or empty during local development.
 
-## App structure
+## Repository structure
+
+This is an npm workspaces monorepo. The Expo app lives under `apps/`, and code shared across apps (currently just the domain/Firestore types) lives under `packages/`. Cloud Functions (`functions/`) and the Firebase project config (`firebase.json`, `firestore.rules`, `storage.rules`, `firestore.indexes.json`) stay at the repo root, since they describe the backend rather than any one app.
 
 ```txt
-src/
-  app/
-  components/
-  lib/
-    firebase/
-    stripe/
-    utils/
-    validations/
-  providers/
-  repositories/
-  services/
-  types/
+apps/
+  customer/        buyer + seller Expo Router app (mobile + web)
+    src/
+      app/
+      components/
+      lib/
+        firebase/
+        stripe/
+        utils/
+        validations/
+      providers/
+      repositories/
+      services/
+      types/
+packages/
+  core/            @aosell/core — domain + Firestore types shared across apps
+functions/         Cloud Functions (Stripe, notifications, video transcoding)
 ```
+
+Future apps (an admin dashboard, a courier app) will live alongside `apps/customer` and depend on `@aosell/core`.
 
 ## Setup
 
-1. Install dependencies.
+1. Install dependencies (installs every workspace at once).
 
 ```bash
 npm install
 ```
 
-2. Start the Expo app.
+2. Start the Expo app (either from the root, or directly in `apps/customer`).
 
 ```bash
-npx expo start
+npm run web
+# or
+cd apps/customer && npx expo start
 ```
 
 3. Create your local env file from the example and add your real Firebase and Stripe values.
 
 ```bash
+cd apps/customer
 cp .env.example .env
 ```
 
@@ -74,19 +86,17 @@ npx expo run:android
 
 Relevant config files:
 
-- [app.config.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/app.config.ts)
-- [app.json](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/app.json)
-- [src/lib/firebase/config.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/src/lib/firebase/config.ts)
-- [src/lib/stripe/index.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/src/lib/stripe/index.ts)
+- [apps/customer/app.config.ts](apps/customer/app.config.ts)
+- [apps/customer/src/lib/firebase/config.ts](apps/customer/src/lib/firebase/config.ts)
+- [apps/customer/src/lib/stripe/index.ts](apps/customer/src/lib/stripe/index.ts)
 
 ## Firebase
 
 Relevant files:
 
-- [firestore.rules](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firestore.rules)
-- [firestore.indexes.json](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firestore.indexes.json)
-- [firestore_types.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firestore_types.ts)
-- [firebase.tsx](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/firebase.tsx)
+- [firestore.rules](firestore.rules)
+- [firestore.indexes.json](firestore.indexes.json)
+- [packages/core/firestore_types.ts](packages/core/firestore_types.ts)
 
 Deploy commands after configuring Firebase CLI:
 
@@ -98,7 +108,7 @@ firebase deploy --only functions
 
 ## Cloud Functions
 
-Scaffolded in [functions/src/index.ts](/mnt/c/Users/aos/OneDrive%20-%20abat%20AG/Desktop/Privat/MyApps/aosell/functions/src/index.ts).
+Scaffolded in [functions/src/index.ts](functions/src/index.ts).
 
 Expected environment variables:
 
@@ -111,4 +121,3 @@ Expected environment variables:
 - Listing editor is built around the V1 schema and seller ownership model.
 - Search is Firestore-oriented and can later be upgraded with generated `searchTokens`.
 - Firebase client config is now expected from Expo environment variables and is no longer committed in the repo.
-- The current environment here could not run `node`, `npm`, `tsc`, or `expo` commands because the available Node setup is broken under WSL, so runtime verification is still required on a working Node installation.

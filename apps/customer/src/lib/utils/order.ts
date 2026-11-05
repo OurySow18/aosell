@@ -1,4 +1,4 @@
-import type { OrderStatus } from '../../../types';
+import type { OrderStatus } from '@aosell/core/types';
 
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   created: ['pending_payment', 'canceled'],
