@@ -3,7 +3,8 @@ import { router } from 'expo-router';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytesResumable, type UploadMetadata } from 'firebase/storage';
+import type { StorageReference } from 'firebase/storage';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import {
@@ -20,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/ui/app-button';
+import { POST_CAPTION_MAX_LENGTH } from '@/constants/post';
 import { useLocale } from '@/hooks/use-locale';
 import { useAppTheme } from '@/hooks/use-theme';
 import { getFriendlyAuthError } from '@/lib/errors/friendly-message';
@@ -75,6 +77,27 @@ function resolveVideoFormat(asset: ImagePicker.ImagePickerAsset): { mimeType: st
   return { mimeType: 'video/quicktime', extension: 'mov' };
 }
 
+// A plain video upload has no size cap on Android (see MAX_IMAGE_DIMENSION's
+// comment above) and can take a while, so it reports real progress instead of
+// just spinning — uploadBytesResumable also means a dropped connection can
+// retry the task instead of restarting the whole transfer from zero.
+function uploadWithProgress(
+  storageRef: StorageReference,
+  blob: Blob,
+  metadata: UploadMetadata,
+  onProgress: (ratio: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, blob, metadata);
+    task.on(
+      'state_changed',
+      (snapshot) => onProgress(snapshot.totalBytes ? snapshot.bytesTransferred / snapshot.totalBytes : 0),
+      reject,
+      () => resolve()
+    );
+  });
+}
+
 // A post can be a pure share (no commercial link at all), linked to the
 // poster's own shop, or linked to one of their existing listings. The
 // seller profile itself (and its real Firestore id) isn't known until
@@ -93,6 +116,7 @@ export default function CreatePostScreen() {
   const [linkChoice, setLinkChoice] = useState<LinkChoice>({ kind: 'share' });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   if (!currentUser) {
     return (
@@ -203,11 +227,17 @@ export default function CreatePostScreen() {
         const extension = mediaMode === 'video' ? (selectedMedia.extension ?? 'mov') : 'jpg';
         const contentType = mediaMode === 'video' ? (selectedMedia.mimeType ?? 'video/quicktime') : 'image/jpeg';
         const storageRef = ref(storage, `post-media/${currentUser.id}/${postId}.${extension}`);
+        setUploadProgress(0);
         // postId is unique per post and this path is never overwritten, so the
         // file at this URL never changes — safe to cache for a year and skip
         // revalidation entirely (immutable), instead of re-fetching it on every
         // view the way an uncached asset would.
-        await uploadBytes(storageRef, blob, { contentType, cacheControl: 'public, max-age=31536000, immutable' });
+        await uploadWithProgress(
+          storageRef,
+          blob,
+          { contentType, cacheControl: 'public, max-age=31536000, immutable' },
+          setUploadProgress
+        );
         mediaUrl = await getDownloadURL(storageRef);
         // Videos start out as the raw upload and get swapped for a
         // standardized, re-encoded version once the transcoding function
@@ -238,18 +268,10 @@ export default function CreatePostScreen() {
         router.replace('/(tabs)/home');
       }
     } catch (submitError) {
-      // TEMPORARY: append the raw Firebase/SDK code so we can see exactly
-      // which error publishing hits without a debugger attached. Remove
-      // this suffix once the real cause is confirmed.
-      const rawCode =
-        typeof submitError === 'object' && submitError !== null && 'code' in submitError
-          ? String((submitError as { code?: unknown }).code)
-          : typeof submitError === 'object' && submitError !== null && 'message' in submitError
-            ? String((submitError as { message?: unknown }).message)
-            : String(submitError);
-      Alert.alert(t('createPost.errorTitle'), `${getFriendlyAuthError(submitError)} [debug: ${rawCode}]`);
+      Alert.alert(t('createPost.errorTitle'), getFriendlyAuthError(submitError));
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   }
 
@@ -266,7 +288,18 @@ export default function CreatePostScreen() {
         </Text>
         <Pressable accessibilityRole="button" disabled={!canSubmit} hitSlop={8} onPress={() => void handleSubmit()}>
           {isSubmitting ? (
-            <ActivityIndicator color={theme.colors.accent} size="small" />
+            uploadProgress !== null ? (
+              <Text
+                style={[
+                  styles.topBarAction,
+                  styles.topBarSubmit,
+                  { color: theme.colors.accent, fontFamily: theme.typography.label.fontFamily, fontVariant: ['tabular-nums'] },
+                ]}>
+                {`${Math.round(uploadProgress * 100)}%`}
+              </Text>
+            ) : (
+              <ActivityIndicator color={theme.colors.accent} size="small" />
+            )
           ) : (
             <Text
               style={[
@@ -326,6 +359,7 @@ export default function CreatePostScreen() {
             )}
           </View>
           <TextInput
+            maxLength={POST_CAPTION_MAX_LENGTH}
             multiline
             onChangeText={setCaption}
             placeholder={t('createPost.captionPlaceholder')}
@@ -334,6 +368,12 @@ export default function CreatePostScreen() {
             value={caption}
           />
         </View>
+
+        {caption.length > POST_CAPTION_MAX_LENGTH * 0.8 ? (
+          <Text style={[styles.captionCounter, { color: theme.colors.textMuted }]}>
+            {`${caption.length}/${POST_CAPTION_MAX_LENGTH}`}
+          </Text>
+        ) : null}
 
         <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
@@ -524,6 +564,7 @@ const styles = StyleSheet.create({
   avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 13, lineHeight: 17 },
   captionInput: { flex: 1, minHeight: 60, fontSize: 15, lineHeight: 21, paddingTop: 8 },
+  captionCounter: { fontSize: 12, lineHeight: 16, textAlign: 'right', fontVariant: ['tabular-nums'] },
 
   divider: { height: StyleSheet.hairlineWidth },
 

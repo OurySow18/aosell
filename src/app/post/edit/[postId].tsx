@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/ui/empty-state';
+import { POST_CAPTION_MAX_LENGTH } from '@/constants/post';
 import { useLocale } from '@/hooks/use-locale';
 import { useAppTheme } from '@/hooks/use-theme';
 import { getFriendlyAuthError } from '@/lib/errors/friendly-message';
@@ -120,6 +121,7 @@ export default function EditPostScreen() {
 
         <View style={styles.captionRow}>
           <TextInput
+            maxLength={POST_CAPTION_MAX_LENGTH}
             multiline
             onChangeText={setCaption}
             placeholder={t('createPost.captionPlaceholder')}
@@ -128,6 +130,12 @@ export default function EditPostScreen() {
             value={caption}
           />
         </View>
+
+        {caption.length > POST_CAPTION_MAX_LENGTH * 0.8 ? (
+          <Text style={[styles.captionCounter, { color: theme.colors.textMuted }]}>
+            {`${caption.length}/${POST_CAPTION_MAX_LENGTH}`}
+          </Text>
+        ) : null}
 
         <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
@@ -224,6 +232,7 @@ const styles = StyleSheet.create({
 
   captionRow: { flexDirection: 'row', gap: 12 },
   captionInput: { flex: 1, minHeight: 60, fontSize: 15, lineHeight: 21, paddingTop: 8 },
+  captionCounter: { fontSize: 12, lineHeight: 16, textAlign: 'right', fontVariant: ['tabular-nums'] },
 
   divider: { height: StyleSheet.hairlineWidth },
 

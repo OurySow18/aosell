@@ -121,11 +121,18 @@ service cloud.firestore {
         );
     }
 
+    // Matches the client's own cap (src/app/post/create.tsx) so it can't be
+    // bypassed by calling the API directly instead of going through the app.
+    function isValidCaptionLength() {
+      return request.resource.data.caption.size() <= 2200;
+    }
+
     function isValidPostData() {
       return request.resource.data.sellerId is string
         && request.resource.data.mediaType in ['image', 'video', 'text']
         && (request.resource.data.mediaType == 'text' || request.resource.data.mediaUrl is string)
         && request.resource.data.caption is string
+        && isValidCaptionLength()
         && isValidLinkTarget()
         && request.resource.data.likeCount == 0
         && request.resource.data.commentCount == 0
@@ -144,6 +151,7 @@ service cloud.firestore {
         && request.resource.data.commentCount == resource.data.commentCount
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.caption is string
+        && isValidCaptionLength()
         && isValidLinkTarget()
         && isValidTimestamp(request.resource.data.updatedAt);
     }
