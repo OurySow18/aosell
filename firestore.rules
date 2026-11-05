@@ -30,6 +30,10 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/seller_profiles/$(sellerId));
     }
 
+    function courierDoc(courierId) {
+      return get(/databases/$(database)/documents/courier_profiles/$(courierId));
+    }
+
     function listingDoc(listingId) {
       return get(/databases/$(database)/documents/listings/$(listingId));
     }
@@ -42,6 +46,13 @@ service cloud.firestore {
       return isSignedIn()
         && exists(/databases/$(database)/documents/seller_profiles/$(sellerId))
         && sellerDoc(sellerId).data.ownerUserId == request.auth.uid;
+    }
+
+    function isCourierOwnerByCourierId(courierId) {
+      return isSignedIn()
+        && courierId != null
+        && exists(/databases/$(database)/documents/courier_profiles/$(courierId))
+        && courierDoc(courierId).data.ownerUserId == request.auth.uid;
     }
 
     function isActiveListing() {
@@ -277,6 +288,25 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /courier_profiles/{courierId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUserId == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.phoneNumber is string
+        && request.resource.data.countryCode is string
+        && request.resource.data.city is string
+        && request.resource.data.availability in ['available', 'offline', 'on_delivery']
+        && request.resource.data.verificationStatus in ['unverified', 'pending', 'verified', 'rejected']
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidTimestamp(request.resource.data.updatedAt);
+      // totalEarnedCents is only ever written by the assignment Cloud
+      // Function (Admin SDK bypasses rules), same guard as followerCount above.
+      allow update: if (isCourierOwnerByCourierId(courierId) || isAdmin())
+        && request.resource.data.get('totalEarnedCents', 0) == resource.data.get('totalEarnedCents', 0);
+      allow delete: if isAdmin();
+    }
+
     match /listings/{listingId} {
       allow read: if resource.data.status == 'active' || isSellerOwnerBySellerId(resource.data.sellerId) || isAdmin();
 
@@ -329,6 +359,7 @@ service cloud.firestore {
         && (
           resource.data.buyerUserId == request.auth.uid
           || isSellerOwnerBySellerId(resource.data.sellerId)
+          || isCourierOwnerByCourierId(resource.data.get('courierId', null))
           || isAdmin()
         );
 
@@ -367,6 +398,20 @@ service cloud.firestore {
           && request.resource.data.totalAmountCents == resource.data.totalAmountCents
           && isValidOrderStatusTransition(resource.data.status, request.resource.data.status)
         )
+        ||
+        (
+          isCourierOwnerByCourierId(resource.data.get('courierId', null))
+          && request.resource.data.buyerUserId == resource.data.buyerUserId
+          && request.resource.data.sellerId == resource.data.sellerId
+          && request.resource.data.items == resource.data.items
+          && request.resource.data.subtotalAmountCents == resource.data.subtotalAmountCents
+          && request.resource.data.totalAmountCents == resource.data.totalAmountCents
+          && request.resource.data.courierId == resource.data.courierId
+          && (
+            request.resource.data.status == resource.data.status
+            || isValidOrderStatusTransition(resource.data.status, request.resource.data.status)
+          )
+        )
         || isAdmin()
       );
 
@@ -374,16 +419,6 @@ service cloud.firestore {
     }
 
     match /payments/{paymentId} {
-      allow read: if isSignedIn()
-        && (
-          orderDoc(resource.data.orderId).data.buyerUserId == request.auth.uid
-          || isSellerOwnerBySellerId(orderDoc(resource.data.orderId).data.sellerId)
-          || isAdmin()
-        );
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /deliveries/{deliveryId} {
       allow read: if isSignedIn()
         && (
           orderDoc(resource.data.orderId).data.buyerUserId == request.auth.uid

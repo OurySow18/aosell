@@ -4,7 +4,7 @@ export type CurrencyCode = "EUR";
 export type CountryCode = string;
 export type LanguageCode = string;
 
-export type UserRole = "buyer" | "seller" | "admin";
+export type UserRole = "buyer" | "seller" | "admin" | "courier";
 export type SellerType = "shop" | "restaurant" | "individual";
 export type ListingType = "product" | "meal" | "service";
 export type DeliveryMode = "aosell" | "seller";
@@ -57,7 +57,10 @@ export type NotificationType =
   | "listing_published"
   | "listing_rejected"
   | "payout_sent"
+  | "delivery_offered"
   | "system_message";
+export type CourierAvailability = "available" | "offline" | "on_delivery";
+export type CourierAssignmentStatus = "offered" | "accepted" | "declined";
 export type VerificationStatus =
   | "unverified"
   | "pending"
@@ -142,6 +145,22 @@ export interface SellerProfile {
   isOpen?: boolean;
   tags: string[];
   cuisineSpecialties: Cuisine[];
+  createdAt: ISODateString;
+  updatedAt: ISODateString;
+}
+
+export interface CourierProfile {
+  id: UUID;
+  ownerUserId: UUID;
+  displayName: string;
+  phoneNumber: string;
+  countryCode: CountryCode;
+  city: string;
+  vehicleType?: string;
+  location?: GeoPoint;
+  availability: CourierAvailability;
+  verificationStatus: VerificationStatus;
+  totalEarnedCents?: number;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -313,6 +332,10 @@ export interface Order {
   deliveryAddress: Address;
   timeline: OrderTimelineEntry[];
   notes?: string;
+  courierId?: UUID;
+  courierAssignmentStatus?: CourierAssignmentStatus;
+  declinedCourierIds?: UUID[];
+  courierCommission?: Money;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -327,23 +350,6 @@ export interface Payment {
   paidAt?: ISODateString;
   refundedAt?: ISODateString;
   failureReason?: string;
-  createdAt: ISODateString;
-  updatedAt: ISODateString;
-}
-
-export interface Delivery {
-  id: UUID;
-  orderId: UUID;
-  mode: DeliveryMode;
-  status: Extract<
-    OrderStatus,
-    "confirmed" | "preparing" | "out_for_delivery" | "delivered" | "canceled"
-  >;
-  courierName?: string;
-  trackingNumber?: string;
-  estimatedDeliveryAt?: ISODateString;
-  deliveredAt?: ISODateString;
-  notes?: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
@@ -416,11 +422,11 @@ export interface DatabaseSchema {
   users: AppUser;
   user_profiles: UserProfile;
   seller_profiles: SellerProfile;
+  courier_profiles: CourierProfile;
   listings: Listing;
   carts: Cart;
   orders: Order;
   payments: Payment;
-  deliveries: Delivery;
   reviews: Review;
   notifications: Notification;
   dishes: Dish;

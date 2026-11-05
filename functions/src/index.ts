@@ -325,3 +325,132 @@ export const onPostVideoTranscoded = onObjectFinalized(async (event) => {
     { merge: true }
   );
 });
+
+// Placeholder rate — the real commission structure hasn't been decided yet;
+// this just needs to exist so the rest of the courier flow has a number to
+// compute with. Change this one constant once the real rate is set.
+const COURIER_COMMISSION_RATE = 0.15;
+
+function haversineDistanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const sinDLat = Math.sin(dLat / 2);
+  const sinDLng = Math.sin(dLng / 2);
+  const h =
+    sinDLat * sinDLat +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinDLng * sinDLng;
+  return 2 * earthRadiusKm * Math.asin(Math.sqrt(h));
+}
+
+// Picks the closest available, verified courier to a pickup point (the
+// seller's own location — no live courier GPS tracking in this v1, just
+// whatever location a courier last reported when going "available").
+// Straight-line distance, not road distance — fine at this scale.
+async function findNearestAvailableCourier(
+  sellerLocation: { lat: number; lng: number },
+  countryCode: string,
+  excludeCourierIds: string[]
+): Promise<{ id: string; ownerUserId: string } | null> {
+  const candidates = await db
+    .collection('courier_profiles')
+    .where('countryCode', '==', countryCode)
+    .where('availability', '==', 'available')
+    .where('verificationStatus', '==', 'verified')
+    .get();
+
+  let nearest: { id: string; ownerUserId: string; distanceKm: number } | null = null;
+
+  candidates.forEach((candidate) => {
+    if (excludeCourierIds.includes(candidate.id)) {
+      return;
+    }
+
+    const location = candidate.data().location;
+    if (!location) {
+      return;
+    }
+
+    const distanceKm = haversineDistanceKm(sellerLocation, location);
+    if (!nearest || distanceKm < nearest.distanceKm) {
+      nearest = { id: candidate.id, ownerUserId: candidate.data().ownerUserId, distanceKm };
+    }
+  });
+
+  return nearest;
+}
+
+// Assigns (or re-assigns, after a decline) the nearest available courier to
+// an "aosell"-delivery order once it's ready to be picked up. Triggered by
+// either the order entering 'preparing', or a courier declining their offer.
+export const onOrderReadyForDelivery = onDocumentUpdated('orders/{orderId}', async (event) => {
+  const orderId = event.params.orderId;
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+
+  if (!after || after.deliveryMode !== 'aosell') {
+    return;
+  }
+
+  const justEnteredPreparing = after.status === 'preparing' && before?.status !== 'preparing' && !after.courierId;
+  const courierJustDeclined =
+    after.courierAssignmentStatus === 'declined' && before?.courierAssignmentStatus !== 'declined';
+
+  if (!justEnteredPreparing && !courierJustDeclined) {
+    return;
+  }
+
+  const sellerSnap = await db.collection('seller_profiles').doc(String(after.sellerId)).get();
+  const seller = sellerSnap.data();
+  if (!seller?.location || !seller?.countryCode) {
+    return;
+  }
+
+  const declinedCourierIds: string[] = after.declinedCourierIds ?? [];
+  const nearest = await findNearestAvailableCourier(seller.location, seller.countryCode, declinedCourierIds);
+
+  if (!nearest) {
+    return;
+  }
+
+  await db.collection('orders').doc(orderId).set(
+    { courierId: nearest.id, courierAssignmentStatus: 'offered' },
+    { merge: true }
+  );
+
+  await db.collection('notifications').doc(nearest.ownerUserId).collection('items').add({
+    userId: nearest.ownerUserId,
+    type: 'delivery_offered',
+    title: 'New delivery available',
+    body: 'A nearby order is ready for pickup.',
+    isRead: false,
+    createdAt: new Date(),
+  });
+});
+
+// Computes the courier's cut once an "aosell"-delivery order is marked
+// delivered, and credits it to their running (denormalized) total — the
+// actual payout itself is handled manually/outside the app for now.
+export const onOrderDelivered = onDocumentUpdated('orders/{orderId}', async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+
+  if (!after || after.deliveryMode !== 'aosell' || !after.courierId) {
+    return;
+  }
+  if (after.status !== 'delivered' || before?.status === 'delivered') {
+    return;
+  }
+
+  const commissionCents = Math.round(Number(after.totalAmountCents ?? 0) * COURIER_COMMISSION_RATE);
+
+  await db.collection('orders').doc(event.params.orderId).set(
+    { courierCommissionAmountCents: commissionCents },
+    { merge: true }
+  );
+  await db.collection('courier_profiles').doc(String(after.courierId)).set(
+    { totalEarnedCents: FieldValue.increment(commissionCents) },
+    { merge: true }
+  );
+});

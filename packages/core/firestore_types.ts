@@ -2,7 +2,7 @@ import type {
     Address,
     AppUser,
     Condiment,
-    Delivery,
+    CourierProfile,
     Dish,
     ISODateString,
     Listing,
@@ -43,11 +43,11 @@ export const COLLECTIONS = {
   users: "users",
   userProfiles: "user_profiles",
   sellerProfiles: "seller_profiles",
+  courierProfiles: "courier_profiles",
   listings: "listings",
   carts: "carts",
   orders: "orders",
   payments: "payments",
-  deliveries: "deliveries",
   reviews: "reviews",
   notifications: "notifications",
   dishes: "dishes",
@@ -96,6 +96,14 @@ export interface FirestoreSellerProfileDoc extends Omit<
   createdAt: FirestoreDate;
   updatedAt: FirestoreDate;
   addressId?: UUID;
+}
+
+export interface FirestoreCourierProfileDoc extends Omit<
+  CourierProfile,
+  "createdAt" | "updatedAt"
+> {
+  createdAt: FirestoreDate;
+  updatedAt: FirestoreDate;
 }
 
 export interface FirestoreListingDoc extends Omit<
@@ -175,6 +183,10 @@ export interface FirestoreOrderDoc {
   deliveryAddress: FirestoreOrderAddressSnapshot;
   timeline: FirestoreOrderTimelineEntryDoc[];
   notes?: string;
+  courierId?: UUID;
+  courierAssignmentStatus?: Order["courierAssignmentStatus"];
+  declinedCourierIds?: UUID[];
+  courierCommissionAmountCents?: number;
   createdAt: FirestoreDate;
   updatedAt: FirestoreDate;
 }
@@ -189,16 +201,6 @@ export interface FirestorePaymentDoc extends Omit<
   updatedAt: FirestoreDate;
   paidAt?: FirestoreDate;
   refundedAt?: FirestoreDate;
-}
-
-export interface FirestoreDeliveryDoc extends Omit<
-  Delivery,
-  "createdAt" | "updatedAt" | "estimatedDeliveryAt" | "deliveredAt"
-> {
-  createdAt: FirestoreDate;
-  updatedAt: FirestoreDate;
-  estimatedDeliveryAt?: FirestoreDate;
-  deliveredAt?: FirestoreDate;
 }
 
 export interface FirestoreReviewDoc extends Omit<
@@ -263,10 +265,10 @@ export type UserDocPath = `users/${string}`;
 export type UserProfileDocPath = `user_profiles/${string}`;
 export type UserAddressDocPath = `user_profiles/${string}/addresses/${string}`;
 export type SellerProfileDocPath = `seller_profiles/${string}`;
+export type CourierProfileDocPath = `courier_profiles/${string}`;
 export type ListingDocPath = `listings/${string}`;
 export type OrderDocPath = `orders/${string}`;
 export type PaymentDocPath = `payments/${string}`;
-export type DeliveryDocPath = `deliveries/${string}`;
 export type ReviewDocPath = `reviews/${string}`;
 export type UserNotificationDocPath = `notifications/${string}/items/${string}`;
 export type CartDocPath = `carts/${string}`;
@@ -284,11 +286,11 @@ export interface FirestoreCollectionMap {
   users: FirestoreUserDoc;
   user_profiles: FirestoreUserProfileDoc;
   seller_profiles: FirestoreSellerProfileDoc;
+  courier_profiles: FirestoreCourierProfileDoc;
   listings: FirestoreListingDoc;
   carts: FirestoreCartDoc;
   orders: FirestoreOrderDoc;
   payments: FirestorePaymentDoc;
-  deliveries: FirestoreDeliveryDoc;
   reviews: FirestoreReviewDoc;
   notifications: FirestoreNotificationDoc;
   dishes: FirestoreDishDoc;
