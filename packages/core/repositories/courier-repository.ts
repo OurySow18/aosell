@@ -96,4 +96,18 @@ export const CourierRepository = {
       updatedAt: createTimestamp(),
     });
   },
+
+  async updateProfile(
+    courierId: string,
+    input: { displayName: string; phoneNumber: string; countryCode: string; city: string; vehicleType?: string }
+  ) {
+    await updateDoc(doc(db, 'courier_profiles', courierId), {
+      displayName: input.displayName,
+      phoneNumber: input.phoneNumber,
+      countryCode: input.countryCode.toUpperCase(),
+      city: input.city,
+      ...(input.vehicleType !== undefined && { vehicleType: input.vehicleType }),
+      updatedAt: createTimestamp(),
+    });
+  },
 };
