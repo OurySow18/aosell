@@ -1,4 +1,4 @@
-import { CourierRepository, OrderRepository, SellerRepository } from '@aosell/core';
+import { CourierRepository, OrderRepository, SellerRepository, palette } from '@aosell/core';
 import type { CourierProfile, Order, SellerProfile } from '@aosell/core';
 import { Link, Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -213,7 +213,7 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.todoCol}>
-          <View style={[styles.courierCard, { backgroundColor: theme.colors.text, borderRadius: theme.radii.xl }]}>
+          <View style={[styles.courierCard, { backgroundColor: palette.ink, borderRadius: theme.radii.xl }]}>
             <Text style={styles.courierTitle}>{t('dashboard.couriersOnline')}</Text>
             <View style={styles.courierBig}>
               <Text style={styles.courierNumber}>{onlineCouriers.length}</Text>

@@ -1,4 +1,4 @@
-import { CourierRepository, SellerRepository } from '@aosell/core';
+import { CourierRepository, SellerRepository, palette } from '@aosell/core';
 import { Link, usePathname } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -56,7 +56,7 @@ export function AdminScreen({
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.sidebar, { backgroundColor: theme.colors.text }]}>
+      <View style={[styles.sidebar, { backgroundColor: palette.ink }]}>
         <View style={styles.sidebarTop}>
           <AdminLogo onDark theme={theme} />
           <View style={styles.nav}>
@@ -86,7 +86,7 @@ export function AdminScreen({
                       <View
                         style={[
                           styles.navBadge,
-                          { borderRadius: theme.radii.pill, backgroundColor: active ? theme.colors.text : theme.colors.secondary },
+                          { borderRadius: theme.radii.pill, backgroundColor: active ? palette.ink : theme.colors.secondary },
                         ]}>
                         <Text style={[styles.navBadgeText, { color: active ? '#FFFFFF' : theme.colors.text }]}>{item.badge}</Text>
                       </View>

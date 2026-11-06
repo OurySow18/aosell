@@ -1,4 +1,4 @@
-import { SellerRepository, getIntlLocale } from '@aosell/core';
+import { SellerRepository, getIntlLocale, palette } from '@aosell/core';
 import type { SellerProfile } from '@aosell/core';
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -44,7 +44,7 @@ export default function GainsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: theme.colors.text }]}>
+      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: palette.ink }]}>
         <Text style={styles.headerLabel}>{t('gains.last7Days')}</Text>
         <Text style={styles.headerTotal}>{(weekTotalCents / 100).toFixed(2)} €</Text>
         <Text style={styles.headerNote}>

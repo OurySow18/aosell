@@ -1,4 +1,4 @@
-import { COURIER_COMMISSION_RATE, OrderRepository } from '@aosell/core';
+import { COURIER_COMMISSION_RATE, OrderRepository, palette } from '@aosell/core';
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -36,7 +36,7 @@ export default function DeliveryScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <MapBackdrop height={230}>
-        <View style={[styles.pin, styles.pinSelf, { backgroundColor: theme.colors.text }]} />
+        <View style={[styles.pin, styles.pinSelf, { backgroundColor: palette.ink }]} />
         <View style={[styles.pin, styles.pinDropoff, { backgroundColor: theme.colors.secondary }]} />
       </MapBackdrop>
 
@@ -69,7 +69,7 @@ export default function DeliveryScreen() {
         <View style={styles.actionsRow}>
           <Pressable
             onPress={() => void Linking.openURL(`tel:${address.phoneNumber}`)}
-            style={[styles.actionButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
+            style={[styles.actionButton, { backgroundColor: palette.ink, borderRadius: theme.radii.lg }]}>
             <Text style={styles.actionButtonTextDark}>{t('delivery.call')}</Text>
           </Pressable>
           <View style={[styles.actionButton, styles.actionButtonOutline, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>

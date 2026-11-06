@@ -407,7 +407,7 @@ function Dashboard({
 
         {offeredOrder ? (
           <Link asChild href="/offer">
-            <Pressable style={[styles.offerBanner, { backgroundColor: theme.colors.text, borderRadius: theme.radii.xl }]}>
+            <Pressable style={[styles.offerBanner, { backgroundColor: HERO_NAVY, borderRadius: theme.radii.xl }]}>
               <View style={[styles.offerDot, { backgroundColor: theme.colors.accent }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.offerTitle}>{t('dashboard.offerBannerTitle')}</Text>

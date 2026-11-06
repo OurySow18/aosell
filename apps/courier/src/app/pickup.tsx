@@ -1,4 +1,4 @@
-import { OrderRepository, SellerRepository } from '@aosell/core';
+import { OrderRepository, SellerRepository, palette } from '@aosell/core';
 import type { SellerProfile } from '@aosell/core';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -44,7 +44,7 @@ export default function PickupScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
-      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: theme.colors.text }]}>
+      <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: palette.ink }]}>
         <View style={styles.headerTop}>
           <Text style={[styles.kicker, { color: theme.colors.accent }]}>{t('pickup.step')}</Text>
           <Text style={styles.orderId}>#{activeOrder.id.slice(0, 8).toUpperCase()}</Text>
