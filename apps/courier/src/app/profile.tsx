@@ -8,8 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/bottom-nav';
 import { Icon } from '@/components/icon';
+import type { IconName } from '@/components/icon';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { VehicleSelect } from '@/components/vehicle-select';
+import { VEHICLE_ICON, VehicleSelect } from '@/components/vehicle-select';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/lib/i18n';
 import { useCourierAuth } from '@/providers/courier-auth';
@@ -18,11 +19,20 @@ import { useCourierAuth } from '@/providers/courier-auth';
 // one-person team during testing, not a real support desk yet.
 const SUPPORT_EMAIL = 'amadourys15@gmail.com';
 
+type Tone = 'neutral' | 'success' | 'warning' | 'error';
+
 const STATUS_KEY: Record<string, string> = {
   unverified: 'profile.statusUnverified',
   pending: 'profile.statusPending',
   verified: 'profile.statusVerified',
   rejected: 'profile.statusRejected',
+};
+
+const STATUS_TONE: Record<string, Tone> = {
+  unverified: 'neutral',
+  pending: 'warning',
+  verified: 'success',
+  rejected: 'error',
 };
 
 export default function ProfileScreen() {
@@ -83,7 +93,7 @@ export default function ProfileScreen() {
           <LanguageSwitcher theme={theme} />
         </View>
         <View style={styles.identity}>
-          <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint }]}>
+          <View style={[styles.avatar, { backgroundColor: theme.colors.accentTint, borderColor: theme.colors.accent }]}>
             <Text style={[styles.avatarText, { color: theme.colors.text }]}>{initials}</Text>
           </View>
           <View style={{ flex: 1 }}>
@@ -94,14 +104,22 @@ export default function ProfileScreen() {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.body}>
-        <View style={[styles.statCard, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.lg }]}>
-          <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('profile.totalEarned')}</Text>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>{((courierProfile.totalEarnedCents ?? 0) / 100).toFixed(2)} €</Text>
+        <View style={[styles.statCard, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.lg }, theme.shadows.sm]}>
+          <View style={[styles.statIconWrap, { backgroundColor: theme.colors.accentTint, borderRadius: theme.radii.md }]}>
+            <Icon color={theme.colors.text} name="chart" size={18} />
+          </View>
+          <View>
+            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('profile.totalEarned')}</Text>
+            <Text style={[styles.statValue, { color: theme.colors.text }]}>{((courierProfile.totalEarnedCents ?? 0) / 100).toFixed(2)} €</Text>
+          </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }, theme.shadows.sm]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardTitle, { color: theme.colors.text }]}>{t('onboarding.title')}</Text>
+            <View style={styles.cardHeaderLeft}>
+              <Icon color={theme.colors.textMuted} name="person" size={16} />
+              <Text style={[styles.cardTitle, { color: theme.colors.text }]}>{t('profile.infoTitle')}</Text>
+            </View>
             {!isEditing ? (
               <Pressable onPress={startEditing}>
                 <Text style={[styles.editLink, { color: theme.colors.secondaryText }]}>{t('profile.edit')}</Text>
@@ -137,19 +155,24 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              <InfoRow label={t('profile.phone')} theme={theme} value={courierProfile.phoneNumber} />
-              <InfoRow label={t('profile.city')} theme={theme} value={`${courierProfile.city}, ${courierProfile.countryCode}`} />
+              <InfoRow icon="phone" label={t('profile.phone')} theme={theme} value={courierProfile.phoneNumber} />
+              <InfoRow icon="pin" label={t('profile.city')} theme={theme} value={`${courierProfile.city}, ${courierProfile.countryCode}`} />
               {courierProfile.vehicleType ? (
-                <InfoRow label={t('profile.vehicle')} theme={theme} value={t(`vehicle.${courierProfile.vehicleType}`)} />
+                <InfoRow
+                  icon={VEHICLE_ICON[courierProfile.vehicleType]}
+                  label={t('profile.vehicle')}
+                  theme={theme}
+                  value={t(`vehicle.${courierProfile.vehicleType}`)}
+                />
               ) : null}
-              <InfoRow last label={t('profile.status')} theme={theme} value={t(statusKey)} />
+              <InfoRow icon="badge" label={t('profile.status')} last theme={theme} tone={STATUS_TONE[courierProfile.verificationStatus]} value={t(statusKey)} />
             </>
           )}
         </View>
 
         <Pressable
           onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}
-          style={[styles.supportCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
+          style={[styles.supportCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radii.xl }, theme.shadows.sm]}>
           <View style={[styles.supportIcon, { backgroundColor: theme.colors.accentTint, borderRadius: theme.radii.md }]}>
             <Icon color={theme.colors.text} name="message" size={18} />
           </View>
@@ -197,21 +220,43 @@ function EditField({
   );
 }
 
+const TONE_COLORS: Record<Tone, (theme: ReturnType<typeof useAppTheme>) => { bg: string; fg: string }> = {
+  neutral: (theme) => ({ bg: theme.colors.surfaceMuted, fg: theme.colors.textMuted }),
+  success: (theme) => ({ bg: theme.colors.successTint, fg: theme.colors.success }),
+  warning: (theme) => ({ bg: theme.colors.warningTint, fg: theme.colors.warning }),
+  error: (theme) => ({ bg: theme.colors.errorTint, fg: theme.colors.error }),
+};
+
 function InfoRow({
+  icon,
   label,
   value,
   theme,
   last,
+  tone,
 }: {
+  icon: IconName;
   label: string;
   value: string;
   theme: ReturnType<typeof useAppTheme>;
   last?: boolean;
+  tone?: Tone;
 }) {
+  const toneColors = tone ? TONE_COLORS[tone](theme) : null;
+
   return (
     <View style={[styles.infoRow, !last && { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}>
-      <Text style={[styles.infoLabel, { color: theme.colors.textMuted }]}>{label}</Text>
-      <Text style={[styles.infoValue, { color: theme.colors.text }]}>{value}</Text>
+      <View style={styles.infoLeft}>
+        <Icon color={theme.colors.textMuted} name={icon} size={16} />
+        <Text style={[styles.infoLabel, { color: theme.colors.textMuted }]}>{label}</Text>
+      </View>
+      {toneColors ? (
+        <View style={[styles.tonePill, { backgroundColor: toneColors.bg, borderRadius: theme.radii.pill }]}>
+          <Text style={[styles.tonePillText, { color: toneColors.fg }]}>{value}</Text>
+        </View>
+      ) : (
+        <Text style={[styles.infoValue, { color: theme.colors.text }]}>{value}</Text>
+      )}
     </View>
   );
 }
@@ -222,23 +267,28 @@ const styles = StyleSheet.create({
   headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 22 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   avatarText: { fontWeight: '700', fontSize: 16 },
   name: { fontSize: 16, fontWeight: '700' },
   email: { fontSize: 13, marginTop: 2 },
 
   body: { paddingHorizontal: 20, paddingBottom: 24, gap: 14 },
-  statCard: { padding: 16, gap: 4 },
+  statCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  statIconWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   statLabel: { fontSize: 12 },
   statValue: { fontFamily: 'Poppins_700Bold', fontSize: 24 },
 
   card: { borderWidth: 1, padding: 16, gap: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cardTitle: { fontSize: 14, fontWeight: '700' },
   editLink: { fontSize: 13, fontWeight: '700' },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
+  infoLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   infoLabel: { fontSize: 13 },
   infoValue: { fontSize: 14, fontWeight: '600' },
+  tonePill: { paddingHorizontal: 10, paddingVertical: 4 },
+  tonePillText: { fontSize: 12, fontWeight: '700' },
 
   fieldWrap: { gap: 4, marginTop: 8 },
   fieldLabel: { fontSize: 12, fontWeight: '600' },

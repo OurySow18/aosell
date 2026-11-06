@@ -105,6 +105,7 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
     },
     profile: {
       title: 'Profile',
+      infoTitle: 'Information',
       vehicle: 'Vehicle',
       city: 'City',
       phone: 'Phone',
@@ -234,6 +235,7 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
     },
     profile: {
       title: 'Profil',
+      infoTitle: 'Informations',
       vehicle: 'Véhicule',
       city: 'Ville',
       phone: 'Téléphone',
@@ -363,6 +365,7 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
     },
     profile: {
       title: 'Profil',
+      infoTitle: 'Informationen',
       vehicle: 'Fahrzeug',
       city: 'Stadt',
       phone: 'Telefon',

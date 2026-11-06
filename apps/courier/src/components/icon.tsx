@@ -1,6 +1,18 @@
 import { Circle, Path, Rect, Svg } from 'react-native-svg';
 
-export type IconName = 'pin' | 'chart' | 'calendar' | 'person' | 'check' | 'route' | 'phone' | 'message';
+export type IconName =
+  | 'pin'
+  | 'chart'
+  | 'calendar'
+  | 'person'
+  | 'check'
+  | 'route'
+  | 'phone'
+  | 'message'
+  | 'bike'
+  | 'scooter'
+  | 'car'
+  | 'badge';
 
 const common = { fill: 'none', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
@@ -59,6 +71,37 @@ export function Icon({ name, size = 18, color = 'currentColor' }: { name: IconNa
       return (
         <Svg height={size} viewBox="0 0 24 24" width={size}>
           <Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke={color} {...common} />
+        </Svg>
+      );
+    case 'bike':
+      return (
+        <Svg height={size} viewBox="0 0 24 24" width={size}>
+          <Circle cx="6" cy="17" r="3.5" stroke={color} {...common} />
+          <Circle cx="18" cy="17" r="3.5" stroke={color} {...common} />
+          <Path d="M6 17l4-8h3l3 8M10 9h4M14 9l3 4h-5" stroke={color} {...common} />
+        </Svg>
+      );
+    case 'scooter':
+      return (
+        <Svg height={size} viewBox="0 0 24 24" width={size}>
+          <Circle cx="5.5" cy="17.5" r="3" stroke={color} {...common} />
+          <Circle cx="18.5" cy="17.5" r="3" stroke={color} {...common} />
+          <Path d="M8.5 17.5h7M12 17.5V11h4l2.5 3.5M6 11h4l1 2.5" stroke={color} {...common} />
+        </Svg>
+      );
+    case 'car':
+      return (
+        <Svg height={size} viewBox="0 0 24 24" width={size}>
+          <Path d="M4 16.5V12l2-5h12l2 5v4.5" stroke={color} {...common} />
+          <Path d="M3.5 16.5h17M6 9h12" stroke={color} {...common} />
+          <Circle cx="7.5" cy="16.5" r="1.6" stroke={color} {...common} />
+          <Circle cx="16.5" cy="16.5" r="1.6" stroke={color} {...common} />
+        </Svg>
+      );
+    case 'badge':
+      return (
+        <Svg height={size} viewBox="0 0 24 24" width={size}>
+          <Path d="M12 2l2.5 3.5L19 6l-1 4.5L21 14l-4 2-1 5-4-2-4 2-1-5-4-2 3-3.5L5 6l4.5-.5z" stroke={color} {...common} />
         </Svg>
       );
     default:
