@@ -6,10 +6,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MapBackdrop } from '@/components/map-backdrop';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useCourierOrders } from '@/providers/courier-orders';
 
 export default function OfferScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { offeredOrder } = useCourierOrders();
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [isResponding, setIsResponding] = useState(false);
@@ -55,15 +57,15 @@ export default function OfferScreen() {
       <View style={[styles.sheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radii.sheet }]}>
         <View style={styles.topRow}>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>Nouvelle course</Text>
+            <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>{t('offer.title')}</Text>
             <Text style={[styles.amount, { color: theme.colors.text }]}>≈ {(estimatedGainCents / 100).toFixed(2)} €</Text>
-            <Text style={[styles.estimateNote, { color: theme.colors.textMuted }]}>Estimation, pourboire éventuel en plus</Text>
+            <Text style={[styles.estimateNote, { color: theme.colors.textMuted }]}>{t('offer.estimateNote')}</Text>
           </View>
         </View>
 
         <View style={styles.badgeRow}>
           <Text style={[styles.badge, { backgroundColor: theme.colors.surfaceMuted, color: theme.colors.text }]}>
-            {(offeredOrder.total.amountCents / 100).toFixed(2)} € de commande
+            {t('offer.orderAmount', { amount: `${(offeredOrder.total.amountCents / 100).toFixed(2)} €` })}
           </Text>
         </View>
 
@@ -74,8 +76,8 @@ export default function OfferScreen() {
               <View style={[styles.stepLine, { backgroundColor: theme.colors.border }]} />
             </View>
             <View style={{ flex: 1, gap: 2, paddingBottom: 16 }}>
-              <Text style={[styles.stepLabel, { color: theme.colors.textMuted }]}>Retrait</Text>
-              <Text style={[styles.stepTitle, { color: theme.colors.text }]}>{seller?.brandName ?? 'Vendeur'}</Text>
+              <Text style={[styles.stepLabel, { color: theme.colors.textMuted }]}>{t('offer.pickup')}</Text>
+              <Text style={[styles.stepTitle, { color: theme.colors.text }]}>{seller?.brandName ?? t('offer.sellerFallback')}</Text>
               <Text style={[styles.stepMeta, { color: theme.colors.textMuted }]}>
                 {seller ? `${seller.city}, ${seller.countryCode}` : ''}
               </Text>
@@ -86,9 +88,9 @@ export default function OfferScreen() {
               <View style={[styles.stepDot, { backgroundColor: theme.colors.secondary }]} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[styles.stepLabel, { color: theme.colors.textMuted }]}>Livraison</Text>
+              <Text style={[styles.stepLabel, { color: theme.colors.textMuted }]}>{t('offer.dropoff')}</Text>
               <Text style={[styles.stepTitle, { color: theme.colors.text }]}>{offeredOrder.deliveryAddress.city}</Text>
-              <Text style={[styles.stepMeta, { color: theme.colors.textMuted }]}>L'adresse exacte s'affiche après acceptation</Text>
+              <Text style={[styles.stepMeta, { color: theme.colors.textMuted }]}>{t('offer.addressHidden')}</Text>
             </View>
           </View>
         </View>
@@ -98,13 +100,13 @@ export default function OfferScreen() {
             disabled={isResponding}
             onPress={() => void handleDecline()}
             style={[styles.secondaryButton, { borderColor: theme.colors.border, borderRadius: theme.radii.xl }]}>
-            <Text style={[styles.secondaryButtonText, { color: theme.colors.text }]}>Refuser</Text>
+            <Text style={[styles.secondaryButtonText, { color: theme.colors.text }]}>{t('offer.decline')}</Text>
           </Pressable>
           <Pressable
             disabled={isResponding}
             onPress={() => void handleAccept()}
             style={[styles.primaryButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.xl }]}>
-            <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>Accepter la course</Text>
+            <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{t('offer.accept')}</Text>
           </Pressable>
         </View>
       </View>

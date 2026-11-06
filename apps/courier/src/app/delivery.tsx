@@ -5,10 +5,12 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MapBackdrop } from '@/components/map-backdrop';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useCourierOrders } from '@/providers/courier-orders';
 
 export default function DeliveryScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { activeOrder } = useCourierOrders();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,7 +42,7 @@ export default function DeliveryScreen() {
 
       <View style={[styles.sheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radii.sheet }]}>
         <View style={styles.topRow}>
-          <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>Étape 2 sur 2 · Livraison</Text>
+          <Text style={[styles.kicker, { color: theme.colors.textMuted }]}>{t('delivery.step')}</Text>
           <Text style={[styles.orderId, { color: theme.colors.textMuted }]}>#{activeOrder.id.slice(0, 8).toUpperCase()}</Text>
         </View>
 
@@ -58,7 +60,7 @@ export default function DeliveryScreen() {
         {address.instructions ? (
           <View style={[styles.noteBox, { backgroundColor: theme.colors.accentTint, borderRadius: theme.radii.md }]}>
             <Text style={[styles.noteText, { color: theme.colors.text }]}>
-              <Text style={styles.noteStrong}>Note du client : </Text>
+              <Text style={styles.noteStrong}>{t('delivery.clientNote')}</Text>
               {address.instructions}
             </Text>
           </View>
@@ -68,7 +70,7 @@ export default function DeliveryScreen() {
           <Pressable
             onPress={() => void Linking.openURL(`tel:${address.phoneNumber}`)}
             style={[styles.actionButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
-            <Text style={styles.actionButtonTextDark}>Appeler</Text>
+            <Text style={styles.actionButtonTextDark}>{t('delivery.call')}</Text>
           </Pressable>
           <View style={[styles.actionButton, styles.actionButtonOutline, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
             <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>{address.phoneNumber}</Text>
@@ -81,7 +83,7 @@ export default function DeliveryScreen() {
             onPress={() => void handleConfirm()}
             style={[styles.confirmButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.xl }]}>
             <Text style={[styles.confirmButtonText, { color: theme.colors.onAccent }]}>
-              Confirmer la livraison · +{((activeOrder.total.amountCents * COURIER_COMMISSION_RATE) / 100).toFixed(2)} €
+              {t('delivery.confirm', { amount: `+${((activeOrder.total.amountCents * COURIER_COMMISSION_RATE) / 100).toFixed(2)} €` })}
             </Text>
           </Pressable>
         </View>

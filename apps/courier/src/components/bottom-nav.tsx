@@ -5,17 +5,19 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/icon';
 import type { IconName } from '@/components/icon';
 import type { AppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 
 type Tab = { href: Href; label: string; icon: IconName; disabled?: boolean };
 
-const TABS: Tab[] = [
-  { href: '/', label: 'Courses', icon: 'pin' },
-  { href: '/gains', label: 'Gains', icon: 'chart' },
-  { href: '/', label: 'Créneaux', icon: 'calendar', disabled: true },
-  { href: '/', label: 'Profil', icon: 'person', disabled: true },
-];
-
 export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; theme: AppTheme }) {
+  const { t } = useLocale();
+  const TABS: Tab[] = [
+    { href: '/', label: t('nav.courses'), icon: 'pin' },
+    { href: '/gains', label: t('nav.gains'), icon: 'chart' },
+    { href: '/', label: t('nav.slots'), icon: 'calendar', disabled: true },
+    { href: '/', label: t('nav.profile'), icon: 'person', disabled: true },
+  ];
+
   return (
     <View style={[styles.root, { borderTopColor: theme.colors.border }]}>
       {TABS.map((tab, index) => {

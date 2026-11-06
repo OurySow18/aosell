@@ -6,8 +6,10 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, Vi
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/bottom-nav';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { MapBackdrop } from '@/components/map-backdrop';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useCourierAuth } from '@/providers/courier-auth';
 import { useCourierOrders } from '@/providers/courier-orders';
 import type { AppUser } from '@aosell/core';
@@ -18,6 +20,7 @@ function isToday(iso: string) {
 
 export default function CourierHomeScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { isLoading, currentUser, courierProfile, signUp, signIn, signInWithGoogle, signInWithApple, signOut } = useCourierAuth();
 
   if (isLoading) {
@@ -40,10 +43,10 @@ export default function CourierHomeScreen() {
     return (
       <SafeAreaView style={[styles.center, { backgroundColor: theme.colors.background }]}>
         <Text style={[styles.message, { color: theme.colors.text }]}>
-          Compte en attente de validation par l'équipe AoSell ({courierProfile.verificationStatus}).
+          {t('pendingStatus.message', { status: courierProfile.verificationStatus })}
         </Text>
         <Pressable onPress={() => void signOut()}>
-          <Text style={[styles.link, { color: theme.colors.secondaryText }]}>Se déconnecter</Text>
+          <Text style={[styles.link, { color: theme.colors.secondaryText }]}>{t('pendingStatus.signOut')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -65,6 +68,7 @@ function AuthForm({
   onSignInWithApple: () => Promise<void>;
   theme: ReturnType<typeof useAppTheme>;
 }) {
+  const { t } = useLocale();
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,7 +82,7 @@ function AuthForm({
       if (mode === 'signIn') await onSignIn({ email, password });
       else await onSignUp({ email, password });
     } catch {
-      setError(mode === 'signIn' ? 'Email ou mot de passe invalide.' : "Impossible de créer le compte.");
+      setError(mode === 'signIn' ? t('auth.signInError') : t('auth.signUpError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -90,7 +94,7 @@ function AuthForm({
     try {
       await method();
     } catch {
-      setError('Connexion annulée ou refusée.');
+      setError(t('auth.socialError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -98,19 +102,20 @@ function AuthForm({
 
   return (
     <SafeAreaView style={[styles.center, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>AoSell Livreur</Text>
+      <LanguageSwitcher theme={theme} />
+      <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>{t('auth.title')}</Text>
       <TextInput
         autoCapitalize="none"
         keyboardType="email-address"
         onChangeText={setEmail}
-        placeholder="Email"
+        placeholder={t('auth.email')}
         placeholderTextColor={theme.colors.textMuted}
         style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]}
         value={email}
       />
       <TextInput
         onChangeText={setPassword}
-        placeholder="Mot de passe"
+        placeholder={t('auth.password')}
         placeholderTextColor={theme.colors.textMuted}
         secureTextEntry
         style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]}
@@ -118,30 +123,30 @@ function AuthForm({
       />
       {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
       <Pressable disabled={isSubmitting} onPress={() => void handleSubmit()} style={[styles.primaryButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg }]}>
-        <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : mode === 'signIn' ? 'Se connecter' : "Créer un compte"}</Text>
+        <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}</Text>
       </Pressable>
 
       {Platform.OS === 'web' ? (
         <>
-          <Text style={[styles.orText, { color: theme.colors.textMuted }]}>ou</Text>
+          <Text style={[styles.orText, { color: theme.colors.textMuted }]}>{t('auth.or')}</Text>
           <Pressable
             disabled={isSubmitting}
             onPress={() => void handleSocialSignIn(onSignInWithGoogle)}
             style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
-            <Text style={styles.secondaryButtonText}>Continuer avec Google</Text>
+            <Text style={styles.secondaryButtonText}>{t('auth.continueGoogle')}</Text>
           </Pressable>
           <Pressable
             disabled={isSubmitting}
             onPress={() => void handleSocialSignIn(onSignInWithApple)}
             style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
-            <Text style={styles.secondaryButtonText}>Continuer avec Apple</Text>
+            <Text style={styles.secondaryButtonText}>{t('auth.continueApple')}</Text>
           </Pressable>
         </>
       ) : null}
 
       <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
         <Text style={[styles.link, { color: theme.colors.secondaryText }]}>
-          {mode === 'signIn' ? "Pas encore de compte ? S'inscrire" : 'Déjà un compte ? Se connecter'}
+          {mode === 'signIn' ? t('auth.switchToSignUp') : t('auth.switchToSignIn')}
         </Text>
       </Pressable>
     </SafeAreaView>
@@ -149,6 +154,7 @@ function AuthForm({
 }
 
 function OnboardingForm({ user, theme }: { user: AppUser; theme: ReturnType<typeof useAppTheme> }) {
+  const { t } = useLocale();
   const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [city, setCity] = useState('');
@@ -163,7 +169,7 @@ function OnboardingForm({ user, theme }: { user: AppUser; theme: ReturnType<type
     try {
       await CourierRepository.create(user, { displayName, phoneNumber, city, countryCode, vehicleType: vehicleType || undefined });
     } catch {
-      setError("Impossible d'enregistrer le profil.");
+      setError(t('onboarding.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -171,15 +177,15 @@ function OnboardingForm({ user, theme }: { user: AppUser; theme: ReturnType<type
 
   return (
     <SafeAreaView style={[styles.center, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>Devenir livreur</Text>
-      <TextInput onChangeText={setDisplayName} placeholder="Nom complet" placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={displayName} />
-      <TextInput onChangeText={setPhoneNumber} placeholder="Téléphone" placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={phoneNumber} />
-      <TextInput onChangeText={setCity} placeholder="Ville" placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={city} />
-      <TextInput autoCapitalize="characters" onChangeText={setCountryCode} placeholder="Pays (ex: SN)" placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={countryCode} />
-      <TextInput onChangeText={setVehicleType} placeholder="Véhicule (moto, vélo...)" placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={vehicleType} />
+      <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>{t('onboarding.title')}</Text>
+      <TextInput onChangeText={setDisplayName} placeholder={t('onboarding.fullName')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={displayName} />
+      <TextInput onChangeText={setPhoneNumber} placeholder={t('onboarding.phone')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={phoneNumber} />
+      <TextInput onChangeText={setCity} placeholder={t('onboarding.city')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={city} />
+      <TextInput autoCapitalize="characters" onChangeText={setCountryCode} placeholder={t('onboarding.country')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={countryCode} />
+      <TextInput onChangeText={setVehicleType} placeholder={t('onboarding.vehicle')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={vehicleType} />
       {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
       <Pressable disabled={isSubmitting} onPress={() => void handleSubmit()} style={[styles.primaryButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg }]}>
-        <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : 'Envoyer'}</Text>
+        <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : t('onboarding.submit')}</Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -200,6 +206,7 @@ function Dashboard({
   availability: string;
   theme: ReturnType<typeof useAppTheme>;
 }) {
+  const { t } = useLocale();
   const { orders, offeredOrder, activeOrder } = useCourierOrders();
   const [isToggling, setIsToggling] = useState(false);
   const [locationError, setLocationError] = useState('');
@@ -222,7 +229,7 @@ function Dashboard({
       }
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted) {
-        setLocationError('Autorisation de localisation refusée.');
+        setLocationError(t('dashboard.locationError'));
         return;
       }
       const position = await Location.getCurrentPositionAsync({});
@@ -254,7 +261,7 @@ function Dashboard({
             </View>
             <View style={[styles.statusPill, { backgroundColor: online ? theme.colors.successTint : theme.colors.surfaceMuted }]}>
               <Text style={[styles.statusPillText, { color: online ? theme.colors.success : theme.colors.textMuted }]}>
-                {online ? 'En ligne' : 'Hors ligne'}
+                {online ? t('dashboard.online') : t('dashboard.offline')}
               </Text>
             </View>
           </View>
@@ -269,8 +276,8 @@ function Dashboard({
             <Pressable style={[styles.offerBanner, { backgroundColor: theme.colors.text, borderRadius: theme.radii.xl }]}>
               <View style={[styles.offerDot, { backgroundColor: theme.colors.accent }]} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.offerTitle}>Recherche de courses autour de toi</Text>
-                <Text style={styles.offerSubtitle}>1 course proposée · touche pour la voir</Text>
+                <Text style={styles.offerTitle}>{t('dashboard.offerBannerTitle')}</Text>
+                <Text style={styles.offerSubtitle}>{t('dashboard.offerBannerSubtitle')}</Text>
               </View>
               <Text style={styles.offerChevron}>›</Text>
             </Pressable>
@@ -285,17 +292,17 @@ function Dashboard({
             { borderRadius: theme.radii.xl },
             online ? { backgroundColor: theme.colors.surface, borderWidth: 2, borderColor: theme.colors.border } : { backgroundColor: theme.colors.accent },
           ]}>
-          <Text style={[styles.toggleButtonText, { color: theme.colors.text }]}>{online ? 'Passer hors ligne' : 'Passer en ligne'}</Text>
+          <Text style={[styles.toggleButtonText, { color: theme.colors.text }]}>{online ? t('dashboard.goOffline') : t('dashboard.goOnline')}</Text>
         </Pressable>
         {locationError ? <Text style={[styles.error, { color: theme.colors.error }]}>{locationError}</Text> : null}
 
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.lg }]}>
-            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>Gains du jour</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('dashboard.earningsToday')}</Text>
             <Text style={[styles.statValue, { color: theme.colors.text }]}>{(gainsTodayCents / 100).toFixed(2)} €</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.lg }]}>
-            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>Courses</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textMuted }]}>{t('dashboard.deliveriesToday')}</Text>
             <Text style={[styles.statValue, { color: theme.colors.text }]}>{todayDelivered.length}</Text>
           </View>
         </View>

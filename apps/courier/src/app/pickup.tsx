@@ -7,10 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useCourierOrders } from '@/providers/courier-orders';
 
 export default function PickupScreen() {
   const theme = useAppTheme();
+  const { t } = useLocale();
   const { activeOrder } = useCourierOrders();
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [checked, setChecked] = useState<Record<number, boolean>>({});
@@ -44,10 +46,10 @@ export default function PickupScreen() {
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: theme.colors.text }]}>
         <View style={styles.headerTop}>
-          <Text style={[styles.kicker, { color: theme.colors.accent }]}>Étape 1 sur 2 · Retrait</Text>
+          <Text style={[styles.kicker, { color: theme.colors.accent }]}>{t('pickup.step')}</Text>
           <Text style={styles.orderId}>#{activeOrder.id.slice(0, 8).toUpperCase()}</Text>
         </View>
-        <Text style={styles.sellerName}>{seller?.brandName ?? 'Vendeur'}</Text>
+        <Text style={styles.sellerName}>{seller?.brandName ?? t('offer.sellerFallback')}</Text>
         <Text style={styles.sellerAddress}>
           {seller ? `${seller.city}, ${seller.countryCode}` : ''}
         </Text>
@@ -62,7 +64,7 @@ export default function PickupScreen() {
       </SafeAreaView>
 
       <View style={styles.body}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vérifie la commande</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('pickup.checkOrder')}</Text>
         {activeOrder.items.map((item, index) => {
           const on = !!checked[index];
           return (
@@ -84,9 +86,7 @@ export default function PickupScreen() {
           );
         })}
 
-        <Text style={[styles.helperText, { color: theme.colors.textMuted }]}>
-          Un article manque ou le sac n'est pas fermé ? Préviens le vendeur avant de partir.
-        </Text>
+        <Text style={[styles.helperText, { color: theme.colors.textMuted }]}>{t('pickup.helper')}</Text>
 
         <View style={styles.bottomArea}>
           {allChecked ? (
@@ -94,14 +94,14 @@ export default function PickupScreen() {
               disabled={isSubmitting}
               onPress={() => void handleConfirm()}
               style={[styles.confirmButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.xl }]}>
-              <Text style={[styles.confirmButtonText, { color: theme.colors.onAccent }]}>J'ai récupéré la commande</Text>
+              <Text style={[styles.confirmButtonText, { color: theme.colors.onAccent }]}>{t('pickup.confirm')}</Text>
             </Pressable>
           ) : (
             <View style={[styles.confirmButton, styles.confirmButtonDisabled, { backgroundColor: theme.colors.surfaceMuted, borderRadius: theme.radii.xl }]}>
               <Text style={[styles.confirmButtonText, { color: theme.colors.textMuted }]}>
                 {activeOrder.items.length - Object.values(checked).filter(Boolean).length === 1
-                  ? 'Coche le dernier élément'
-                  : `Coche les ${activeOrder.items.length - Object.values(checked).filter(Boolean).length} éléments restants`}
+                  ? t('pickup.checkLast')
+                  : t('pickup.checkRemaining', { count: activeOrder.items.length - Object.values(checked).filter(Boolean).length })}
               </Text>
             </View>
           )}

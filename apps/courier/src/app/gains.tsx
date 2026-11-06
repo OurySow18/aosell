@@ -1,4 +1,4 @@
-import { SellerRepository } from '@aosell/core';
+import { SellerRepository, getIntlLocale } from '@aosell/core';
 import type { SellerProfile } from '@aosell/core';
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -7,20 +7,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/bottom-nav';
 import { useAppTheme } from '@/hooks/use-theme';
+import { useLocale } from '@/lib/i18n';
 import { useCourierAuth } from '@/providers/courier-auth';
 import { useCourierOrders } from '@/providers/courier-orders';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
-
 export default function GainsScreen() {
   const theme = useAppTheme();
+  const { t, locale } = useLocale();
   const { courierProfile } = useCourierAuth();
   const { orders } = useCourierOrders();
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
+
+  function formatTime(iso: string) {
+    return new Date(iso).toLocaleTimeString(getIntlLocale(locale), { hour: '2-digit', minute: '2-digit' });
+  }
 
   useEffect(() => {
     return SellerRepository.subscribeAll(setSellers);
@@ -38,20 +40,23 @@ export default function GainsScreen() {
   const thisWeek = delivered.filter((o) => new Date(o.updatedAt).getTime() >= weekCutoff);
   const weekTotalCents = thisWeek.reduce((sum, o) => sum + (o.courierCommission?.amountCents ?? 0), 0);
 
-  const sellerName = (id: string) => sellers.find((s) => s.id === id)?.brandName ?? 'Vendeur';
+  const sellerName = (id: string) => sellers.find((s) => s.id === id)?.brandName ?? t('offer.sellerFallback');
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <SafeAreaView edges={['top']} style={[styles.header, { backgroundColor: theme.colors.text }]}>
-        <Text style={styles.headerLabel}>7 derniers jours</Text>
+        <Text style={styles.headerLabel}>{t('gains.last7Days')}</Text>
         <Text style={styles.headerTotal}>{(weekTotalCents / 100).toFixed(2)} €</Text>
         <Text style={styles.headerNote}>
-          {thisWeek.length} course{thisWeek.length > 1 ? 's' : ''} · solde total : {((courierProfile.totalEarnedCents ?? 0) / 100).toFixed(2)} €
+          {t(thisWeek.length > 1 ? 'gains.summaryPlural' : 'gains.summary', {
+            count: thisWeek.length,
+            amount: `${((courierProfile.totalEarnedCents ?? 0) / 100).toFixed(2)} €`,
+          })}
         </Text>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.body}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Historique des livraisons</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('gains.history')}</Text>
         {delivered.map((order) => (
           <View key={order.id} style={[styles.runRow, { borderBottomColor: theme.colors.border }]}>
             <Text style={[styles.runTime, { color: theme.colors.textMuted }]}>{formatTime(order.updatedAt)}</Text>
@@ -65,9 +70,7 @@ export default function GainsScreen() {
             </Text>
           </View>
         ))}
-        {!delivered.length ? (
-          <Text style={[styles.empty, { color: theme.colors.textMuted }]}>Aucune livraison terminée encore.</Text>
-        ) : null}
+        {!delivered.length ? <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{t('gains.empty')}</Text> : null}
       </ScrollView>
 
       <BottomNav active="gains" theme={theme} />

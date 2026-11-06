@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { LocaleProvider } from '@/lib/i18n';
 import { CourierAuthProvider } from '@/providers/courier-auth';
 import { CourierOrdersProvider } from '@/providers/courier-orders';
 
@@ -23,17 +24,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <CourierAuthProvider>
-        <CourierOrdersProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="offer" />
-            <Stack.Screen name="pickup" />
-            <Stack.Screen name="delivery" />
-            <Stack.Screen name="gains" />
-          </Stack>
-        </CourierOrdersProvider>
-      </CourierAuthProvider>
+      <LocaleProvider>
+        <CourierAuthProvider>
+          <CourierOrdersProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="offer" />
+              <Stack.Screen name="pickup" />
+              <Stack.Screen name="delivery" />
+              <Stack.Screen name="gains" />
+            </Stack>
+          </CourierOrdersProvider>
+        </CourierAuthProvider>
+      </LocaleProvider>
     </SafeAreaProvider>
   );
 }
