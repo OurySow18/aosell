@@ -8,6 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { AosellLogo } from '@/components/brand/aosell-logo';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { AppleIcon, GoogleIcon } from '@/components/ui/social-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/hooks/use-locale';
 import { getFriendlyAuthError } from '@/lib/errors/friendly-message';
@@ -466,15 +467,10 @@ function AuthOptionButton({
       <View style={styles.optionIcon}>
         {type === 'email' ? (
           <SymbolView tintColor={theme.colors.text} size={25} name={{ ios: 'envelope', android: 'mail', web: 'mail' }} />
+        ) : type === 'google' ? (
+          <GoogleIcon size={20} />
         ) : (
-          <Text
-            style={[
-              styles.optionLetter,
-              { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily },
-              type === 'google' && styles.googleLetter,
-            ]}>
-            {type === 'google' ? 'G' : 'A'}
-          </Text>
+          <AppleIcon color={theme.colors.text} size={20} />
         )}
       </View>
       <Text style={[styles.optionLabel, { color: theme.colors.text, fontFamily: theme.typography.heading.fontFamily }]}>{label}</Text>
@@ -549,8 +545,6 @@ const styles = StyleSheet.create({
   optionList: { gap: 10 },
   optionButton: { minHeight: 58, borderWidth: 1, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   optionIcon: { width: 30, alignItems: 'center', justifyContent: 'center' },
-  optionLetter: { fontSize: 17, lineHeight: 22 },
-  googleLetter: { color: '#4285F4' },
   optionLabel: { fontSize: 16, lineHeight: 21 },
   moreButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   moreButtonText: { fontSize: 15, lineHeight: 20 },

@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 
 import { AdminLogo } from '@/components/admin-logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { AppleIcon, GoogleIcon } from '@/components/social-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/lib/i18n';
 import { useAdminAuth } from '@/providers/admin-auth';
@@ -125,6 +126,7 @@ export default function AdminIndexScreen() {
             disabled={isSubmitting}
             onPress={() => void handleSocialSignIn(signInWithGoogle)}
             style={[styles.socialButton, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <GoogleIcon size={16} />
             <Text style={[styles.socialButtonText, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.bodySemi }]}>
               {t('auth.continueGoogle')}
             </Text>
@@ -133,6 +135,7 @@ export default function AdminIndexScreen() {
             disabled={isSubmitting}
             onPress={() => void handleSocialSignIn(signInWithApple)}
             style={[styles.socialButton, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+            <AppleIcon color={theme.colors.text} size={16} />
             <Text style={[styles.socialButtonText, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.bodySemi }]}>
               {t('auth.continueApple')}
             </Text>
@@ -158,6 +161,6 @@ const styles = StyleSheet.create({
   dividerLine: { flex: 1, height: 1 },
   dividerText: { fontSize: 12 },
   socialRow: { flexDirection: 'row', gap: 10 },
-  socialButton: { flex: 1, borderWidth: 1, paddingVertical: 11, alignItems: 'center' },
+  socialButton: { flex: 1, borderWidth: 1, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   socialButtonText: { fontSize: 14 },
 });
