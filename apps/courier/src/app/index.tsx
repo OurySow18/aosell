@@ -12,6 +12,7 @@ import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/lib/i18n';
 import { useCourierAuth } from '@/providers/courier-auth';
 import { useCourierOrders } from '@/providers/courier-orders';
+import { lightTheme } from '@aosell/core';
 import type { AppUser } from '@aosell/core';
 
 const HERO_NAVY = '#14213D';
@@ -84,6 +85,10 @@ function AuthForm({
 }) {
   const { t } = useLocale();
   const isWeb = Platform.OS === 'web';
+  // This screen keeps a fixed dark-hero/light-sheet look regardless of the
+  // device's system theme (like the design mockup), rather than following
+  // useAppTheme — the sheet/hero contrast would otherwise invert in dark mode.
+  const formColors = lightTheme.colors;
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -138,29 +143,29 @@ function AuthForm({
 
   const formFields = (
     <>
-      <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>{t('auth.emailLabel')}</Text>
+      <Text style={[styles.fieldLabel, { color: formColors.textMuted }]}>{t('auth.emailLabel')}</Text>
       <TextInput
         autoCapitalize="none"
         keyboardType="email-address"
         onChangeText={setEmail}
         placeholder={t('auth.email')}
-        placeholderTextColor={theme.colors.textMuted}
-        style={[styles.fieldInput, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]}
+        placeholderTextColor={formColors.textMuted}
+        style={[styles.fieldInput, { borderColor: formColors.border, color: formColors.text, borderRadius: theme.radii.lg }]}
         value={email}
       />
 
-      <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>{t('auth.passwordLabel')}</Text>
-      <View style={[styles.passwordRow, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+      <Text style={[styles.fieldLabel, { color: formColors.textMuted }]}>{t('auth.passwordLabel')}</Text>
+      <View style={[styles.passwordRow, { borderColor: formColors.border, borderRadius: theme.radii.lg }]}>
         <TextInput
           onChangeText={setPassword}
           placeholder={t('auth.password')}
-          placeholderTextColor={theme.colors.textMuted}
+          placeholderTextColor={formColors.textMuted}
           secureTextEntry={!showPassword}
-          style={[styles.passwordInput, { color: theme.colors.text }]}
+          style={[styles.passwordInput, { color: formColors.text }]}
           value={password}
         />
         <Pressable onPress={() => setShowPassword((v) => !v)}>
-          <Text style={[styles.passwordToggle, { color: theme.colors.secondaryText }]}>
+          <Text style={[styles.passwordToggle, { color: formColors.secondaryText }]}>
             {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
           </Text>
         </Pressable>
@@ -168,52 +173,52 @@ function AuthForm({
 
       {mode === 'signIn' ? (
         <Pressable onPress={() => void handleForgotPassword()} style={styles.forgotRow}>
-          <Text style={[styles.forgotText, { color: theme.colors.secondaryText }]}>
+          <Text style={[styles.forgotText, { color: formColors.secondaryText }]}>
             {resetStatus === 'sending' ? '...' : t('auth.forgotPassword')}
           </Text>
         </Pressable>
       ) : null}
-      {resetStatus === 'sent' ? <Text style={[styles.success, { color: theme.colors.success }]}>{t('auth.resetSent')}</Text> : null}
-      {resetStatus === 'error' ? <Text style={[styles.error, { color: theme.colors.error }]}>{t('auth.resetError')}</Text> : null}
+      {resetStatus === 'sent' ? <Text style={[styles.success, { color: formColors.success }]}>{t('auth.resetSent')}</Text> : null}
+      {resetStatus === 'error' ? <Text style={[styles.error, { color: formColors.error }]}>{t('auth.resetError')}</Text> : null}
 
-      {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
+      {error ? <Text style={[styles.error, { color: formColors.error }]}>{error}</Text> : null}
 
       <Pressable
         disabled={isSubmitting || !isValid}
         onPress={() => void handleSubmit()}
         style={[
           styles.primaryButtonFull,
-          { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg },
+          { backgroundColor: formColors.accent, borderRadius: theme.radii.lg },
           !isValid || isSubmitting ? { opacity: theme.motion.disabledOpacity } : null,
         ]}>
-        <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>
+        <Text style={[styles.primaryButtonText, { color: formColors.onAccent }]}>
           {isSubmitting ? '...' : mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}
         </Text>
       </Pressable>
 
       <View style={styles.dividerRow}>
-        <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-        <Text style={[styles.dividerText, { color: theme.colors.textMuted }]}>{t('auth.or')}</Text>
-        <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.dividerLine, { backgroundColor: formColors.border }]} />
+        <Text style={[styles.dividerText, { color: formColors.textMuted }]}>{t('auth.or')}</Text>
+        <View style={[styles.dividerLine, { backgroundColor: formColors.border }]} />
       </View>
 
       <Pressable
         disabled={isSubmitting}
         onPress={() => void handleSocialSignIn(onSignInWithGoogle)}
-        style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
+        style={[styles.secondaryButton, { backgroundColor: HERO_NAVY, borderRadius: theme.radii.lg }]}>
         <Text style={styles.secondaryButtonText}>{t('auth.continueGoogle')}</Text>
       </Pressable>
       {Platform.OS !== 'android' ? (
         <Pressable
           disabled={isSubmitting}
           onPress={() => void handleSocialSignIn(onSignInWithApple)}
-          style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
+          style={[styles.secondaryButton, { backgroundColor: HERO_NAVY, borderRadius: theme.radii.lg }]}>
           <Text style={styles.secondaryButtonText}>{t('auth.continueApple')}</Text>
         </Pressable>
       ) : null}
 
       <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
-        <Text style={[styles.switchLink, { color: theme.colors.secondaryText }]}>
+        <Text style={[styles.switchLink, { color: formColors.secondaryText }]}>
           {mode === 'signIn' ? t('auth.switchToSignUp') : t('auth.switchToSignIn')}
         </Text>
       </Pressable>
@@ -222,7 +227,7 @@ function AuthForm({
 
   if (isWeb) {
     return (
-      <View style={[styles.webRoot, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.webRoot, { backgroundColor: formColors.background }]}>
         <View style={[styles.webHero, { backgroundColor: HERO_NAVY }]}>
           <View style={styles.heroDecorA} />
           <View style={styles.heroDecorB} />
@@ -243,11 +248,11 @@ function AuthForm({
 
         <ScrollView contentContainerStyle={styles.webFormPane}>
           <View style={styles.webFormTopRow}>
-            <LanguageSwitcher theme={theme} />
+            <LanguageSwitcher theme={lightTheme} />
           </View>
-          <View style={[styles.webFormCard, { backgroundColor: theme.colors.surface, borderRadius: theme.radii.xl, borderColor: theme.colors.border }]}>
-            <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading, marginBottom: 0 }]}>{heroTitle}</Text>
-            <Text style={[styles.webFormSubtitle, { color: theme.colors.textMuted }]}>{t('auth.webSubtitle')}</Text>
+          <View style={[styles.webFormCard, { backgroundColor: formColors.surface, borderRadius: theme.radii.xl, borderColor: formColors.border }]}>
+            <Text style={[styles.title, { color: formColors.text, fontFamily: theme.typography.fontFamily.heading, marginBottom: 0 }]}>{heroTitle}</Text>
+            <Text style={[styles.webFormSubtitle, { color: formColors.textMuted }]}>{t('auth.webSubtitle')}</Text>
             {formFields}
           </View>
         </ScrollView>
@@ -256,12 +261,12 @@ function AuthForm({
   }
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: formColors.background }]}>
       <View style={[styles.mobileHero, { backgroundColor: HERO_NAVY }]}>
         <View style={styles.heroDecorA} />
         <View style={styles.heroDecorB} />
         <SafeAreaView edges={['top']} style={styles.heroTopRow}>
-          <LanguageSwitcher theme={theme} />
+          <LanguageSwitcher onDark theme={theme} />
         </SafeAreaView>
         <View style={styles.heroBadge}>
           <Text style={styles.heroBadgeText}>{heroBadgeText}</Text>
@@ -271,7 +276,7 @@ function AuthForm({
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.formSheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radii.sheet }]}
+        contentContainerStyle={[styles.formSheet, { backgroundColor: formColors.surface, borderRadius: theme.radii.sheet }]}
         keyboardShouldPersistTaps="handled">
         {formFields}
       </ScrollView>
@@ -470,7 +475,7 @@ const styles = StyleSheet.create({
   mobileHero: { paddingTop: 56, paddingHorizontal: 20, paddingBottom: 40, overflow: 'hidden' },
   heroTopRow: { position: 'absolute', top: 0, right: 16 },
   heroDecorA: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,255,255,0.06)', top: -80, right: -60 },
-  heroDecorB: { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,180,0,0.12)', bottom: -60, left: -40 },
+  heroDecorB: { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,180,0,0.12)', bottom: -120, right: -50 },
   heroBadge: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginBottom: 16 },
   heroBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   heroTitle: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
