@@ -29,20 +29,17 @@ export function BottomNav({ active, theme }: { active: ActiveTab; theme: AppThem
       ]}>
       {TABS.map((tab) => {
         const isActive = tab.key === active;
-        const content = (
-          <View style={styles.item}>
-            <View style={[styles.iconWrap, isActive && { backgroundColor: theme.colors.accent, borderRadius: 999 }]}>
-              <Icon color={isActive ? theme.colors.onAccent : theme.colors.textMuted} name={tab.icon} size={isActive ? 18 : 20} />
-            </View>
-            <Text style={[styles.label, { color: isActive ? theme.colors.text : theme.colors.textMuted, fontWeight: isActive ? '700' : '600' }]}>
-              {tab.label}
-            </Text>
-          </View>
-        );
 
         return (
           <Link asChild href={tab.href} key={tab.key}>
-            <Pressable>{content}</Pressable>
+            <Pressable style={styles.item}>
+              <View style={[styles.iconWrap, isActive && { backgroundColor: theme.colors.accent, borderRadius: 999 }]}>
+                <Icon color={isActive ? theme.colors.onAccent : theme.colors.textMuted} name={tab.icon} size={isActive ? 18 : 20} />
+              </View>
+              <Text style={[styles.label, { color: isActive ? theme.colors.text : theme.colors.textMuted, fontWeight: isActive ? '700' : '600' }]}>
+                {tab.label}
+              </Text>
+            </Pressable>
           </Link>
         );
       })}
