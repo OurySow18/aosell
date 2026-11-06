@@ -1,6 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
@@ -91,6 +92,10 @@ export const AuthRepository = {
       credential.user.uid,
       credential.user.email ?? input.email.trim().toLowerCase()
     );
+  },
+
+  async resetPassword(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email.trim().toLowerCase());
   },
 
   async signOut(): Promise<void> {

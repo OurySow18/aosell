@@ -21,6 +21,7 @@ type CourierAuthValue = {
   signIn: (input: { email: string; password: string }) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -128,12 +129,17 @@ export function CourierAuthProvider({ children }: { children: ReactNode }) {
     await ensureUserDocument(userCredential.user.uid, userCredential.user.email ?? fallbackEmail(userCredential.user.uid));
   }
 
+  async function resetPassword(email: string) {
+    await AuthRepository.resetPassword(email);
+  }
+
   async function signOut() {
     await AuthRepository.signOut();
   }
 
   return (
-    <CourierAuthContext.Provider value={{ isLoading, currentUser, courierProfile, signUp, signIn, signInWithGoogle, signInWithApple, signOut }}>
+    <CourierAuthContext.Provider
+      value={{ isLoading, currentUser, courierProfile, signUp, signIn, signInWithGoogle, signInWithApple, resetPassword, signOut }}>
       {children}
     </CourierAuthContext.Provider>
   );

@@ -2,7 +2,7 @@ import { CourierRepository } from '@aosell/core';
 import * as Location from 'expo-location';
 import { Link, Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomNav } from '@/components/bottom-nav';
@@ -14,6 +14,9 @@ import { useCourierAuth } from '@/providers/courier-auth';
 import { useCourierOrders } from '@/providers/courier-orders';
 import type { AppUser } from '@aosell/core';
 
+const HERO_NAVY = '#14213D';
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
+
 function isToday(iso: string) {
   return new Date(iso).toDateString() === new Date().toDateString();
 }
@@ -21,7 +24,7 @@ function isToday(iso: string) {
 export default function CourierHomeScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
-  const { isLoading, currentUser, courierProfile, signUp, signIn, signInWithGoogle, signInWithApple, signOut } = useCourierAuth();
+  const { isLoading, currentUser, courierProfile, signUp, signIn, signInWithGoogle, signInWithApple, resetPassword, signOut } = useCourierAuth();
 
   if (isLoading) {
     return (
@@ -32,7 +35,16 @@ export default function CourierHomeScreen() {
   }
 
   if (!currentUser) {
-    return <AuthForm onSignIn={signIn} onSignInWithApple={signInWithApple} onSignInWithGoogle={signInWithGoogle} onSignUp={signUp} theme={theme} />;
+    return (
+      <AuthForm
+        onResetPassword={resetPassword}
+        onSignIn={signIn}
+        onSignInWithApple={signInWithApple}
+        onSignInWithGoogle={signInWithGoogle}
+        onSignUp={signUp}
+        theme={theme}
+      />
+    );
   }
 
   if (!courierProfile) {
@@ -60,20 +72,27 @@ function AuthForm({
   onSignUp,
   onSignInWithGoogle,
   onSignInWithApple,
+  onResetPassword,
   theme,
 }: {
   onSignIn: (i: { email: string; password: string }) => Promise<void>;
   onSignUp: (i: { email: string; password: string }) => Promise<void>;
   onSignInWithGoogle: () => Promise<void>;
   onSignInWithApple: () => Promise<void>;
+  onResetPassword: (email: string) => Promise<void>;
   theme: ReturnType<typeof useAppTheme>;
 }) {
   const { t } = useLocale();
+  const isWeb = Platform.OS === 'web';
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetStatus, setResetStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  const isValid = EMAIL_PATTERN.test(email.trim()) && password.length >= 6;
 
   async function handleSubmit() {
     setError('');
@@ -100,33 +119,84 @@ function AuthForm({
     }
   }
 
-  return (
-    <SafeAreaView style={[styles.center, { backgroundColor: theme.colors.background }]}>
-      <LanguageSwitcher theme={theme} />
-      <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading }]}>{t('auth.title')}</Text>
+  async function handleForgotPassword() {
+    if (!EMAIL_PATTERN.test(email.trim())) {
+      return;
+    }
+    setResetStatus('sending');
+    try {
+      await onResetPassword(email);
+      setResetStatus('sent');
+    } catch {
+      setResetStatus('error');
+    }
+  }
+
+  const heroBadgeText = 'AoSell · Livreur';
+  const heroTitle = mode === 'signIn' ? t('auth.welcomeBackTitle') : t('auth.createAccountTitle');
+  const heroSubtitle = mode === 'signIn' ? t('auth.welcomeBackSubtitle') : t('auth.createAccountSubtitle');
+
+  const formFields = (
+    <>
+      <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>{t('auth.emailLabel')}</Text>
       <TextInput
         autoCapitalize="none"
         keyboardType="email-address"
         onChangeText={setEmail}
         placeholder={t('auth.email')}
         placeholderTextColor={theme.colors.textMuted}
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]}
+        style={[styles.fieldInput, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]}
         value={email}
       />
-      <TextInput
-        onChangeText={setPassword}
-        placeholder={t('auth.password')}
-        placeholderTextColor={theme.colors.textMuted}
-        secureTextEntry
-        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]}
-        value={password}
-      />
+
+      <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>{t('auth.passwordLabel')}</Text>
+      <View style={[styles.passwordRow, { borderColor: theme.colors.border, borderRadius: theme.radii.lg }]}>
+        <TextInput
+          onChangeText={setPassword}
+          placeholder={t('auth.password')}
+          placeholderTextColor={theme.colors.textMuted}
+          secureTextEntry={!showPassword}
+          style={[styles.passwordInput, { color: theme.colors.text }]}
+          value={password}
+        />
+        <Pressable onPress={() => setShowPassword((v) => !v)}>
+          <Text style={[styles.passwordToggle, { color: theme.colors.secondaryText }]}>
+            {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+          </Text>
+        </Pressable>
+      </View>
+
+      {mode === 'signIn' ? (
+        <Pressable onPress={() => void handleForgotPassword()} style={styles.forgotRow}>
+          <Text style={[styles.forgotText, { color: theme.colors.secondaryText }]}>
+            {resetStatus === 'sending' ? '...' : t('auth.forgotPassword')}
+          </Text>
+        </Pressable>
+      ) : null}
+      {resetStatus === 'sent' ? <Text style={[styles.success, { color: theme.colors.success }]}>{t('auth.resetSent')}</Text> : null}
+      {resetStatus === 'error' ? <Text style={[styles.error, { color: theme.colors.error }]}>{t('auth.resetError')}</Text> : null}
+
       {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
-      <Pressable disabled={isSubmitting} onPress={() => void handleSubmit()} style={[styles.primaryButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg }]}>
-        <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}</Text>
+
+      <Pressable
+        disabled={isSubmitting || !isValid}
+        onPress={() => void handleSubmit()}
+        style={[
+          styles.primaryButtonFull,
+          { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg },
+          !isValid || isSubmitting ? { opacity: theme.motion.disabledOpacity } : null,
+        ]}>
+        <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>
+          {isSubmitting ? '...' : mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}
+        </Text>
       </Pressable>
 
-      <Text style={[styles.orText, { color: theme.colors.textMuted }]}>{t('auth.or')}</Text>
+      <View style={styles.dividerRow}>
+        <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+        <Text style={[styles.dividerText, { color: theme.colors.textMuted }]}>{t('auth.or')}</Text>
+        <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+      </View>
+
       <Pressable
         disabled={isSubmitting}
         onPress={() => void handleSocialSignIn(onSignInWithGoogle)}
@@ -143,11 +213,69 @@ function AuthForm({
       ) : null}
 
       <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
-        <Text style={[styles.link, { color: theme.colors.secondaryText }]}>
+        <Text style={[styles.switchLink, { color: theme.colors.secondaryText }]}>
           {mode === 'signIn' ? t('auth.switchToSignUp') : t('auth.switchToSignIn')}
         </Text>
       </Pressable>
-    </SafeAreaView>
+    </>
+  );
+
+  if (isWeb) {
+    return (
+      <View style={[styles.webRoot, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.webHero, { backgroundColor: HERO_NAVY }]}>
+          <View style={styles.heroDecorA} />
+          <View style={styles.heroDecorB} />
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeText}>{heroBadgeText}</Text>
+          </View>
+          <Text style={styles.webHeroTitle}>{t('auth.webHeroTitle')}</Text>
+          <Text style={styles.webHeroSubtitle}>{t('auth.webHeroSubtitle')}</Text>
+          <View style={styles.webBulletList}>
+            {[t('auth.webHeroBullet1'), t('auth.webHeroBullet2'), t('auth.webHeroBullet3')].map((bullet) => (
+              <View key={bullet} style={styles.webBulletRow}>
+                <View style={styles.webBulletDot} />
+                <Text style={styles.webBulletText}>{bullet}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.webFormPane}>
+          <View style={styles.webFormTopRow}>
+            <LanguageSwitcher theme={theme} />
+          </View>
+          <View style={[styles.webFormCard, { backgroundColor: theme.colors.surface, borderRadius: theme.radii.xl, borderColor: theme.colors.border }]}>
+            <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.fontFamily.heading, marginBottom: 0 }]}>{heroTitle}</Text>
+            <Text style={[styles.webFormSubtitle, { color: theme.colors.textMuted }]}>{t('auth.webSubtitle')}</Text>
+            {formFields}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.mobileHero, { backgroundColor: HERO_NAVY }]}>
+        <View style={styles.heroDecorA} />
+        <View style={styles.heroDecorB} />
+        <SafeAreaView edges={['top']} style={styles.heroTopRow}>
+          <LanguageSwitcher theme={theme} />
+        </SafeAreaView>
+        <View style={styles.heroBadge}>
+          <Text style={styles.heroBadgeText}>{heroBadgeText}</Text>
+        </View>
+        <Text style={styles.heroTitle}>{heroTitle}</Text>
+        <Text style={styles.heroSubtitle}>{heroSubtitle}</Text>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.formSheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radii.sheet }]}
+        keyboardShouldPersistTaps="handled">
+        {formFields}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -318,13 +446,49 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, marginBottom: 8 },
   input: { width: 280, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   primaryButton: { paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center', marginTop: 4 },
+  primaryButtonFull: { width: '100%', paddingVertical: 16, alignItems: 'center', marginTop: 8 },
   primaryButtonText: { fontSize: 15, fontWeight: '700' },
-  orText: { fontSize: 12, marginTop: 4 },
-  secondaryButton: { width: 280, paddingVertical: 13, alignItems: 'center' },
+  secondaryButton: { width: '100%', paddingVertical: 13, alignItems: 'center' },
   secondaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   message: { fontSize: 15, textAlign: 'center' },
   link: { fontSize: 13, fontWeight: '600', marginTop: 4 },
   error: { fontSize: 13 },
+  success: { fontSize: 13 },
+
+  fieldLabel: { fontSize: 12, fontWeight: '600', marginTop: 4 },
+  fieldInput: { width: '100%', borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  passwordRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, paddingHorizontal: 14 },
+  passwordInput: { flex: 1, paddingVertical: 12, fontSize: 15 },
+  passwordToggle: { fontSize: 13, fontWeight: '700', paddingLeft: 10 },
+  forgotRow: { alignSelf: 'flex-end' },
+  forgotText: { fontSize: 13, fontWeight: '600' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 12 },
+  switchLink: { fontSize: 13, fontWeight: '600', marginTop: 8, textAlign: 'center' },
+
+  mobileHero: { paddingTop: 56, paddingHorizontal: 20, paddingBottom: 40, overflow: 'hidden' },
+  heroTopRow: { position: 'absolute', top: 0, right: 16 },
+  heroDecorA: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(255,255,255,0.06)', top: -80, right: -60 },
+  heroDecorB: { position: 'absolute', width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,180,0,0.12)', bottom: -60, left: -40 },
+  heroBadge: { alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginBottom: 16 },
+  heroBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  heroTitle: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
+  heroSubtitle: { color: '#C9CFDC', fontSize: 14, marginTop: 8, lineHeight: 20 },
+  formSheet: { marginTop: -24, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40, gap: 10 },
+
+  webRoot: { flex: 1, flexDirection: 'row', minHeight: '100%' },
+  webHero: { flex: 1, minWidth: 320, padding: 56, justifyContent: 'center', overflow: 'hidden' },
+  webHeroTitle: { color: '#FFFFFF', fontSize: 34, fontWeight: '700', maxWidth: 420 },
+  webHeroSubtitle: { color: '#C9CFDC', fontSize: 15, marginTop: 14, maxWidth: 420, lineHeight: 22 },
+  webBulletList: { marginTop: 28, gap: 12 },
+  webBulletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  webBulletDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FFB400' },
+  webBulletText: { color: '#FFFFFF', fontSize: 14 },
+  webFormPane: { flexGrow: 1, flexBasis: 480, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },
+  webFormTopRow: { width: '100%', maxWidth: 380, alignItems: 'flex-end' },
+  webFormCard: { width: '100%', maxWidth: 380, borderWidth: 1, padding: 32, gap: 10 },
+  webFormSubtitle: { fontSize: 13, marginBottom: 8 },
 
   screen: { flex: 1 },
   headerArea: { paddingHorizontal: 16, paddingTop: 16 },
