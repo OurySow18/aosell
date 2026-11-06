@@ -1,3 +1,5 @@
+import type { ZodIssue } from 'zod';
+
 import { translate } from '@/lib/i18n';
 
 function errorCode(error: unknown): string {
@@ -41,6 +43,28 @@ export function getFriendlyAuthError(error: unknown): string {
       return translate('auth.errors.serviceUnavailable');
     default:
       return translate('auth.errors.generic');
+  }
+}
+
+// Zod's default message ("String must contain at least 20 character(s)")
+// is never shown to the user directly — mapped by field to a localized,
+// specific message instead, same no-raw-message rule as the function above.
+export function getFriendlyListingError(issue: ZodIssue | undefined): string {
+  switch (issue?.path[0]) {
+    case 'title':
+      return translate('listingEditor.errors.titleTooShort');
+    case 'slug':
+      return translate('listingEditor.errors.slugTooShort');
+    case 'description':
+      return translate('listingEditor.errors.descriptionTooShort');
+    case 'city':
+      return translate('listingEditor.errors.cityTooShort');
+    case 'countryCode':
+      return translate('listingEditor.errors.countryCodeInvalid');
+    case 'amountCents':
+      return translate('listingEditor.errors.amountInvalid');
+    default:
+      return translate('listingEditor.invalid');
   }
 }
 

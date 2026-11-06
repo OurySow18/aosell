@@ -10,6 +10,7 @@ import { CondimentTagInput } from '@/components/ui/condiment-tag-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/ui/section-title';
 import { DEFAULT_CITY, DEFAULT_COUNTRY_CODE } from '@/constants/location';
+import { getFriendlyListingError } from '@/lib/errors/friendly-message';
 import { getCuisineLabel, getDeliveryModeLabel, getListingStatusLabel, getListingTypeLabel } from '@/lib/i18n';
 import { useLocale } from '@/hooks/use-locale';
 import { cuisineOptions } from '@/lib/validations/seller-profile';
@@ -91,7 +92,7 @@ export default function ListingEditorScreen() {
     });
 
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? t('listingEditor.invalid'));
+      setError(getFriendlyListingError(parsed.error.issues[0]));
       return;
     }
 
