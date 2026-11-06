@@ -8,16 +8,17 @@ import type { IconName } from '@/components/icon';
 import type { AppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/lib/i18n';
 
-type Tab = { href: Href; label: string; icon: IconName; disabled?: boolean };
+type ActiveTab = 'courses' | 'gains' | 'slots' | 'profile';
+type Tab = { key: ActiveTab; href: Href; label: string; icon: IconName };
 
-export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; theme: AppTheme }) {
+export function BottomNav({ active, theme }: { active: ActiveTab; theme: AppTheme }) {
   const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const TABS: Tab[] = [
-    { href: '/', label: t('nav.courses'), icon: 'pin' },
-    { href: '/gains', label: t('nav.gains'), icon: 'chart' },
-    { href: '/', label: t('nav.slots'), icon: 'calendar', disabled: true },
-    { href: '/', label: t('nav.profile'), icon: 'person', disabled: true },
+    { key: 'courses', href: '/', label: t('nav.courses'), icon: 'pin' },
+    { key: 'gains', href: '/gains', label: t('nav.gains'), icon: 'chart' },
+    { key: 'slots', href: '/slots', label: t('nav.slots'), icon: 'calendar' },
+    { key: 'profile', href: '/profile', label: t('nav.profile'), icon: 'person' },
   ];
 
   return (
@@ -26,8 +27,8 @@ export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; them
         styles.root,
         { backgroundColor: theme.colors.tabBar, borderTopColor: theme.colors.border, paddingBottom: 8 + insets.bottom },
       ]}>
-      {TABS.map((tab, index) => {
-        const isActive = (index === 0 && active === 'courses') || (index === 1 && active === 'gains');
+      {TABS.map((tab) => {
+        const isActive = tab.key === active;
         const content = (
           <View style={styles.item}>
             <View style={[styles.iconWrap, isActive && { backgroundColor: theme.colors.accent, borderRadius: 999 }]}>
@@ -39,16 +40,8 @@ export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; them
           </View>
         );
 
-        if (tab.disabled) {
-          return (
-            <View key={tab.label} style={styles.disabled}>
-              {content}
-            </View>
-          );
-        }
-
         return (
-          <Link asChild href={tab.href} key={tab.label}>
+          <Link asChild href={tab.href} key={tab.key}>
             <Pressable>{content}</Pressable>
           </Link>
         );
@@ -60,7 +53,6 @@ export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; them
 const styles = StyleSheet.create({
   root: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 6, paddingHorizontal: 8 },
   item: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
-  disabled: { flex: 1, opacity: 0.4 },
   iconWrap: { width: 44, height: 28, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 11 },
 });

@@ -89,4 +89,11 @@ export const CourierRepository = {
       updatedAt: createTimestamp(),
     });
   },
+
+  async setPlannedAvailability(courierId: string, dates: string[]) {
+    await updateDoc(doc(db, 'courier_profiles', courierId), {
+      plannedAvailabilityDates: dates,
+      updatedAt: createTimestamp(),
+    });
+  },
 };

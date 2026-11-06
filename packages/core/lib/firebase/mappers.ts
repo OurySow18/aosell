@@ -112,6 +112,7 @@ export function fromFirestoreCourierProfileDoc(
     availability: doc.availability,
     verificationStatus: doc.verificationStatus,
     totalEarnedCents: doc.totalEarnedCents ?? 0,
+    plannedAvailabilityDates: doc.plannedAvailabilityDates ?? [],
     createdAt: toIsoDate(doc.createdAt),
     updatedAt: toIsoDate(doc.updatedAt),
   };

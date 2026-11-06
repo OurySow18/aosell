@@ -161,6 +161,9 @@ export interface CourierProfile {
   availability: CourierAvailability;
   verificationStatus: VerificationStatus;
   totalEarnedCents?: number;
+  // Day-level intent only ("I plan to be available"), not a hard booking —
+  // no time windows, no enforcement. ISO date strings (YYYY-MM-DD).
+  plannedAvailabilityDates?: string[];
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
