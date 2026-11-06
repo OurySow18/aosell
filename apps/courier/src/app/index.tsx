@@ -126,22 +126,20 @@ function AuthForm({
         <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : mode === 'signIn' ? t('auth.signIn') : t('auth.signUp')}</Text>
       </Pressable>
 
-      {Platform.OS === 'web' ? (
-        <>
-          <Text style={[styles.orText, { color: theme.colors.textMuted }]}>{t('auth.or')}</Text>
-          <Pressable
-            disabled={isSubmitting}
-            onPress={() => void handleSocialSignIn(onSignInWithGoogle)}
-            style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
-            <Text style={styles.secondaryButtonText}>{t('auth.continueGoogle')}</Text>
-          </Pressable>
-          <Pressable
-            disabled={isSubmitting}
-            onPress={() => void handleSocialSignIn(onSignInWithApple)}
-            style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
-            <Text style={styles.secondaryButtonText}>{t('auth.continueApple')}</Text>
-          </Pressable>
-        </>
+      <Text style={[styles.orText, { color: theme.colors.textMuted }]}>{t('auth.or')}</Text>
+      <Pressable
+        disabled={isSubmitting}
+        onPress={() => void handleSocialSignIn(onSignInWithGoogle)}
+        style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
+        <Text style={styles.secondaryButtonText}>{t('auth.continueGoogle')}</Text>
+      </Pressable>
+      {Platform.OS !== 'android' ? (
+        <Pressable
+          disabled={isSubmitting}
+          onPress={() => void handleSocialSignIn(onSignInWithApple)}
+          style={[styles.secondaryButton, { backgroundColor: theme.colors.text, borderRadius: theme.radii.lg }]}>
+          <Text style={styles.secondaryButtonText}>{t('auth.continueApple')}</Text>
+        </Pressable>
       ) : null}
 
       <Pressable onPress={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>

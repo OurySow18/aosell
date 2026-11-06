@@ -1,9 +1,17 @@
 import { AuthRepository, CourierRepository, auth, db, fromFirestoreUserDoc, toFirestoreUserDoc } from '@aosell/core';
 import type { AppUser, CourierProfile, FirestoreUserDoc } from '@aosell/core';
-import { GoogleAuthProvider, OAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, OAuthProvider, signInWithCredential, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
+
+// Defined here (not in the lib/auth/*-sign-in.ts native helpers) so those
+// files — which import native-only SDKs — are only ever reached via dynamic
+// import, while callers can still catch these classes unconditionally.
+export class AppleSignInCanceledError extends Error {}
+export class GoogleSignInCanceledError extends Error {}
+
+const POPUP_CANCEL_CODES = new Set(['auth/popup-closed-by-user', 'auth/cancelled-popup-request']);
 
 type CourierAuthValue = {
   isLoading: boolean;
@@ -18,10 +26,10 @@ type CourierAuthValue = {
 
 const CourierAuthContext = createContext<CourierAuthValue | null>(null);
 
-// Web-only popup sign-in, same trick as apps/admin — lets an existing
-// account (e.g. the admin's own, which has no password) sign into this app
-// too for testing, without needing the native Apple/Google SDKs this app
-// doesn't carry. On native, email/password remains the only option for now.
+function fallbackEmail(uid: string) {
+  return `${uid}@anonymous.aosell.app`;
+}
+
 async function ensureUserDocument(uid: string, email: string) {
   const ref = doc(db, 'users', uid);
   const snapshot = await getDoc(ref);
@@ -29,7 +37,7 @@ async function ensureUserDocument(uid: string, email: string) {
   const user: AppUser = {
     id: uid,
     email,
-    role: existing?.role ?? 'buyer',
+    role: existing?.role ?? 'courier',
     isActive: true,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -70,21 +78,54 @@ export function CourierAuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signInWithGoogle() {
-    if (Platform.OS !== 'web') {
-      throw new Error('Google sign-in is web-only in this app for now.');
+    if (Platform.OS === 'web') {
+      try {
+        const credential = await signInWithPopup(auth, new GoogleAuthProvider());
+        await ensureUserDocument(credential.user.uid, credential.user.email ?? fallbackEmail(credential.user.uid));
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+        if (POPUP_CANCEL_CODES.has(code)) {
+          throw new GoogleSignInCanceledError();
+        }
+        throw error;
+      }
+      return;
     }
-    const credential = await signInWithPopup(auth, new GoogleAuthProvider());
-    await ensureUserDocument(credential.user.uid, credential.user.email ?? '');
+
+    // Native-only: dynamically imported so @react-native-google-signin's
+    // native module (no web build) never reaches the web bundle.
+    const { performGoogleSignIn } = await import('@/lib/auth/google-sign-in');
+    const { idToken } = await performGoogleSignIn();
+    const credential = GoogleAuthProvider.credential(idToken);
+    const userCredential = await signInWithCredential(auth, credential);
+    await ensureUserDocument(userCredential.user.uid, userCredential.user.email ?? fallbackEmail(userCredential.user.uid));
   }
 
   async function signInWithApple() {
-    if (Platform.OS !== 'web') {
-      throw new Error('Apple sign-in is web-only in this app for now.');
+    if (Platform.OS === 'web') {
+      try {
+        const provider = new OAuthProvider('apple.com');
+        provider.addScope('email');
+        const credential = await signInWithPopup(auth, provider);
+        await ensureUserDocument(credential.user.uid, credential.user.email ?? fallbackEmail(credential.user.uid));
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+        if (POPUP_CANCEL_CODES.has(code)) {
+          throw new AppleSignInCanceledError();
+        }
+        throw error;
+      }
+      return;
     }
+
+    // Native-only (iOS — expo-apple-authentication has no Android build);
+    // dynamically imported for the same reason as signInWithGoogle above.
+    const { performAppleSignIn } = await import('@/lib/auth/apple-sign-in');
+    const { idToken, rawNonce } = await performAppleSignIn();
     const provider = new OAuthProvider('apple.com');
-    provider.addScope('email');
-    const credential = await signInWithPopup(auth, provider);
-    await ensureUserDocument(credential.user.uid, credential.user.email ?? '');
+    const credential = provider.credential({ idToken, rawNonce });
+    const userCredential = await signInWithCredential(auth, credential);
+    await ensureUserDocument(userCredential.user.uid, userCredential.user.email ?? fallbackEmail(userCredential.user.uid));
   }
 
   async function signOut() {
