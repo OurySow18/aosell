@@ -2,6 +2,7 @@ import { COURIER_COMMISSION_RATE, OrderRepository, palette } from '@aosell/core'
 import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MapBackdrop } from '@/components/map-backdrop';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -11,6 +12,7 @@ import { useCourierOrders } from '@/providers/courier-orders';
 export default function DeliveryScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
   const { activeOrder } = useCourierOrders();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -77,7 +79,7 @@ export default function DeliveryScreen() {
           </View>
         </View>
 
-        <View style={styles.bottomArea}>
+        <View style={[styles.bottomArea, { paddingBottom: insets.bottom }]}>
           <Pressable
             disabled={isSubmitting}
             onPress={() => void handleConfirm()}

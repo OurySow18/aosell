@@ -3,6 +3,7 @@ import type { SellerProfile } from '@aosell/core';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MapBackdrop } from '@/components/map-backdrop';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -12,6 +13,7 @@ import { useCourierOrders } from '@/providers/courier-orders';
 export default function OfferScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
   const { offeredOrder } = useCourierOrders();
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [isResponding, setIsResponding] = useState(false);
@@ -95,7 +97,7 @@ export default function OfferScreen() {
           </View>
         </View>
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, { paddingBottom: insets.bottom }]}>
           <Pressable
             disabled={isResponding}
             onPress={() => void handleDecline()}

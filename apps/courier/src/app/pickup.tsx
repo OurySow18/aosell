@@ -3,7 +3,7 @@ import type { SellerProfile } from '@aosell/core';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import { useAppTheme } from '@/hooks/use-theme';
@@ -13,6 +13,7 @@ import { useCourierOrders } from '@/providers/courier-orders';
 export default function PickupScreen() {
   const theme = useAppTheme();
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
   const { activeOrder } = useCourierOrders();
   const [sellers, setSellers] = useState<SellerProfile[]>([]);
   const [checked, setChecked] = useState<Record<number, boolean>>({});
@@ -88,7 +89,7 @@ export default function PickupScreen() {
 
         <Text style={[styles.helperText, { color: theme.colors.textMuted }]}>{t('pickup.helper')}</Text>
 
-        <View style={styles.bottomArea}>
+        <View style={[styles.bottomArea, { paddingBottom: insets.bottom }]}>
           {allChecked ? (
             <Pressable
               disabled={isSubmitting}

@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import type { Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import type { IconName } from '@/components/icon';
@@ -11,6 +12,7 @@ type Tab = { href: Href; label: string; icon: IconName; disabled?: boolean };
 
 export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; theme: AppTheme }) {
   const { t } = useLocale();
+  const insets = useSafeAreaInsets();
   const TABS: Tab[] = [
     { href: '/', label: t('nav.courses'), icon: 'pin' },
     { href: '/gains', label: t('nav.gains'), icon: 'chart' },
@@ -19,7 +21,11 @@ export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; them
   ];
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.tabBar, borderTopColor: theme.colors.border }]}>
+    <View
+      style={[
+        styles.root,
+        { backgroundColor: theme.colors.tabBar, borderTopColor: theme.colors.border, paddingBottom: 8 + insets.bottom },
+      ]}>
       {TABS.map((tab, index) => {
         const isActive = (index === 0 && active === 'courses') || (index === 1 && active === 'gains');
         const content = (
@@ -52,7 +58,7 @@ export function BottomNav({ active, theme }: { active: 'courses' | 'gains'; them
 }
 
 const styles = StyleSheet.create({
-  root: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 6, paddingBottom: 14, paddingHorizontal: 8 },
+  root: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 6, paddingHorizontal: 8 },
   item: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 4 },
   disabled: { flex: 1, opacity: 0.4 },
   iconWrap: { width: 44, height: 28, alignItems: 'center', justifyContent: 'center' },
