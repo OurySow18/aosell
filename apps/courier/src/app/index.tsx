@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomNav } from '@/components/bottom-nav';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { MapBackdrop } from '@/components/map-backdrop';
+import { AppleIcon, GoogleIcon } from '@/components/social-icons';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/lib/i18n';
 import { useCourierAuth } from '@/providers/courier-auth';
@@ -206,6 +207,7 @@ function AuthForm({
         disabled={isSubmitting}
         onPress={() => void handleSocialSignIn(onSignInWithGoogle)}
         style={[styles.secondaryButton, { backgroundColor: HERO_NAVY, borderRadius: theme.radii.lg }]}>
+        <GoogleIcon size={18} />
         <Text style={styles.secondaryButtonText}>{t('auth.continueGoogle')}</Text>
       </Pressable>
       {Platform.OS !== 'android' ? (
@@ -213,6 +215,7 @@ function AuthForm({
           disabled={isSubmitting}
           onPress={() => void handleSocialSignIn(onSignInWithApple)}
           style={[styles.secondaryButton, { backgroundColor: HERO_NAVY, borderRadius: theme.radii.lg }]}>
+          <AppleIcon size={18} />
           <Text style={styles.secondaryButtonText}>{t('auth.continueApple')}</Text>
         </Pressable>
       ) : null}
@@ -453,7 +456,7 @@ const styles = StyleSheet.create({
   primaryButton: { paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center', marginTop: 4 },
   primaryButtonFull: { width: '100%', paddingVertical: 16, alignItems: 'center', marginTop: 8 },
   primaryButtonText: { fontSize: 15, fontWeight: '700' },
-  secondaryButton: { width: '100%', paddingVertical: 13, alignItems: 'center' },
+  secondaryButton: { width: '100%', paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   secondaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   message: { fontSize: 15, textAlign: 'center' },
   link: { fontSize: 13, fontWeight: '600', marginTop: 4 },
