@@ -7,7 +7,7 @@ import {
   fromFirestoreCourierProfileDoc,
   toFirestoreCourierProfileDoc,
 } from '../lib/firebase/mappers';
-import type { AppUser, CourierAvailability, CourierProfile, GeoPoint, VerificationStatus } from '../types';
+import type { AppUser, CourierAvailability, CourierProfile, CourierVehicleType, GeoPoint, VerificationStatus } from '../types';
 import type { FirestoreCourierProfileDoc } from '../firestore_types';
 
 export const CourierRepository = {
@@ -53,7 +53,7 @@ export const CourierRepository = {
 
   async create(
     user: AppUser,
-    input: { displayName: string; phoneNumber: string; countryCode: string; city: string; vehicleType?: string }
+    input: { displayName: string; phoneNumber: string; countryCode: string; city: string; vehicleType?: CourierVehicleType }
   ): Promise<CourierProfile> {
     const ref = doc(collection(db, 'courier_profiles'));
     const profile: CourierProfile = {
@@ -99,7 +99,7 @@ export const CourierRepository = {
 
   async updateProfile(
     courierId: string,
-    input: { displayName: string; phoneNumber: string; countryCode: string; city: string; vehicleType?: string }
+    input: { displayName: string; phoneNumber: string; countryCode: string; city: string; vehicleType?: CourierVehicleType }
   ) {
     await updateDoc(doc(db, 'courier_profiles', courierId), {
       displayName: input.displayName,

@@ -1,4 +1,5 @@
 import { CourierRepository } from '@aosell/core';
+import type { CourierVehicleType } from '@aosell/core';
 import Constants from 'expo-constants';
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
@@ -8,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomNav } from '@/components/bottom-nav';
 import { Icon } from '@/components/icon';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { VehicleSelect } from '@/components/vehicle-select';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/lib/i18n';
 import { useCourierAuth } from '@/providers/courier-auth';
@@ -32,7 +34,7 @@ export default function ProfileScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [city, setCity] = useState('');
   const [countryCode, setCountryCode] = useState('');
-  const [vehicleType, setVehicleType] = useState('');
+  const [vehicleType, setVehicleType] = useState<CourierVehicleType | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,7 +47,7 @@ export default function ProfileScreen() {
     setPhoneNumber(courierProfile!.phoneNumber);
     setCity(courierProfile!.city);
     setCountryCode(courierProfile!.countryCode);
-    setVehicleType(courierProfile!.vehicleType ?? '');
+    setVehicleType(courierProfile!.vehicleType);
     setError('');
     setIsEditing(true);
   }
@@ -59,7 +61,7 @@ export default function ProfileScreen() {
         phoneNumber,
         city,
         countryCode,
-        vehicleType: vehicleType || undefined,
+        vehicleType,
       });
       setIsEditing(false);
     } catch {
@@ -113,7 +115,10 @@ export default function ProfileScreen() {
               <EditField label={t('onboarding.phone')} onChangeText={setPhoneNumber} theme={theme} value={phoneNumber} />
               <EditField label={t('onboarding.city')} onChangeText={setCity} theme={theme} value={city} />
               <EditField autoCapitalize="characters" label={t('onboarding.country')} onChangeText={setCountryCode} theme={theme} value={countryCode} />
-              <EditField label={t('onboarding.vehicle')} onChangeText={setVehicleType} theme={theme} value={vehicleType} />
+              <View style={styles.fieldWrap}>
+                <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>{t('onboarding.vehicle')}</Text>
+                <VehicleSelect onChange={setVehicleType} theme={theme} value={vehicleType} />
+              </View>
               {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
               <View style={styles.editActions}>
                 <Pressable
@@ -134,7 +139,9 @@ export default function ProfileScreen() {
             <>
               <InfoRow label={t('profile.phone')} theme={theme} value={courierProfile.phoneNumber} />
               <InfoRow label={t('profile.city')} theme={theme} value={`${courierProfile.city}, ${courierProfile.countryCode}`} />
-              {courierProfile.vehicleType ? <InfoRow label={t('profile.vehicle')} theme={theme} value={courierProfile.vehicleType} /> : null}
+              {courierProfile.vehicleType ? (
+                <InfoRow label={t('profile.vehicle')} theme={theme} value={t(`vehicle.${courierProfile.vehicleType}`)} />
+              ) : null}
               <InfoRow last label={t('profile.status')} theme={theme} value={t(statusKey)} />
             </>
           )}

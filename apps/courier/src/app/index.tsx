@@ -9,12 +9,13 @@ import { BottomNav } from '@/components/bottom-nav';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { MapBackdrop } from '@/components/map-backdrop';
 import { AppleIcon, GoogleIcon } from '@/components/social-icons';
+import { VehicleSelect } from '@/components/vehicle-select';
 import { useAppTheme } from '@/hooks/use-theme';
 import { useLocale } from '@/lib/i18n';
 import { useCourierAuth } from '@/providers/courier-auth';
 import { useCourierOrders } from '@/providers/courier-orders';
 import { lightTheme } from '@aosell/core';
-import type { AppUser } from '@aosell/core';
+import type { AppUser, CourierVehicleType } from '@aosell/core';
 
 const HERO_NAVY = '#14213D';
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/;
@@ -293,7 +294,7 @@ function OnboardingForm({ user, theme }: { user: AppUser; theme: ReturnType<type
   const [phoneNumber, setPhoneNumber] = useState('');
   const [city, setCity] = useState('');
   const [countryCode, setCountryCode] = useState('');
-  const [vehicleType, setVehicleType] = useState('');
+  const [vehicleType, setVehicleType] = useState<CourierVehicleType | undefined>(undefined);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -301,7 +302,7 @@ function OnboardingForm({ user, theme }: { user: AppUser; theme: ReturnType<type
     setError('');
     setIsSubmitting(true);
     try {
-      await CourierRepository.create(user, { displayName, phoneNumber, city, countryCode, vehicleType: vehicleType || undefined });
+      await CourierRepository.create(user, { displayName, phoneNumber, city, countryCode, vehicleType });
     } catch {
       setError(t('onboarding.error'));
     } finally {
@@ -316,7 +317,10 @@ function OnboardingForm({ user, theme }: { user: AppUser; theme: ReturnType<type
       <TextInput onChangeText={setPhoneNumber} placeholder={t('onboarding.phone')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={phoneNumber} />
       <TextInput onChangeText={setCity} placeholder={t('onboarding.city')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={city} />
       <TextInput autoCapitalize="characters" onChangeText={setCountryCode} placeholder={t('onboarding.country')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={countryCode} />
-      <TextInput onChangeText={setVehicleType} placeholder={t('onboarding.vehicle')} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text, borderRadius: theme.radii.lg }]} value={vehicleType} />
+      <View style={styles.vehicleFieldWrap}>
+        <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>{t('onboarding.vehicle')}</Text>
+        <VehicleSelect onChange={setVehicleType} theme={theme} value={vehicleType} />
+      </View>
       {error ? <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text> : null}
       <Pressable disabled={isSubmitting} onPress={() => void handleSubmit()} style={[styles.primaryButton, { backgroundColor: theme.colors.accent, borderRadius: theme.radii.lg }]}>
         <Text style={[styles.primaryButtonText, { color: theme.colors.onAccent }]}>{isSubmitting ? '...' : t('onboarding.submit')}</Text>
@@ -465,6 +469,7 @@ const styles = StyleSheet.create({
 
   fieldLabel: { fontSize: 12, fontWeight: '600', marginTop: 4 },
   fieldInput: { width: '100%', borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+  vehicleFieldWrap: { width: 280, gap: 6 },
   passwordRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, paddingHorizontal: 14 },
   passwordInput: { flex: 1, paddingVertical: 12, fontSize: 15 },
   passwordToggle: { fontSize: 13, fontWeight: '700', paddingLeft: 10 },

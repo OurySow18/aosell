@@ -151,6 +151,7 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
     },
     domain: {
       sellerType: { shop: 'Shop', restaurant: 'Restaurant', individual: 'Individual' },
+      vehicleType: { bike: 'Bike', scooter: 'Scooter', car: 'Car' },
       availability: { available: 'available', offline: 'offline', on_delivery: 'on delivery' },
       assignmentStatus: { offered: 'offered', accepted: 'accepted', declined: 'declined' },
       orderStatus: {
@@ -318,6 +319,7 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
     },
     domain: {
       sellerType: { shop: 'Boutique', restaurant: 'Restaurant', individual: 'Particulier' },
+      vehicleType: { bike: 'Vélo', scooter: 'Moto', car: 'Voiture' },
       availability: { available: 'disponible', offline: 'hors ligne', on_delivery: 'en course' },
       assignmentStatus: { offered: 'proposée', accepted: 'acceptée', declined: 'refusée' },
       orderStatus: {
@@ -485,6 +487,7 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
     },
     domain: {
       sellerType: { shop: 'Geschäft', restaurant: 'Restaurant', individual: 'Privatperson' },
+      vehicleType: { bike: 'Fahrrad', scooter: 'Motorrad', car: 'Auto' },
       availability: { available: 'verfügbar', offline: 'offline', on_delivery: 'unterwegs' },
       assignmentStatus: { offered: 'angeboten', accepted: 'angenommen', declined: 'abgelehnt' },
       orderStatus: {

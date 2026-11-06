@@ -94,7 +94,9 @@ export default function CouriersScreen() {
                   <Text style={[styles.cardMeta, { color: theme.colors.textMuted }]}>
                     {courier.phoneNumber} · {courier.city}, {courier.countryCode}
                   </Text>
-                  {courier.vehicleType ? <Text style={[styles.cardMeta, { color: theme.colors.textMuted }]}>{courier.vehicleType}</Text> : null}
+                  {courier.vehicleType ? (
+                    <Text style={[styles.cardMeta, { color: theme.colors.textMuted }]}>{t(`domain.vehicleType.${courier.vehicleType}`)}</Text>
+                  ) : null}
                 </View>
               </View>
               <View style={styles.actions}>

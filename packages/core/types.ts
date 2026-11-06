@@ -149,6 +149,8 @@ export interface SellerProfile {
   updatedAt: ISODateString;
 }
 
+export type CourierVehicleType = 'bike' | 'scooter' | 'car';
+
 export interface CourierProfile {
   id: UUID;
   ownerUserId: UUID;
@@ -156,7 +158,7 @@ export interface CourierProfile {
   phoneNumber: string;
   countryCode: CountryCode;
   city: string;
-  vehicleType?: string;
+  vehicleType?: CourierVehicleType;
   location?: GeoPoint;
   availability: CourierAvailability;
   verificationStatus: VerificationStatus;

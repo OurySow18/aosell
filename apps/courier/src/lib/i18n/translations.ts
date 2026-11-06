@@ -122,6 +122,11 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
       supportTitle: 'Need help?',
       version: 'Version {version}',
     },
+    vehicle: {
+      bike: 'Bike',
+      scooter: 'Scooter',
+      car: 'Car',
+    },
   },
   fr: {
     nav: {
@@ -246,6 +251,11 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
       supportTitle: "Besoin d'aide ?",
       version: 'Version {version}',
     },
+    vehicle: {
+      bike: 'Vélo',
+      scooter: 'Moto',
+      car: 'Voiture',
+    },
   },
   de: {
     nav: {
@@ -369,6 +379,11 @@ export const translations: Record<'en' | 'fr' | 'de', Record<string, unknown>> =
       editError: 'Änderungen konnten nicht gespeichert werden.',
       supportTitle: 'Brauchst du Hilfe?',
       version: 'Version {version}',
+    },
+    vehicle: {
+      bike: 'Fahrrad',
+      scooter: 'Motorrad',
+      car: 'Auto',
     },
   },
 };
